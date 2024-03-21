@@ -18,7 +18,7 @@ import java.util.Objects;
  */
 public class ToolboxCommand {
 
-    public static void register(CommandDispatcher<ServerCommandSource> dispatcher, CommandManager m) {
+    public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
         dispatcher.register((CommandManager.literal("toolbox")
                 .requires(source -> source.hasPermissionLevel(2)))
                 .then(CommandManager.literal("config")

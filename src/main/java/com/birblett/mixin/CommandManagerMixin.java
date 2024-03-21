@@ -20,7 +20,7 @@ public abstract class CommandManagerMixin {
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void onRegister(CommandManager.RegistrationEnvironment environment, CommandRegistryAccess commandRegistryAccess, CallbackInfo ci) {
-        ToolboxCommand.register(dispatcher, (CommandManager) (Object) this);
+        ToolboxCommand.register(dispatcher);
     }
 
 }
