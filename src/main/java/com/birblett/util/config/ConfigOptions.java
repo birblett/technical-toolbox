@@ -1,6 +1,14 @@
 package com.birblett.util.config;
 
+import com.birblett.TechnicalToolbox;
+import com.birblett.command.CameraCommand;
+import com.birblett.command.ToolboxCommand;
+import com.birblett.lib.NodeRemovalInterface;
+import com.birblett.util.ServerUtil;
+import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import com.mojang.brigadier.tree.CommandNode;
+import com.mojang.brigadier.tree.RootCommandNode;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -8,6 +16,10 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.StringNbtReader;
 import net.minecraft.registry.Registries;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.ServerTask;
+import net.minecraft.server.command.ServerCommandSource;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.Pair;
 
@@ -16,6 +28,49 @@ import java.util.Collection;
 import java.util.function.Predicate;
 
 public enum ConfigOptions implements ConfigOption<Object> {
+    CAMERA_COMMAND("cameraCommand", "cam", "Camera command string, usage /[cmd string] i.e. " +
+            "/cam. Default: cam", "cam", "c", "cs") {
+        private String value = "cam";
+
+        @Override
+        public String value() {
+            return this.value;
+        }
+
+        @Override
+        public String setFromString(String value, MinecraftServer server) {
+            String oldValue = this.value;
+            String s = setFromString(value);
+            if (s == null && server != null) {
+                ServerUtil.removeCommandByName(server, oldValue);
+                CameraCommand.register(server.getCommandManager().getDispatcher());
+            }
+            return s;
+        }
+
+        @Override
+        public String setFromString(String value) {
+            Pair<String, String> out = ConfigHelper.getStringOption(this.getName(), value, "cam");
+            this.value = out.getLeft();
+            return out.getRight();
+        }
+    },
+    CAMERA_PERMISSION_LEVEL("cameraPermissionLevel", "0", "Permission level required to use the" +
+            "camera command. Default: 0", "0", "2", "4") {
+        private int value = 0;
+
+        @Override
+        public Integer value() {
+            return this.value;
+        }
+
+        @Override
+        public String setFromString(String value) {
+            Pair<Integer, String> out = ConfigHelper.getIntOption(this.getName(), value, 4, 0, 4);
+            this.value = out.getLeft();
+            return out.getRight();
+        }
+    },
     CRAFTER_COOLDOWN("crafterCooldown", "4", "0", "4") {
         private int value = 4;
 
@@ -31,14 +86,9 @@ public enum ConfigOptions implements ConfigOption<Object> {
 
         @Override
         public String setFromString(String value) {
-            Pair<Integer, String> out = ConfigHelper.getIntOption(this.getName(), value, 4);
+            Pair<Integer, String> out = ConfigHelper.getIntOption(this.getName(), value, 4, 0, Integer.MAX_VALUE);
             this.value = out.getLeft();
             return out.getRight();
-        }
-
-        @Override
-        public String getWriteable() {
-            return Integer.toString(this.value);
         }
     },
     CRAFTER_QUASI_POWER("crafterQuasiPower", "false", "true", "false") {
@@ -59,11 +109,6 @@ public enum ConfigOptions implements ConfigOption<Object> {
             Pair<Boolean, String> out = ConfigHelper.getBooleanOption(this.getName(), value, false);
             this.value = out.getLeft();
             return out.getRight();
-        }
-
-        @Override
-        public String getWriteable() {
-            return Boolean.toString(this.value);
         }
     },
     CRAFTER_DISABLED_SLOT_ITEMS("crafterDisabledSlotItems", "minecraft:wooden_shovel", "minecraft:wooden_shovel") {
@@ -134,11 +179,13 @@ public enum ConfigOptions implements ConfigOption<Object> {
     ;
 
     private final String name;
+    private final String desc;
     private final String defaultValue;
     private final Collection<String> commandSuggestions;
 
-    ConfigOptions(String name, String defaultValue, String... suggestions) {
+    ConfigOptions(String name, String defaultValue, String desc, String... suggestions) {
         this.name = name;
+        this.desc = desc;
         this.defaultValue = defaultValue;
         this.commandSuggestions = Arrays.asList(suggestions);
     }
@@ -146,6 +193,11 @@ public enum ConfigOptions implements ConfigOption<Object> {
     @Override
     public String getName() {
         return this.name;
+    }
+
+    @Override
+    public String getDesc() {
+        return this.desc;
     }
 
     @Override

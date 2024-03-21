@@ -18,7 +18,7 @@ import java.util.Objects;
  */
 public class ToolboxCommand {
 
-    public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
+    public static void register(CommandDispatcher<ServerCommandSource> dispatcher, CommandManager m) {
         dispatcher.register((CommandManager.literal("toolbox")
                 .requires(source -> source.hasPermissionLevel(2)))
                 .then(CommandManager.literal("config")
@@ -41,7 +41,7 @@ public class ToolboxCommand {
                                             String value = context.getArgument("config_value", String.class);
                                             if (TechnicalToolbox.CONFIG_MANAGER.getAllConfigOptions().contains(option)) {
                                                 ConfigOptions c = TechnicalToolbox.CONFIG_MANAGER.configMap.get(option);
-                                                String out = c.setFromString(value);
+                                                String out = c.setFromString(value, context.getSource().getServer());
                                                 context.getSource().sendFeedback(() -> Text.of(Objects.requireNonNullElseGet(
                                                         out, () -> "Successfully set value '" + value + "' for option "
                                                                 + option)), true);

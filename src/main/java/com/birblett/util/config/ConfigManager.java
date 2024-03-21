@@ -10,12 +10,12 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 
 public class ConfigManager {
 
     private MinecraftServer server = null;
-    public final HashMap<String, ConfigOptions> configMap = new HashMap<>();
+    public final LinkedHashMap<String, ConfigOptions> configMap = new LinkedHashMap<>();
 
     public ConfigManager() {
         for (ConfigOptions c : ConfigOptions.values()) {
@@ -61,7 +61,7 @@ public class ConfigManager {
                     TechnicalToolbox.log("Option '" + name + "' does not exist");
                     continue;
                 }
-                String out = configMap.get(name).setFromString(value);
+                String out = configMap.get(name).setFromString(value, this.server);
                 if (out != null) {
                     TechnicalToolbox.log(out);
                     continue;

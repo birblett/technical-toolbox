@@ -1,5 +1,6 @@
 package com.birblett.mixin;
 
+import com.birblett.command.CameraCommand;
 import com.birblett.command.ToolboxCommand;
 import com.mojang.brigadier.CommandDispatcher;
 import net.minecraft.command.CommandRegistryAccess;
@@ -19,7 +20,7 @@ public abstract class CommandManagerMixin {
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void onRegister(CommandManager.RegistrationEnvironment environment, CommandRegistryAccess commandRegistryAccess, CallbackInfo ci) {
-        ToolboxCommand.register(dispatcher);
+        ToolboxCommand.register(dispatcher, (CommandManager) (Object) this);
     }
 
 }
