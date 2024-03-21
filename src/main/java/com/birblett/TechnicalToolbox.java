@@ -1,12 +1,8 @@
 package com.birblett;
 
 import com.birblett.util.config.ConfigManager;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.function.Predicate;
 
 public class TechnicalToolbox {
 

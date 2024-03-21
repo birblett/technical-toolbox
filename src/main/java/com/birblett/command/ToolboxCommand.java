@@ -7,14 +7,14 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import net.minecraft.command.CommandSource;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.text.Text;
+import net.minecraft.text.*;
+import net.minecraft.util.Formatting;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Objects;
 
 /**
- * brigadier forces me to use 10 billion nested calls so idfk read this yourself lmao
+ * brigadier forces me to use 10 billion nested calls and lambdas so decipher it yourself lmao
  */
 public class ToolboxCommand {
 
@@ -41,25 +41,40 @@ public class ToolboxCommand {
                                             String value = context.getArgument("config_value", String.class);
                                             if (TechnicalToolbox.CONFIG_MANAGER.getAllConfigOptions().contains(option)) {
                                                 ConfigOptions c = TechnicalToolbox.CONFIG_MANAGER.configMap.get(option);
-                                                String out = c.setFromString(value, context.getSource().getServer());
-                                                context.getSource().sendFeedback(() -> Text.of(Objects.requireNonNullElseGet(
-                                                        out, () -> "Successfully set value '" + value + "' for option "
-                                                                + option)), true);
+                                                Text out = c.setFromString(value, context.getSource().getServer());
+                                                if (out != null) {
+                                                    context.getSource().sendFeedback(() -> out, false);
+                                                }
+                                                else {
+                                                    context.getSource().sendFeedback(() -> MutableText.of(TextContent.EMPTY)
+                                                            .append(Text.of("Successfully set value ")).append(MutableText
+                                                                    .of(new LiteralTextContent(value)).setStyle(Style.EMPTY
+                                                                            .withColor(Formatting.GREEN)))
+                                                            .append(Text.of(" for option " + option)), true);
+                                                }
                                             }
                                             return 1;
-                                        })))))
+                                        })))
+                                .executes(context -> {
+                                    String option = context.getArgument("config_option", String.class);
+                                    if (TechnicalToolbox.CONFIG_MANAGER.getAllConfigOptions().contains(option)) {
+                                        ConfigOptions c = TechnicalToolbox.CONFIG_MANAGER.configMap.get(option);
+                                        context.getSource().sendFeedback(c::getText, true);
+                                    }
+                                    return 1;
+                                })))
                 .then(CommandManager.literal("reload_configs")
-                        .executes((context -> {
+                        .executes(context -> {
                             context.getSource().sendFeedback(() -> Text.of("Reloading configs from disk"), true);
                             TechnicalToolbox.CONFIG_MANAGER.readConfigsFromFile();
                             return 1;
-                        })))
+                        }))
                 .then(CommandManager.literal("write_configs")
-                        .executes((context -> {
+                        .executes(context -> {
                             context.getSource().sendFeedback(() -> Text.of("Writing configs to disk"), true);
                             TechnicalToolbox.CONFIG_MANAGER.writeConfigsToFile();
                             return 1;
-                        }))));
+                        })));
 
     }
 

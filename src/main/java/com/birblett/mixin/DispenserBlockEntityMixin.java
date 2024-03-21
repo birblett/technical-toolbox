@@ -1,27 +1,30 @@
 package com.birblett.mixin;
 
-import com.birblett.TechnicalToolbox;
 import com.birblett.lib.CrafterInterface;
-import com.birblett.util.config.ConfigHelper;
+import com.birblett.util.ServerUtil;
+import com.birblett.util.config.ConfigUtil;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.block.entity.DispenserBlockEntity;
 import net.minecraft.block.entity.LootableContainerBlockEntity;
+import net.minecraft.inventory.SidedInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.recipe.RecipeMatcher;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
+import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 
 import java.util.List;
 
 /**
- * Extends dispenser block entities to be able to perform crafter logic, most ported from snapshots with minor tweaks
- * for compatibility
+ * Extends dispenser block entities to be able to perform crafter logic, most ported from snapshots with extra tweaks
+ * for compatibility. Implements SidedInventory for Lithium compatibility.
  */
 @Mixin(DispenserBlockEntity.class)
-public abstract class DispenserBlockEntityMixin extends LootableContainerBlockEntity implements CrafterInterface {
+public abstract class DispenserBlockEntityMixin extends LootableContainerBlockEntity implements CrafterInterface, SidedInventory {
 
     @Shadow private DefaultedList<ItemStack> inventory;
 
@@ -45,9 +48,30 @@ public abstract class DispenserBlockEntityMixin extends LootableContainerBlockEn
     }
 
     @Override
+    public int[] getAvailableSlots(Direction side) {
+        return new int[((DispenserBlockEntity) (Object) this).size()];
+    }
+
+    @Override
+    public boolean canInsert(int slot, ItemStack stack, @Nullable Direction dir) {
+        if (this.world != null && this.world.getBlockState(this.pos).get(ServerUtil.IS_CRAFTER)) {
+            return !isSlotDisabled(slot);
+        }
+        return true;
+    }
+
+    @Override
+    public boolean canExtract(int slot, ItemStack stack, Direction dir) {
+        if (this.world != null && this.world.getBlockState(this.pos).get(ServerUtil.IS_CRAFTER)) {
+            return !isSlotDisabled(slot);
+        }
+        return true;
+    }
+
+    @Override
     public void provideRecipeInputs(RecipeMatcher finder) {
         for (ItemStack itemStack : this.getInvStackList()) {
-            if (ConfigHelper.crafterDisabled().test(itemStack)) {
+            if (ConfigUtil.crafterDisabled().test(itemStack)) {
                 finder.addUnenchantedInput(itemStack);
             }
         }
@@ -56,7 +80,7 @@ public abstract class DispenserBlockEntityMixin extends LootableContainerBlockEn
     @Override
     public boolean isSlotDisabled(int slot) {
         if (slot >= 0 && slot < 9) {
-            return ConfigHelper.crafterDisabled().test(this.getStack(slot));
+            return ConfigUtil.crafterDisabled().test(this.getStack(slot));
         }
         return false;
     }

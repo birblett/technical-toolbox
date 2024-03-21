@@ -2,6 +2,7 @@ package com.birblett.util.config;
 
 import com.birblett.TechnicalToolbox;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.text.Text;
 import net.minecraft.util.WorldSavePath;
 
 import java.io.BufferedReader;
@@ -61,14 +62,17 @@ public class ConfigManager {
                     TechnicalToolbox.log("Option '" + name + "' does not exist");
                     continue;
                 }
-                String out = configMap.get(name).setFromString(value, this.server);
+                Text out = configMap.get(name).setFromString(value, this.server);
                 if (out != null) {
-                    TechnicalToolbox.log(out);
+                    TechnicalToolbox.log(out.getContent().toString());
                     continue;
                 }
                 options++;
             }
             TechnicalToolbox.log("Read " + options + " valid configuration options from 'toolbox.conf'");
+            if (configMap.size() - options > 0) {
+                TechnicalToolbox.log((configMap.size() - options) + " configuration options were not specified, using defaults");
+            }
         }
         catch (IOException e) {
             TechnicalToolbox.warn("Configuration file 'toolbox.conf' was not found, generating defaults");
@@ -81,6 +85,9 @@ public class ConfigManager {
             int options = 0;
             for (ConfigOptions c : ConfigOptions.values()) {
                  bufferedWriter.write(c.getName() + ": " + c.getWriteable() + "\n");
+                 if (c.hasLineBreak()) {
+                     bufferedWriter.write("\n");
+                 }
                  options++;
             }
             TechnicalToolbox.log("Wrote " + options + " configuration options to 'toolbox.conf'");

@@ -7,8 +7,11 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.ServerTask;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.state.property.BooleanProperty;
 
 public class ServerUtil {
+
+    public static final BooleanProperty IS_CRAFTER = BooleanProperty.of("crafter");
 
     public static void removeCommandByName(MinecraftServer server, String name) {
         RootCommandNode<ServerCommandSource> r = server.getCommandManager().getDispatcher().getRoot();

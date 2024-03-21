@@ -1,6 +1,5 @@
 package com.birblett.mixin;
 
-import com.birblett.command.CameraCommand;
 import com.birblett.command.ToolboxCommand;
 import com.mojang.brigadier.CommandDispatcher;
 import net.minecraft.command.CommandRegistryAccess;
