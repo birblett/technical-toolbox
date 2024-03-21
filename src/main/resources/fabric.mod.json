@@ -1,0 +1,29 @@
+{
+	"schemaVersion": 1,
+	"id": "technical-toolbox",
+	"version": "${version}",
+	"name": "Technical Toolbox",
+	"description": "A collection of technical Minecraft-related utilities",
+	"authors": [
+		"birblett"
+	],
+	"contact": {
+		"homepage": "https://fabricmc.net/",
+		"sources": "https://github.com/FabricMC/fabric-example-mod"
+	},
+	"license": "MIT",
+	"icon": "assets/technical-toolbox/icon.png",
+	"environment": "*",
+	"entrypoints": {},
+	"mixins": [
+		"technical-toolbox.mixins.json"
+	],
+	"depends": {
+		"fabricloader": ">=0.15.7",
+		"minecraft": "~1.20.1",
+		"java": ">=17"
+	},
+	"suggests": {
+		"another-mod": "*"
+	}
+}
