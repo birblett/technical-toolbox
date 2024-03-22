@@ -2,6 +2,7 @@ package com.birblett.util.config;
 
 import com.birblett.command.CameraCommand;
 import com.birblett.util.ServerUtil;
+import com.birblett.util.TextUtils;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -11,7 +12,8 @@ import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.StringNbtReader;
 import net.minecraft.registry.Registries;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.text.*;
+import net.minecraft.text.Style;
+import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.Pair;
@@ -20,7 +22,26 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.function.Predicate;
 
+/**
+ * Enum containing all configurable options, honestly a mess but i'll deal with refactoring later if necessary
+ */
 public enum ConfigOptions implements ConfigOption<Object> {
+    CONFIG_VIEW_PERMISSION_LEVEL("configViewPermissionLevel", "0", "Permission level required to" +
+            " view configurations.", true, "0", "4") {
+        private int value = 0;
+
+        @Override
+        public Integer value() {
+            return this.value;
+        }
+
+        @Override
+        public Text setFromString(String value) {
+            Pair<Integer, Text> out = ConfigUtil.getIntOption(this.getName(), value, 4, 0, 4);
+            this.value = out.getLeft();
+            return out.getRight();
+        }
+    },
     CAMERA_COMMAND("cameraCommand", "cam", "Camera command string, usage /[cmd string]",
             "cam", "c", "cs") {
         private String value = "cam";
@@ -48,8 +69,74 @@ public enum ConfigOptions implements ConfigOption<Object> {
             return out.getRight();
         }
     },
-    CAMERA_PERMISSION_LEVEL("cameraPermissionLevel", "0", "Permission level required to use the " +
-            "camera command.", "0", "2", "4") {
+    CAMERA_GENERATES_CHUNKS("cameraGeneratesChunks", "false", "Whether players in camera mode" +
+            " should generate chunks or not", "true", "false") {
+        private boolean value = false;
+
+        @Override
+        public Boolean value() {
+            return this.value;
+        }
+
+        @Override
+        public Text setFromString(String value) {
+            Pair<Boolean, Text> out = ConfigUtil.getBooleanOption(this.getName(), value, false);
+            this.value = out.getLeft();
+            return out.getRight();
+        }
+    },
+    CAMERA_CAN_SPECTATE("cameraCanSpectate", "false", "Whether players in camera mode can " +
+            "spectate other players", "true", "false") {
+        private boolean value = false;
+
+        @Override
+        public Boolean value() {
+            return this.value;
+        }
+
+        @Override
+        public Text setFromString(String value) {
+            Pair<Boolean, Text> out = ConfigUtil.getBooleanOption(this.getName(), value, false);
+            this.value = out.getLeft();
+            return out.getRight();
+        }
+    },
+    CAMERA_CAN_TELEPORT("cameraCanTeleport", "false", "Whether players in camera mode can " +
+            "teleport to other players", "true", "false") {
+        private boolean value = false;
+
+        @Override
+        public Boolean value() {
+            return this.value;
+        }
+
+        @Override
+        public Text setFromString(String value) {
+            Pair<Boolean, Text> out = ConfigUtil.getBooleanOption(this.getName(), value, false);
+            this.value = out.getLeft();
+            return out.getRight();
+        }
+    },
+    CAMERA_CONSOLE_LOGGING("cameraConsoleLogging", "none", "The level of logging for camera mode" +
+            " usage by players. Accepts values \"none\", \"command\", \"spectate\".", "none", "command",
+            "spectate") {
+        private String value = "none";
+
+        @Override
+        public String value() {
+            return this.value;
+        }
+
+        @Override
+        public Text setFromString(String value) {
+            Pair<String, Text> out = ConfigUtil.getRestrictedStringOptions(this.getName(), value, "none",
+                    this.commandSuggestions());
+            this.value = out.getLeft();
+            return out.getRight();
+        }
+    },
+    CAMERA_PERMISSION_LEVEL("cameraPermissionLevel", "4", "Permission level required to use the " +
+            "camera command.", true, "0", "4") {
         private int value = 0;
 
         @Override
@@ -184,14 +271,13 @@ public enum ConfigOptions implements ConfigOption<Object> {
 
     public Text getText() {
         if (this.getWriteable().equals(this.defaultValue)) {
-            return MutableText.of(TextContent.EMPTY).append(Text.of(this.desc
-                        + "\nCurrent value (default): ")).append(MutableText.of(new LiteralTextContent(this.getWriteable()))
-                        .setStyle(Style.EMPTY.withColor(Formatting.GREEN))).append(Text.of(")"));
+            return TextUtils.formattable(this.desc + "\nCurrent value (default): ").append(TextUtils.formattable(this
+                            .getWriteable()).setStyle(Style.EMPTY.withColor(Formatting.GREEN))).append(TextUtils.formattable(")"));
         }
-        return MutableText.of(TextContent.EMPTY).append(Text.of(this.desc + "\nCurrent value: "))
-                .append(MutableText.of(new LiteralTextContent(this.getWriteable())).setStyle(Style.EMPTY.withColor(Formatting.GREEN)))
-                .append(Text.of(" (default: ")).append(MutableText.of(new LiteralTextContent(this.defaultValue))
-                        .setStyle(Style.EMPTY.withColor(Formatting.YELLOW))).append(Text.of(")"));
+        return TextUtils.formattable(this.desc + "\nCurrent value: ").append(TextUtils.formattable(this.getWriteable())
+                .setStyle(Style.EMPTY.withColor(Formatting.GREEN))).append(TextUtils.formattable(" (default: "))
+                .append(TextUtils.formattable(this.defaultValue).setStyle(Style.EMPTY.withColor(Formatting.YELLOW)))
+                .append(TextUtils.formattable(")"));
     }
 
     public Collection<String> commandSuggestions() {

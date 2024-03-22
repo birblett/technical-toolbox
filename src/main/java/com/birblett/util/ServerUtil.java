@@ -7,12 +7,17 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.ServerTask;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.state.property.BooleanProperty;
 
+/**
+ * Collection of server-related utilities
+ */
 public class ServerUtil {
 
-    public static final BooleanProperty IS_CRAFTER = BooleanProperty.of("crafter");
-
+    /**
+     * Removes a command from a server given by the specified string
+     * @param server target server
+     * @param name target command
+     */
     public static void removeCommandByName(MinecraftServer server, String name) {
         RootCommandNode<ServerCommandSource> r = server.getCommandManager().getDispatcher().getRoot();
         ((NodeRemovalInterface) r).removeStringInstance(name);
@@ -23,7 +28,7 @@ public class ServerUtil {
                 }
             }
             catch (NullPointerException e) {
-                TechnicalToolbox.log("Failed to remove command '" + name + "', please report");
+                TechnicalToolbox.log("Failed to update command tree, please report");
             }
         }));
     }

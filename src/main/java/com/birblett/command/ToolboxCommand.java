@@ -1,13 +1,15 @@
 package com.birblett.command;
 
 import com.birblett.TechnicalToolbox;
+import com.birblett.util.TextUtils;
 import com.birblett.util.config.ConfigOptions;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import net.minecraft.command.CommandSource;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.text.*;
+import net.minecraft.text.Style;
+import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
 import java.util.ArrayList;
@@ -19,11 +21,13 @@ import java.util.Collection;
 public class ToolboxCommand {
 
     public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
-        dispatcher.register((CommandManager.literal("toolbox")
-                .requires(source -> source.hasPermissionLevel(2)))
+        dispatcher.register(CommandManager.literal("toolbox")
+                .requires(source -> source.hasPermissionLevel((Integer) ConfigOptions.CONFIG_VIEW_PERMISSION_LEVEL.value()))
                 .then(CommandManager.literal("config")
                         .then(CommandManager.argument("config_option", StringArgumentType.string())
-                                .suggests((context, builder) -> CommandSource.suggestMatching(TechnicalToolbox.CONFIG_MANAGER.getAllConfigOptions(), builder))
+                                .requires(source -> source.hasPermissionLevel(4))
+                                .suggests((context, builder) -> CommandSource.suggestMatching(TechnicalToolbox.CONFIG_MANAGER
+                                        .getAllConfigOptions(), builder))
                                 .then(CommandManager.argument("config_value", StringArgumentType.string())
                                         .suggests((context, builder) -> {
                                             Collection<String> suggestions = new ArrayList<>();
@@ -46,11 +50,11 @@ public class ToolboxCommand {
                                                     context.getSource().sendFeedback(() -> out, false);
                                                 }
                                                 else {
-                                                    context.getSource().sendFeedback(() -> MutableText.of(TextContent.EMPTY)
-                                                            .append(Text.of("Successfully set value ")).append(MutableText
-                                                                    .of(new LiteralTextContent(value)).setStyle(Style.EMPTY
-                                                                            .withColor(Formatting.GREEN)))
-                                                            .append(Text.of(" for option " + option)), true);
+                                                    context.getSource().sendFeedback(() -> TextUtils
+                                                            .formattable("Successfully set value ").append(TextUtils
+                                                            .formattable(value).setStyle(Style.EMPTY.withColor(Formatting
+                                                            .GREEN))).append(TextUtils.formattable(" for option " + option)),
+                                                            true);
                                                 }
                                             }
                                             return 1;
@@ -64,14 +68,18 @@ public class ToolboxCommand {
                                     return 1;
                                 })))
                 .then(CommandManager.literal("reload_configs")
+                        .requires(source -> source.hasPermissionLevel(4))
                         .executes(context -> {
-                            context.getSource().sendFeedback(() -> Text.of("Reloading configs from disk"), true);
+                            context.getSource().sendFeedback(() -> TextUtils.formattable("Reloading configs from disk"),
+                                    true);
                             TechnicalToolbox.CONFIG_MANAGER.readConfigsFromFile();
                             return 1;
                         }))
                 .then(CommandManager.literal("write_configs")
+                        .requires(source -> source.hasPermissionLevel(4))
                         .executes(context -> {
-                            context.getSource().sendFeedback(() -> Text.of("Writing configs to disk"), true);
+                            context.getSource().sendFeedback(() -> TextUtils.formattable("Writing configs to disk"),
+                                    true);
                             TechnicalToolbox.CONFIG_MANAGER.writeConfigsToFile();
                             return 1;
                         })));

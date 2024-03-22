@@ -13,6 +13,9 @@ import java.nio.file.Path;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 
+/**
+ * Handles writing and reading of configuration options, with methods called on server start and close
+ */
 public class ConfigManager {
 
     private MinecraftServer server = null;

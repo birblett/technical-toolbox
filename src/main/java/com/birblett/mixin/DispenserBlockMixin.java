@@ -2,7 +2,8 @@ package com.birblett.mixin;
 
 import com.birblett.lib.CrafterInterface;
 import com.birblett.lib.RecipeCache;
-import com.birblett.util.ServerUtil;
+import com.birblett.util.Constant;
+import com.birblett.util.TextUtils;
 import com.birblett.util.config.ConfigOptions;
 import com.birblett.util.config.ConfigUtil;
 import com.llamalad7.mixinextras.sugar.Local;
@@ -24,7 +25,6 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.DirectionProperty;
-import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
@@ -134,7 +134,7 @@ public class DispenserBlockMixin {
 
     @Inject(method = "scheduledTick", at = @At("HEAD"), cancellable = true)
     private void craftInstead(BlockState state, ServerWorld world, BlockPos pos, Random random, CallbackInfo ci) {
-        if (state.get(ServerUtil.IS_CRAFTER)) {
+        if (state.get(Constant.IS_CRAFTER)) {
             this.craft(state, world, pos);
             ci.cancel();
         }
@@ -146,7 +146,7 @@ public class DispenserBlockMixin {
     @Inject(method = "getComparatorOutput", at = @At("HEAD"), cancellable = true)
     private void getCrafterComparatorOutput(BlockState state, World world, BlockPos pos, CallbackInfoReturnable<Integer> cir) {
         BlockEntity blockEntity = world.getBlockEntity(pos);
-        if (state.get(ServerUtil.IS_CRAFTER) && blockEntity instanceof CrafterInterface crafterInterface) {
+        if (state.get(Constant.IS_CRAFTER) && blockEntity instanceof CrafterInterface crafterInterface) {
             cir.setReturnValue(crafterInterface.getComparatorOutput());
         }
     }
@@ -156,7 +156,7 @@ public class DispenserBlockMixin {
      */
     @ModifyVariable(method = "neighborUpdate", at = @At(value = "INVOKE", target = "Lnet/minecraft/block/BlockState;get(Lnet/minecraft/state/property/Property;)Ljava/lang/Comparable;"), index = 7)
     private boolean disableQuasi(boolean b, @Local BlockState state, @Local World world, @Local(ordinal = 0) BlockPos pos) {
-        if (state.get(ServerUtil.IS_CRAFTER) && !(Boolean) ConfigOptions.CRAFTER_QUASI_POWER.value()) {
+        if (state.get(Constant.IS_CRAFTER) && !(Boolean) ConfigOptions.CRAFTER_QUASI_POWER.value()) {
             return b && world.isReceivingRedstonePower(pos);
         }
         return b;
@@ -168,7 +168,7 @@ public class DispenserBlockMixin {
     @SuppressWarnings("InvalidInjectorMethodSignature")
     @ModifyArg(method = "neighborUpdate", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/World;scheduleBlockTick(Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/Block;I)V"))
     private int modifyCrafterCooldown(int cd, @Local BlockState state) {
-        if (state.get(ServerUtil.IS_CRAFTER) && (Integer) ConfigOptions.CRAFTER_COOLDOWN.value() > 0) {
+        if (state.get(Constant.IS_CRAFTER) && (Integer) ConfigOptions.CRAFTER_COOLDOWN.value() > 0) {
             return (int) ConfigOptions.CRAFTER_COOLDOWN.value();
         }
         return cd;
@@ -179,7 +179,7 @@ public class DispenserBlockMixin {
      */
     @Inject(method = "neighborUpdate", at = @At(value = "INVOKE", target = "Lnet/minecraft/block/BlockState;get(Lnet/minecraft/state/property/Property;)Ljava/lang/Comparable;"), cancellable = true, locals = LocalCapture.CAPTURE_FAILSOFT)
     private void crafterNoCooldown(BlockState state, World world, BlockPos pos, Block sourceBlock, BlockPos sourcePos, boolean notify, CallbackInfo ci, boolean bl) {
-        if (state.get(ServerUtil.IS_CRAFTER) && ConfigOptions.CRAFTER_COOLDOWN.value().equals(0) && world instanceof ServerWorld) {
+        if (state.get(Constant.IS_CRAFTER) && ConfigOptions.CRAFTER_COOLDOWN.value().equals(0) && world instanceof ServerWorld) {
             if (bl && !state.get(TRIGGERED)) {
                 world.setBlockState(pos, state.with(TRIGGERED, true), Block.NOTIFY_ALL);
                 this.craft(state, (ServerWorld) world, pos);
@@ -198,25 +198,25 @@ public class DispenserBlockMixin {
     private void applyCrafterNbt(ItemPlacementContext ctx, CallbackInfoReturnable<BlockState> cir) {
         NbtCompound nbt;
         if ((nbt = ctx.getStack().getNbt()) != null && nbt.getBoolean("IsCrafter")) {
-            cir.setReturnValue(cir.getReturnValue().with(ServerUtil.IS_CRAFTER, true));
+            cir.setReturnValue(cir.getReturnValue().with(Constant.IS_CRAFTER, true));
         }
     }
 
     @Inject(method = "onPlaced", at = @At("TAIL"))
     private void applyCrafterName(World world, BlockPos pos, BlockState state, LivingEntity placer, ItemStack itemStack, CallbackInfo ci) {
         if (!itemStack.hasCustomName() && world.getBlockEntity(pos) instanceof DispenserBlockEntity blockEntity &&
-                world.getBlockState(pos).get(ServerUtil.IS_CRAFTER)) {
-            blockEntity.setCustomName(Text.of("Crafter"));
+                world.getBlockState(pos).get(Constant.IS_CRAFTER)) {
+            blockEntity.setCustomName(TextUtils.formattable("Crafter"));
         }
     }
 
     @ModifyArg(method = "<init>", at = @At(value = "INVOKE", target = "Lnet/minecraft/block/DispenserBlock;setDefaultState(Lnet/minecraft/block/BlockState;)V"))
     private BlockState defaultCrafterProperty(BlockState defaultState) {
-        return defaultState.with(ServerUtil.IS_CRAFTER, false);
+        return defaultState.with(Constant.IS_CRAFTER, false);
     }
 
     @Inject(method = "appendProperties", at = @At("HEAD"))
     private void addCrafterProperty(StateManager.Builder<Block, BlockState> builder, CallbackInfo ci) {
-        builder.add(ServerUtil.IS_CRAFTER);
+        builder.add(Constant.IS_CRAFTER);
     }
 }

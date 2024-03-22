@@ -1,23 +1,31 @@
 package com.birblett.util.config;
 
+import com.birblett.TechnicalToolbox;
+import com.birblett.util.TextUtils;
 import net.minecraft.item.ItemStack;
-import net.minecraft.text.*;
+import net.minecraft.text.MutableText;
+import net.minecraft.text.Style;
+import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Pair;
 
+import java.util.Collection;
 import java.util.function.Predicate;
 
+/**
+ * Various configuration related utilities and shorthands
+ */
 public class ConfigUtil {
 
     public static Text setFailCustom(String substr1, String value, Formatting color, String substr2, String value2, Formatting color2) {
-        return MutableText.of(TextContent.EMPTY).append(Text.of(substr1)).append(MutableText.of(new LiteralTextContent(value))
-                .setStyle(Style.EMPTY.withColor(color))).append(Text.of(substr2)).append(MutableText.of(new
-                LiteralTextContent(value2)).setStyle(Style.EMPTY.withColor(color2)));
+        return TextUtils.formattable(substr1).append(TextUtils.formattable(value).setStyle(Style.EMPTY.withColor(color)))
+                .append(TextUtils.formattable(substr2)).append(TextUtils.formattable(value2)).setStyle(Style.EMPTY
+                        .withColor(color2));
     }
 
     private static Text setFailGeneric(String name, String value) {
-        return MutableText.of(TextContent.EMPTY).append(Text.of("Failed to parse value '")).append(MutableText.of(new
-                LiteralTextContent(value)).setStyle(Style.EMPTY.withColor(Formatting.RED))).append(Text.of("' for option " + name));
+        return TextUtils.formattable("Failed to parse value ").append(TextUtils.formattable(value).setStyle(Style.EMPTY
+                .withColor(Formatting.RED))).append(TextUtils.formattable(" for option " + name));
     }
 
     public static Pair<Integer, Text> getIntOption(String name, String value, int defaultValue, int left, int right) {
@@ -25,20 +33,22 @@ public class ConfigUtil {
         try {
             tmp = Integer.parseInt(value);
             if (tmp < left || tmp > right) {
-                MutableText t = MutableText.of(new LiteralTextContent(name + " only accepts values "));
+                MutableText t = TextUtils.formattable("Invalid input ").append(TextUtils.formattable(value)
+                        .setStyle(Style.EMPTY.withColor(Formatting.RED))).append(TextUtils.formattable(": " + name +
+                        " only accepts values "));
                 if (left != Integer.MIN_VALUE && right != Integer.MAX_VALUE) {
-                    return new Pair<>(defaultValue, t.append(Text.of("in range [")).append(MutableText.of(new
-                                    LiteralTextContent("" + left)).setStyle(Style.EMPTY.withColor(Formatting.RED)))
-                                    .append(Text.of(", ")).append(MutableText.of(new LiteralTextContent("" + right))
-                                    .setStyle(Style.EMPTY.withColor(Formatting.RED))).append(Text.of("]")));
+                    return new Pair<>(defaultValue, t.append(TextUtils.formattable("in range [")).append(TextUtils
+                                    .formattable("" + left).setStyle(Style.EMPTY.withColor(Formatting.GREEN)))
+                                    .append(TextUtils.formattable(", ")).append(TextUtils.formattable("" + right)
+                                    .setStyle(Style.EMPTY.withColor(Formatting.GREEN))).append(TextUtils.formattable("]")));
                 }
                 else if (left != Integer.MIN_VALUE) {
-                    return new Pair<>(defaultValue, t.append(Text.of(">= ")).append(MutableText.of(new
-                            LiteralTextContent("" + left)).setStyle(Style.EMPTY.withColor(Formatting.RED))));
+                    return new Pair<>(defaultValue, t.append(TextUtils.formattable(">= ")).append(TextUtils
+                            .formattable("" + left).setStyle(Style.EMPTY.withColor(Formatting.GREEN))));
                 }
                 else if (right != Integer.MAX_VALUE) {
-                    return new Pair<>(defaultValue, t.append(Text.of("<= ")).append(MutableText.of(new
-                            LiteralTextContent("" + right)).setStyle(Style.EMPTY.withColor(Formatting.RED))));
+                    return new Pair<>(defaultValue, t.append(TextUtils.formattable("<= ")).append(Text.literal("" + right)
+                            .setStyle(Style.EMPTY.withColor(Formatting.GREEN))));
                 }
             }
         }
@@ -62,6 +72,23 @@ public class ConfigUtil {
     public static Pair<String, Text> getStringOption(String name, String value, String defaultValue) {
         if (value == null || value.length() == 0) {
             return new Pair<>(defaultValue, setFailGeneric(name, value));
+        }
+        return new Pair<>(value, null);
+    }
+
+    public static Pair<String, Text> getRestrictedStringOptions(String name, String value, String defaultValue, Collection<String> suggestions) {
+        if (!suggestions.contains(value)) {
+            MutableText out = TextUtils.formattable("Invalid input ").append(TextUtils.formattable(value)
+                    .setStyle(Style.EMPTY.withColor(Formatting.RED))).append(TextUtils.formattable(": must be one of " +
+                    "["));
+            int i = 0;
+            for (String suggestion : suggestions) {
+                out = out.append(TextUtils.formattable(suggestion).setStyle(Style.EMPTY.withColor(Formatting.GREEN)));
+                if (++i != suggestions.size()) {
+                    out = out.append(TextUtils.formattable(","));
+                }
+            }
+            return new Pair<>(defaultValue, out.append("]"));
         }
         return new Pair<>(value, null);
     }

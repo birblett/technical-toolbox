@@ -7,7 +7,10 @@
     "CommandNodeMixin",
     "DispenserBlockEntityMixin",
     "DispenserBlockMixin",
-    "MinecraftServerMixin"
+    "MinecraftServerMixin",
+    "ServerPlayerEntityMixin",
+    "ServerPlayNetworkHandlerMixin",
+    "ThreadedAnvilChunkStorageMixin"
   ],
   "injectors": {
     "defaultRequire": 1

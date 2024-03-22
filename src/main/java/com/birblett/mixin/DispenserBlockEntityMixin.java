@@ -1,7 +1,7 @@
 package com.birblett.mixin;
 
 import com.birblett.lib.CrafterInterface;
-import com.birblett.util.ServerUtil;
+import com.birblett.util.Constant;
 import com.birblett.util.config.ConfigUtil;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntityType;
@@ -16,8 +16,10 @@ import net.minecraft.util.math.Direction;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 
 import java.util.List;
+import java.util.stream.IntStream;
 
 /**
  * Extends dispenser block entities to be able to perform crafter logic, most ported from snapshots with extra tweaks
@@ -27,6 +29,7 @@ import java.util.List;
 public abstract class DispenserBlockEntityMixin extends LootableContainerBlockEntity implements CrafterInterface, SidedInventory {
 
     @Shadow private DefaultedList<ItemStack> inventory;
+    @Unique private final int[] AVAILABLE_SLOTS = IntStream.range(0, 9).toArray();
 
     protected DispenserBlockEntityMixin(BlockEntityType<?> blockEntityType, BlockPos blockPos, BlockState blockState) {
         super(blockEntityType, blockPos, blockState);
@@ -49,12 +52,12 @@ public abstract class DispenserBlockEntityMixin extends LootableContainerBlockEn
 
     @Override
     public int[] getAvailableSlots(Direction side) {
-        return new int[((DispenserBlockEntity) (Object) this).size()];
+        return this.AVAILABLE_SLOTS;
     }
 
     @Override
     public boolean canInsert(int slot, ItemStack stack, @Nullable Direction dir) {
-        if (this.world != null && this.world.getBlockState(this.pos).get(ServerUtil.IS_CRAFTER)) {
+        if (this.world != null && this.world.getBlockState(this.pos).get(Constant.IS_CRAFTER)) {
             return !isSlotDisabled(slot);
         }
         return true;
@@ -62,7 +65,7 @@ public abstract class DispenserBlockEntityMixin extends LootableContainerBlockEn
 
     @Override
     public boolean canExtract(int slot, ItemStack stack, Direction dir) {
-        if (this.world != null && this.world.getBlockState(this.pos).get(ServerUtil.IS_CRAFTER)) {
+        if (this.world != null && this.world.getBlockState(this.pos).get(Constant.IS_CRAFTER)) {
             return !isSlotDisabled(slot);
         }
         return true;
