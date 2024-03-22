@@ -55,6 +55,9 @@ public class ToolboxCommand {
                                                             .formattable(value).setStyle(Style.EMPTY.withColor(Formatting
                                                             .GREEN))).append(TextUtils.formattable(" for option " + option)),
                                                             true);
+                                                    if ((Boolean) ConfigOptions.CONFIG_WRITE_ON_CHANGE.value()) {
+                                                        TechnicalToolbox.CONFIG_MANAGER.writeConfigsToFile();
+                                                    }
                                                 }
                                             }
                                             return 1;

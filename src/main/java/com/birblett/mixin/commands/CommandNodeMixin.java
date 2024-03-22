@@ -1,4 +1,4 @@
-package com.birblett.mixin;
+package com.birblett.mixin.commands;
 
 import com.birblett.lib.NodeRemovalInterface;
 import com.mojang.brigadier.tree.ArgumentCommandNode;

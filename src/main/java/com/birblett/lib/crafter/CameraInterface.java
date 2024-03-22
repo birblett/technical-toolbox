@@ -1,4 +1,4 @@
-package com.birblett.lib;
+package com.birblett.lib.crafter;
 
 public interface CameraInterface {
 

@@ -1,19 +1,19 @@
-package com.birblett.mixin;
+package com.birblett.mixin.crafter;
 
-import com.birblett.lib.CrafterInterface;
-import com.birblett.lib.RecipeCache;
+import com.birblett.TechnicalToolbox;
+import com.birblett.lib.crafter.CrafterInterface;
+import com.birblett.lib.crafter.RecipeCache;
 import com.birblett.util.Constant;
 import com.birblett.util.TextUtils;
 import com.birblett.util.config.ConfigOptions;
 import com.birblett.util.config.ConfigUtil;
+import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import com.llamalad7.mixinextras.sugar.Local;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.DispenserBlock;
+import com.mojang.datafixers.kinds.Const;
+import net.minecraft.block.*;
 import net.minecraft.block.dispenser.ItemDispenserBehavior;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.block.entity.DispenserBlockEntity;
-import net.minecraft.block.entity.HopperBlockEntity;
+import net.minecraft.block.entity.*;
+import net.minecraft.block.enums.JigsawOrientation;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.inventory.RecipeInputInventory;
@@ -25,12 +25,14 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.DirectionProperty;
+import net.minecraft.text.Style;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.random.Random;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldEvents;
+import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -50,11 +52,15 @@ import java.util.Optional;
  * different snapshots
  */
 @Mixin(DispenserBlock.class)
-public class DispenserBlockMixin {
+public abstract class DispenserBlockMixin extends BlockWithEntity implements BlockEntityProvider {
 
     @Shadow @Final public static DirectionProperty FACING;
     @Shadow @Final public static BooleanProperty TRIGGERED;
     @Unique private static final RecipeCache RECIPE_CACHE = new RecipeCache(10);
+
+    protected DispenserBlockMixin(Settings settings) {
+        super(settings);
+    }
 
     @Unique private void restoreMarkers(ItemStack[] temp, CrafterInterface crafterInterface) {
         for (int slot = 0; slot < 9; slot++) {
@@ -105,6 +111,8 @@ public class DispenserBlockMixin {
             }
             stack.decrement(1);
         });
+        ((CrafterInterface) blockEntity).setCraftingTicks(6);
+        world.setBlockState(pos, state.with(Constant.IS_CRAFTING, true), Block.NOTIFY_ALL);
         this.restoreMarkers(temp, crafterInterface);
         crafterInterface.markDirty();
     }
@@ -175,13 +183,37 @@ public class DispenserBlockMixin {
     }
 
     /**
+     * Next two methods force crafter to notify client on state change
+     */
+    @SuppressWarnings("InvalidInjectorMethodSignature")
+    @ModifyArg(method = "neighborUpdate", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/World;setBlockState(Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/BlockState;I)Z",
+            ordinal = 0))
+    private int forceNotify1(int notify, @Local BlockState state) {
+        if (state.get(Constant.IS_CRAFTER) && (Integer) ConfigOptions.CRAFTER_COOLDOWN.value() > 0) {
+            return Block.NOTIFY_ALL;
+        }
+        return notify;
+    }
+
+    @SuppressWarnings("InvalidInjectorMethodSignature")
+    @ModifyArg(method = "neighborUpdate", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/World;setBlockState(Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/BlockState;I)Z",
+            ordinal = 1))
+    private int forceNotify2(int notify, @Local BlockState state) {
+        if (state.get(Constant.IS_CRAFTER) && (Integer) ConfigOptions.CRAFTER_COOLDOWN.value() > 0) {
+            return Block.NOTIFY_ALL;
+        }
+        return notify;
+    }
+
+    /**
      * Instantly craft if matching config option is zero
      */
     @Inject(method = "neighborUpdate", at = @At(value = "INVOKE", target = "Lnet/minecraft/block/BlockState;get(Lnet/minecraft/state/property/Property;)Ljava/lang/Comparable;"), cancellable = true, locals = LocalCapture.CAPTURE_FAILSOFT)
     private void crafterNoCooldown(BlockState state, World world, BlockPos pos, Block sourceBlock, BlockPos sourcePos, boolean notify, CallbackInfo ci, boolean bl) {
         if (state.get(Constant.IS_CRAFTER) && ConfigOptions.CRAFTER_COOLDOWN.value().equals(0) && world instanceof ServerWorld) {
             if (bl && !state.get(TRIGGERED)) {
-                world.setBlockState(pos, state.with(TRIGGERED, true), Block.NOTIFY_ALL);
+                state = state.with(TRIGGERED, true);
+                world.setBlockState(pos, state, Block.NOTIFY_ALL);
                 this.craft(state, (ServerWorld) world, pos);
             }
             else if (!bl) {
@@ -194,29 +226,46 @@ public class DispenserBlockMixin {
     /**
      * Apply crafter property to placed blocks with matching nbt
      */
-    @Inject(method = "getPlacementState", at = @At("RETURN"), cancellable = true)
-    private void applyCrafterNbt(ItemPlacementContext ctx, CallbackInfoReturnable<BlockState> cir) {
+    @ModifyReturnValue(method = "getPlacementState", at = @At("RETURN"))
+    private BlockState applyCrafterNbt(BlockState b, @Local ItemPlacementContext ctx) {
         NbtCompound nbt;
-        if ((nbt = ctx.getStack().getNbt()) != null && nbt.getBoolean("IsCrafter")) {
-            cir.setReturnValue(cir.getReturnValue().with(Constant.IS_CRAFTER, true));
+        if ((nbt = ctx.getStack().getNbt()) != null && nbt.getInt("CustomModelData") == 1) {
+            Direction direction = ctx.getPlayerLookDirection().getOpposite();
+            Direction direction2 = switch (direction) {
+                case DOWN -> ctx.getHorizontalPlayerFacing().getOpposite();
+                case UP -> ctx.getHorizontalPlayerFacing();
+                case NORTH, SOUTH, WEST, EAST -> Direction.UP;
+            };
+            b = b.with(Constant.IS_CRAFTER, true).with(Constant.ORIENTATION, JigsawOrientation.byDirections(direction, direction2));
         }
+        return b;
+    }
+
+    /**
+     * Provides ticker to properly reset the crafting state
+     */
+    @Override @Nullable
+    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(World world, BlockState state, BlockEntityType<T> type) {
+        return world.isClient ? null : state.get(Constant.IS_CRAFTER) ? DispenserBlock.checkType(type, BlockEntityType
+                .DROPPER, CrafterInterface::tickCrafting) : null;
     }
 
     @Inject(method = "onPlaced", at = @At("TAIL"))
     private void applyCrafterName(World world, BlockPos pos, BlockState state, LivingEntity placer, ItemStack itemStack, CallbackInfo ci) {
         if (!itemStack.hasCustomName() && world.getBlockEntity(pos) instanceof DispenserBlockEntity blockEntity &&
                 world.getBlockState(pos).get(Constant.IS_CRAFTER)) {
-            blockEntity.setCustomName(TextUtils.formattable("Crafter"));
+            blockEntity.setCustomName(TextUtils.formattable("Crafter").setStyle(Style.EMPTY.withItalic(false)));
         }
     }
 
     @ModifyArg(method = "<init>", at = @At(value = "INVOKE", target = "Lnet/minecraft/block/DispenserBlock;setDefaultState(Lnet/minecraft/block/BlockState;)V"))
     private BlockState defaultCrafterProperty(BlockState defaultState) {
-        return defaultState.with(Constant.IS_CRAFTER, false);
+        return defaultState.with(Constant.IS_CRAFTER, false).with(Constant.ORIENTATION, JigsawOrientation.NORTH_UP)
+                .with(Constant.IS_CRAFTING, false);
     }
 
     @Inject(method = "appendProperties", at = @At("HEAD"))
     private void addCrafterProperty(StateManager.Builder<Block, BlockState> builder, CallbackInfo ci) {
-        builder.add(Constant.IS_CRAFTER);
+        builder.add(Constant.IS_CRAFTER).add(Constant.ORIENTATION).add(Constant.IS_CRAFTING);
     }
 }

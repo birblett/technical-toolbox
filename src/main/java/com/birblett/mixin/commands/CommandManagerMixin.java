@@ -1,4 +1,4 @@
-package com.birblett.mixin;
+package com.birblett.mixin.commands;
 
 import com.birblett.command.ToolboxCommand;
 import com.mojang.brigadier.CommandDispatcher;
@@ -13,7 +13,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(CommandManager.class)
-public abstract class CommandManagerMixin {
+public class CommandManagerMixin {
 
     @Shadow @Final private CommandDispatcher<ServerCommandSource> dispatcher;
 

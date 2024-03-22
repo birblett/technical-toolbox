@@ -1,8 +1,10 @@
-package com.birblett.lib;
+package com.birblett.lib.crafter;
 
 
 import net.minecraft.inventory.RecipeInputInventory;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.recipe.CraftingRecipe;
 import net.minecraft.recipe.RecipeManager;
 import net.minecraft.recipe.RecipeType;
@@ -77,7 +79,18 @@ public class RecipeCache {
                 return false;
             }
             for (int i = 0; i < this.key.size(); ++i) {
-                if (ItemStack.areItemsEqual(this.key.get(i), inputs.get(i))) continue;
+                if (ItemStack.areItemsEqual(this.key.get(i), inputs.get(i))) {
+                    // too lazy to write a proper exception for this one hahaha
+                    if (this.key.get(i).isOf(Items.DROPPER) && inputs.get(i).isOf(Items.DROPPER)) {
+                        NbtCompound nbt1 = this.key.get(i).getNbt();
+                        NbtCompound nbt2 = inputs.get(i).getNbt();
+                        if (nbt1 != null && nbt1.getInt("CustomModelData") == 1 || nbt2 != null && nbt2
+                                .getInt("CustomModelData") == 1) {
+                            return false;
+                        }
+                    }
+                    continue;
+                }
                 return false;
             }
             return true;

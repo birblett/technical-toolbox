@@ -3,14 +3,16 @@
   "package": "com.birblett.mixin",
   "compatibilityLevel": "JAVA_17",
   "mixins": [
-    "CommandManagerMixin",
-    "CommandNodeMixin",
-    "DispenserBlockEntityMixin",
-    "DispenserBlockMixin",
-    "MinecraftServerMixin",
-    "ServerPlayerEntityMixin",
-    "ServerPlayNetworkHandlerMixin",
-    "ThreadedAnvilChunkStorageMixin"
+    "camera.ServerPlayerEntityMixin",
+    "camera.ServerPlayNetworkHandlerMixin",
+    "camera.ThreadedAnvilChunkStorageMixin",
+    "commands.CommandManagerMixin",
+    "commands.CommandNodeMixin",
+    "config.MinecraftServerMixin",
+    "crafter.DispenserBlockEntityMixin",
+    "crafter.DispenserBlockMixin",
+    "crafter.SuspiciousStewRecipeMixin",
+    "mechanic.RedstoneWireBlockMixin"
   ],
   "injectors": {
     "defaultRequire": 1

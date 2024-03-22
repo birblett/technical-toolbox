@@ -1,6 +1,6 @@
-package com.birblett.mixin;
+package com.birblett.mixin.crafter;
 
-import com.birblett.lib.CrafterInterface;
+import com.birblett.lib.crafter.CrafterInterface;
 import com.birblett.util.Constant;
 import com.birblett.util.config.ConfigUtil;
 import net.minecraft.block.BlockState;
@@ -30,6 +30,7 @@ public abstract class DispenserBlockEntityMixin extends LootableContainerBlockEn
 
     @Shadow private DefaultedList<ItemStack> inventory;
     @Unique private final int[] AVAILABLE_SLOTS = IntStream.range(0, 9).toArray();
+    @Unique private int craftingTicks = 0;
 
     protected DispenserBlockEntityMixin(BlockEntityType<?> blockEntityType, BlockPos blockPos, BlockState blockState) {
         super(blockEntityType, blockPos, blockState);
@@ -86,6 +87,21 @@ public abstract class DispenserBlockEntityMixin extends LootableContainerBlockEn
             return ConfigUtil.crafterDisabled().test(this.getStack(slot));
         }
         return false;
+    }
+
+    @Override
+    public boolean isCrafter() {
+        return this.world != null && this.world.getBlockState(this.pos).get(Constant.IS_CRAFTER);
+    }
+
+    @Override
+    public int craftingTicks() {
+        return this.craftingTicks;
+    }
+
+    @Override
+    public void setCraftingTicks(int i) {
+        this.craftingTicks = i;
     }
 
     @Override

@@ -1,6 +1,6 @@
-package com.birblett.mixin;
+package com.birblett.mixin.camera;
 
-import com.birblett.lib.CameraInterface;
+import com.birblett.lib.crafter.CameraInterface;
 import com.birblett.util.TextUtils;
 import com.birblett.util.config.ConfigOptions;
 import net.minecraft.entity.Entity;
@@ -79,6 +79,8 @@ public class ServerPlayerEntityMixin implements CameraInterface {
             // store motion
             Vec3d vec3d = player.getVelocity();
             nbt.put("Motion", this.toDoubleNbtList(vec3d.x, vec3d.y, vec3d.z));
+            // store creative flight
+            nbt.putBoolean("Flying", player.getAbilities().flying);
             // store elytra flight
             nbt.putBoolean("FallFlying", player.isFallFlying());
             // store rotation
@@ -125,6 +127,10 @@ public class ServerPlayerEntityMixin implements CameraInterface {
                 float pitch = nbt.getFloat("Pitch");
                 // restore all
                 player.teleport(world, finalPos.x, finalPos.y, finalPos.z, yaw, pitch);
+                // restore creative flight
+                if (!nbt.getBoolean("Flying")) {
+                    player.getAbilities().flying = false;
+                }
                 // restore elytra flight
                 if (nbt.getBoolean("FallFlying")) {
                     player.startFallFlying();

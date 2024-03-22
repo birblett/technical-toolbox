@@ -1,6 +1,6 @@
-package com.birblett.mixin;
+package com.birblett.mixin.camera;
 
-import com.birblett.lib.CameraInterface;
+import com.birblett.lib.crafter.CameraInterface;
 import com.birblett.util.TextUtils;
 import com.birblett.util.config.ConfigOptions;
 import net.minecraft.entity.Entity;
@@ -22,7 +22,7 @@ import java.util.Iterator;
  * Handle some camera-related configured functionalities
  */
 @Mixin(ServerPlayNetworkHandler.class)
-public abstract class ServerPlayNetworkHandlerMixin {
+public class ServerPlayNetworkHandlerMixin {
 
     @Shadow public ServerPlayerEntity player;
 

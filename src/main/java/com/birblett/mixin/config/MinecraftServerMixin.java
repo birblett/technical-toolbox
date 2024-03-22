@@ -1,4 +1,4 @@
-package com.birblett.mixin;
+package com.birblett.mixin.config;
 
 import com.birblett.TechnicalToolbox;
 import net.minecraft.server.MinecraftServer;

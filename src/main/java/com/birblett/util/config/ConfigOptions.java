@@ -27,7 +27,7 @@ import java.util.function.Predicate;
  */
 public enum ConfigOptions implements ConfigOption<Object> {
     CONFIG_VIEW_PERMISSION_LEVEL("configViewPermissionLevel", "0", "Permission level required to" +
-            " view configurations.", true, "0", "4") {
+            " view configurations.", "0", "4") {
         private int value = 0;
 
         @Override
@@ -38,6 +38,22 @@ public enum ConfigOptions implements ConfigOption<Object> {
         @Override
         public Text setFromString(String value) {
             Pair<Integer, Text> out = ConfigUtil.getIntOption(this.getName(), value, 4, 0, 4);
+            this.value = out.getLeft();
+            return out.getRight();
+        }
+    },
+    CONFIG_WRITE_ON_CHANGE("configWriteOnChange", "false", "If enabled, changing configurations will" +
+            " also write to file.", true, "false", "true") {
+        private boolean value = false;
+
+        @Override
+        public Boolean value() {
+            return this.value;
+        }
+
+        @Override
+        public Text setFromString(String value) {
+            Pair<Boolean, Text> out = ConfigUtil.getBooleanOption(this.getName(), value, false);
             this.value = out.getLeft();
             return out.getRight();
         }
@@ -230,7 +246,7 @@ public enum ConfigOptions implements ConfigOption<Object> {
         }
     },
     CRAFTER_QUASI_POWER("crafterQuasiPower", "false", "Whether crafter droppers can be quasi-" +
-            "powered or not.", "true", "false") {
+            "powered or not.", true, "true", "false") {
         private boolean value = false;
 
         @Override
@@ -245,6 +261,22 @@ public enum ConfigOptions implements ConfigOption<Object> {
             return out.getRight();
         }
     },
+    MECHANIC_UPDATE_SKIPPING("mechanicUpdateSkipping", "false", "Whether update skipping (for " +
+            "1.20+ should be allowed", "true", "false") {
+        private boolean value = false;
+
+        @Override
+        public Boolean value() {
+            return this.value;
+        }
+
+        @Override
+        public Text setFromString(String value) {
+            Pair<Boolean, Text> out = ConfigUtil.getBooleanOption(this.getName(), value, false);
+            this.value = out.getLeft();
+            return out.getRight();
+        }
+    }
     ;
 
     private final String name;
