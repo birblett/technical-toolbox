@@ -14,7 +14,8 @@
     "crafter.DispenserBlockMixin",
     "crafter.ServerPlayNetworkHandlerMixin",
     "crafter.SuspiciousStewRecipeMixin",
-    "mechanic.RedstoneWireBlockMixin"
+    "mechanic.RedstoneWireBlockMixin",
+    "mechanic.StateMixin"
   ],
   "injectors": {
     "defaultRequire": 1

@@ -59,18 +59,20 @@ public class ConfigManager {
                     TechnicalToolbox.log("Improperly separated config option on line " + lineCount + " ('"+ line + "')");
                     continue;
                 }
-                String name = split[0].strip();
-                String value = split[1].strip();
-                if (!configMap.containsKey(name)) {
-                    TechnicalToolbox.log("Option '" + name + "' does not exist");
-                    continue;
+                if (split.length == 2) {
+                    String name = split[0].strip();
+                    String value = split[1].strip();
+                    if (!configMap.containsKey(name)) {
+                        TechnicalToolbox.log("Option '" + name + "' does not exist");
+                        continue;
+                    }
+                    Text out = configMap.get(name).setFromString(value, this.server);
+                    if (out != null) {
+                        TechnicalToolbox.log(out.getContent().toString());
+                        continue;
+                    }
+                    options++;
                 }
-                Text out = configMap.get(name).setFromString(value, this.server);
-                if (out != null) {
-                    TechnicalToolbox.log(out.getContent().toString());
-                    continue;
-                }
-                options++;
             }
             TechnicalToolbox.log("Read " + options + " valid configuration options from 'toolbox.conf'");
             if (configMap.size() - options > 0) {

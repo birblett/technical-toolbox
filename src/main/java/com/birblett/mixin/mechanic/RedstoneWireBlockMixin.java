@@ -9,7 +9,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 
 /**
- * Re-introduces update skipping if config option is enabled
+ * Re-introduces update skipping if config option is enabled; see {@link ConfigOptions#MECHANIC_UPDATE_SKIPPING}
  */
 @Mixin(RedstoneWireBlock.class)
 public class RedstoneWireBlockMixin {

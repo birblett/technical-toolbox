@@ -208,7 +208,7 @@ public enum ConfigOptions implements ConfigOption<Object> {
         }
     },
     MECHANIC_UPDATE_SKIPPING("mechanicUpdateSkipping", "false", "Whether update skipping (for " +
-            "1.20+ should be allowed", "true", "false") {
+            "1.20+ should be allowed.", "true", "false") {
         private boolean value = false;
 
         @Override
@@ -222,8 +222,23 @@ public enum ConfigOptions implements ConfigOption<Object> {
             this.value = out.getLeft();
             return out.getRight();
         }
-    }
-    ;
+    },
+    MECHANIC_DISABLE_POI_PROPERTY_CHECK("mechanicDisablePoiPropertyCheck", "false", "Whether portal " +
+            "POIs should perform a check for the HORIZONTAL_AXIS property.", "true", "false") {
+        private boolean value = false;
+
+        @Override
+        public Boolean value() {
+            return this.value;
+        }
+
+        @Override
+        public Text setFromString(String value) {
+            Pair<Boolean, Text> out = ConfigUtil.getBooleanOption(this.getName(), value, false);
+            this.value = out.getLeft();
+            return out.getRight();
+        }
+    };
 
     private final String name;
     private final String desc;
