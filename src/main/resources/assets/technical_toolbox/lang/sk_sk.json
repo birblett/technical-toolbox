@@ -1,0 +1,11 @@
+{
+    "block.minecraft.copper_bulb": "Medená žiarovka",
+    "block.minecraft.exposed_copper_bulb": "Zájdená medená žiarovka",
+    "block.minecraft.oxidized_copper_bulb": "Skorodovaná medená žiarovka",
+    "block.minecraft.waxed_copper_bulb": "Navoskovaná medená žiarovka",
+    "block.minecraft.waxed_exposed_copper_bulb": "Navoskovaná zájdená medená žiarovka",
+    "block.minecraft.waxed_oxidized_copper_bulb": "Navoskovaná skorodovaná medená žiarovka",
+    "block.minecraft.waxed_weathered_copper_bulb": "Navoskovaná zelenkavá medená žiarovka",
+    "block.minecraft.weathered_copper_bulb": "Zelenkavá medená žiarovka",
+    "container.crafter": "Výrobník"
+}

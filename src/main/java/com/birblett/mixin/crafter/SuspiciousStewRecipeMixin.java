@@ -1,6 +1,6 @@
 package com.birblett.mixin.crafter;
 
-import com.birblett.TechnicalToolbox;
+import com.birblett.impl.config.ConfigOptions;
 import com.birblett.util.TextUtils;
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import com.llamalad7.mixinextras.sugar.Local;
@@ -54,8 +54,13 @@ public class SuspiciousStewRecipeMixin {
     private void craftCustom(RecipeInputInventory recipeInputInventory, DynamicRegistryManager dynamicRegistryManager, CallbackInfoReturnable<ItemStack> cir) {
         if (recipeInputInventory.size() > 0 && recipeInputInventory.getStack(0).isOf(Items.IRON_INGOT)) {
             ItemStack stack = Items.DROPPER.getDefaultStack();
-            stack.getOrCreateNbt().putInt("CustomModelData", 1);
-            stack.setCustomName(TextUtils.formattable("Crafter").setStyle(Style.EMPTY.withItalic(false)));
+            stack.getOrCreateNbt().putInt("CustomModelData", 13579);
+            if ((Boolean) ConfigOptions.USE_TRANSLATABLE_TEXT.value()) {
+                stack.setCustomName(TextUtils.translatable("container.crafter"));
+            }
+            else {
+                stack.setCustomName(TextUtils.formattable("Crafter").setStyle(Style.EMPTY.withItalic(false)));
+            }
             cir.setReturnValue(stack);
         }
     }

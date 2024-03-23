@@ -1,6 +1,6 @@
 package com.birblett.mixin.commands;
 
-import com.birblett.command.ToolboxCommand;
+import com.birblett.impl.command.ToolboxCommand;
 import com.mojang.brigadier.CommandDispatcher;
 import net.minecraft.command.CommandRegistryAccess;
 import net.minecraft.server.command.CommandManager;

@@ -1,6 +1,6 @@
 package com.birblett;
 
-import com.birblett.util.config.ConfigManager;
+import com.birblett.impl.config.ConfigManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

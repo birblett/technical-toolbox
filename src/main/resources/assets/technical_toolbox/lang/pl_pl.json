@@ -1,0 +1,11 @@
+{
+    "block.minecraft.copper_bulb": "Miedziana lampa",
+    "block.minecraft.exposed_copper_bulb": "Zwietrzała miedziana lampa",
+    "block.minecraft.oxidized_copper_bulb": "Utleniona miedziana lampa",
+    "block.minecraft.waxed_copper_bulb": "Woskowana miedziana lampa",
+    "block.minecraft.waxed_exposed_copper_bulb": "Woskowana zwietrzała rzeźbiona lampa",
+    "block.minecraft.waxed_oxidized_copper_bulb": "Woskowana utleniona miedziana lampa",
+    "block.minecraft.waxed_weathered_copper_bulb": "Woskowana zaśniedziała miedziana lampa",
+    "block.minecraft.weathered_copper_bulb": "Zaśniedziała miedziana lampa",
+    "container.crafter": "Wytwarzacz"
+}

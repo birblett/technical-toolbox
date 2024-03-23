@@ -1,0 +1,11 @@
+{
+    "block.minecraft.copper_bulb": "Бакарна сијалица",
+    "block.minecraft.exposed_copper_bulb": "Изложена бакарна сијалица",
+    "block.minecraft.oxidized_copper_bulb": "Оксидовани бакарна сијалица",
+    "block.minecraft.waxed_copper_bulb": "Воштани клесани сијалица",
+    "block.minecraft.waxed_exposed_copper_bulb": "Waxed Exposed Copper Bulb",
+    "block.minecraft.waxed_oxidized_copper_bulb": "Waxed Oxidized Copper Bulb",
+    "block.minecraft.waxed_weathered_copper_bulb": "Waxed Weathered Copper Bulb",
+    "block.minecraft.weathered_copper_bulb": "Weathered Copper Bulb",
+    "container.crafter": "Произвођач"
+}

@@ -1,0 +1,11 @@
+{
+    "block.minecraft.copper_bulb": "სპილენძის ნათურა",
+    "block.minecraft.exposed_copper_bulb": "გამუქებული სპილენძის ნათურა",
+    "block.minecraft.oxidized_copper_bulb": "დაჟანგული სპილენძის ნათურა",
+    "block.minecraft.waxed_copper_bulb": "გაცვილული სპილენძის ნათურა",
+    "block.minecraft.waxed_exposed_copper_bulb": "გაცვილული გამუქებული სპილენძის ნათურა",
+    "block.minecraft.waxed_oxidized_copper_bulb": "გაცვილული დაჟანგული სპილენძის ნათურა",
+    "block.minecraft.waxed_weathered_copper_bulb": "გაცვილული დაძველებული სპილენძის ნათურა",
+    "block.minecraft.weathered_copper_bulb": "დაძველებული სპილენძის ნათურა",
+    "container.crafter": "ამწყობი"
+}

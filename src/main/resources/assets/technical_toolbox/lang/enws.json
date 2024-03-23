@@ -1,0 +1,11 @@
+{
+    "block.minecraft.copper_bulb": "Copp'r Bulb",
+    "block.minecraft.exposed_copper_bulb": "Expos'd Copp'r Bulb",
+    "block.minecraft.oxidized_copper_bulb": "Oxidis'd Copp'r Bulb",
+    "block.minecraft.waxed_copper_bulb": "Wax'd Copp'r Bulb",
+    "block.minecraft.waxed_exposed_copper_bulb": "Wax'd Expos'd Copp'r Bulb",
+    "block.minecraft.waxed_oxidized_copper_bulb": "Wax'd Oxidis'd Copp'r Bulb",
+    "block.minecraft.waxed_weathered_copper_bulb": "Wax'd Weather'd Copp'r Bulb",
+    "block.minecraft.weathered_copper_bulb": "Weather'd Copp'r Bulb",
+    "container.crafter": "Craft'r"
+}

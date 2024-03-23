@@ -1,0 +1,11 @@
+{
+    "block.minecraft.copper_bulb": "Lampada di rame",
+    "block.minecraft.exposed_copper_bulb": "Lampada di rame esposto",
+    "block.minecraft.oxidized_copper_bulb": "Lampada di rame ossidato",
+    "block.minecraft.waxed_copper_bulb": "Lampada di rame cerato",
+    "block.minecraft.waxed_exposed_copper_bulb": "Lampada di rame esposto cerato",
+    "block.minecraft.waxed_oxidized_copper_bulb": "Lampada di rame ossidato cerato",
+    "block.minecraft.waxed_weathered_copper_bulb": "Lampada di rame corroso cerato",
+    "block.minecraft.weathered_copper_bulb": "Lampada di rame corroso",
+    "container.crafter": "Fabbricatore"
+}

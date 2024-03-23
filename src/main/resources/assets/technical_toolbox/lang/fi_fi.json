@@ -1,0 +1,11 @@
+{
+    "block.minecraft.copper_bulb": "Kuparilamppu",
+    "block.minecraft.exposed_copper_bulb": "Altistunut kuparilamppu",
+    "block.minecraft.oxidized_copper_bulb": "Hapettunut kuparilamppu",
+    "block.minecraft.waxed_copper_bulb": "Vahattu kuparilamppu",
+    "block.minecraft.waxed_exposed_copper_bulb": "Vahattu altistunut kuparilamppu",
+    "block.minecraft.waxed_oxidized_copper_bulb": "Vahattu hapettunut kuparilamppu",
+    "block.minecraft.waxed_weathered_copper_bulb": "Vahattu rapautunut kuparilamppu",
+    "block.minecraft.weathered_copper_bulb": "Rapautunut kuparilamppu",
+    "container.crafter": "Työstin"
+}

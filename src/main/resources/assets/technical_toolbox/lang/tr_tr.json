@@ -1,0 +1,11 @@
+{
+    "block.minecraft.copper_bulb": "Bakır Ampül",
+    "block.minecraft.exposed_copper_bulb": "Açıkta Kalmış Bakır Ampül",
+    "block.minecraft.oxidized_copper_bulb": "Oksitlenmiş Bakır Ampül",
+    "block.minecraft.waxed_copper_bulb": "Cilalı Bakır Ampül",
+    "block.minecraft.waxed_exposed_copper_bulb": "Cilalı Açıkta Kalmış Bakır Ampül",
+    "block.minecraft.waxed_oxidized_copper_bulb": "Cilalı Oksitlenmiş Bakır Ampül",
+    "block.minecraft.waxed_weathered_copper_bulb": "Cilalı Yıpranmış Bakır Ampül",
+    "block.minecraft.weathered_copper_bulb": "Yıpranmış Bakır Ampül",
+    "container.crafter": "Üretici"
+}

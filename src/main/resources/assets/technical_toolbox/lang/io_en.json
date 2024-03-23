@@ -1,0 +1,11 @@
+{
+    "block.minecraft.copper_bulb": "Kupra Bulbo",
+    "block.minecraft.exposed_copper_bulb": "Esponita Kupra Bulbo",
+    "block.minecraft.oxidized_copper_bulb": "Oksidita Kupra Bulbo",
+    "block.minecraft.waxed_copper_bulb": "Vaksita kupra bulbo",
+    "block.minecraft.waxed_exposed_copper_bulb": "Vaksita ekstera kupra bulbo",
+    "block.minecraft.waxed_oxidized_copper_bulb": "Vaksita oksidiĝinta kupra bulbo",
+    "block.minecraft.waxed_weathered_copper_bulb": "Vaksita veterita kupra bulbo",
+    "block.minecraft.weathered_copper_bulb": "Veterita kupra bulbo",
+    "container.crafter": "Metilstacio"
+}

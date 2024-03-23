@@ -1,0 +1,11 @@
+{
+    "block.minecraft.copper_bulb": "구리 전구",
+    "block.minecraft.exposed_copper_bulb": "약간 녹슨 구리 전구",
+    "block.minecraft.oxidized_copper_bulb": "산화된 구리 전구",
+    "block.minecraft.waxed_copper_bulb": "밀랍칠한 구리 전구",
+    "block.minecraft.waxed_exposed_copper_bulb": "밀랍칠한 약간 녹슨 구리 전구",
+    "block.minecraft.waxed_oxidized_copper_bulb": "밀랍칠한 산화된 구리 전구",
+    "block.minecraft.waxed_weathered_copper_bulb": "밀랍칠한 녹슨 구리 전구",
+    "block.minecraft.weathered_copper_bulb": "녹슨 구리 전구",
+    "container.crafter": "제작기"
+}

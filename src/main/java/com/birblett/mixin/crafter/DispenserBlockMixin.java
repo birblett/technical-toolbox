@@ -1,24 +1,21 @@
 package com.birblett.mixin.crafter;
 
-import com.birblett.TechnicalToolbox;
+import com.birblett.impl.config.ConfigOptions;
 import com.birblett.lib.crafter.CrafterInterface;
 import com.birblett.lib.crafter.RecipeCache;
 import com.birblett.util.Constant;
 import com.birblett.util.TextUtils;
-import com.birblett.util.config.ConfigOptions;
-import com.birblett.util.config.ConfigUtil;
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import com.llamalad7.mixinextras.sugar.Local;
-import com.mojang.datafixers.kinds.Const;
 import net.minecraft.block.*;
 import net.minecraft.block.dispenser.ItemDispenserBehavior;
 import net.minecraft.block.entity.*;
 import net.minecraft.block.enums.JigsawOrientation;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.inventory.Inventory;
-import net.minecraft.inventory.RecipeInputInventory;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.recipe.CraftingRecipe;
 import net.minecraft.server.world.ServerWorld;
@@ -42,7 +39,6 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
 import java.util.Optional;
@@ -62,39 +58,28 @@ public abstract class DispenserBlockMixin extends BlockWithEntity implements Blo
         super(settings);
     }
 
-    @Unique private void restoreMarkers(ItemStack[] temp, CrafterInterface crafterInterface) {
-        for (int slot = 0; slot < 9; slot++) {
-            if (temp[slot] != null) {
-                crafterInterface.setStack(slot, temp[slot]);
-            }
-        }
-    }
-
+    /**
+     * Slightly tweaked craft logic from snapshots
+     */
     @Unique private void craft(BlockState state, ServerWorld world, BlockPos pos) {
         BlockEntity blockEntity = world.getBlockEntity(pos);
         if (!(blockEntity instanceof CrafterInterface crafterInterface)) {
             return;
         }
         // use this disgusting hack to temporarily remove marker items
-        ItemStack[] temp = new ItemStack[9];
-        for (int slot = 0; slot < 9; slot++) {
-            ItemStack stack = crafterInterface.getStack(slot);
-            if (ConfigUtil.crafterDisabled().test(stack)) {
-                temp[slot] = stack;
-                crafterInterface.setStack(slot, ItemStack.EMPTY);
-            }
-        }
-        Optional<CraftingRecipe> optional = getCraftingRecipe(world, crafterInterface);
+        ItemStack[] temp = crafterInterface.removeMarkers();
+        // actual crafting logic
+        Optional<CraftingRecipe> optional = RECIPE_CACHE.getRecipe(world, crafterInterface);
         if (optional.isEmpty()) {
             world.syncWorldEvent(WorldEvents.DISPENSER_FAILS, pos, 0);
-            this.restoreMarkers(temp, crafterInterface);
+            crafterInterface.restoreMarkers(temp);
             return;
         }
         CraftingRecipe craftingRecipe = optional.get();
         ItemStack itemStack = craftingRecipe.craft(crafterInterface, world.getRegistryManager());
         if (itemStack.isEmpty()) {
             world.syncWorldEvent(WorldEvents.DISPENSER_FAILS, pos, 0);
-            this.restoreMarkers(temp, crafterInterface);
+            crafterInterface.restoreMarkers(temp);
             return;
         }
         // idk wtf onCraft does in the snapshot someone please tell me
@@ -113,10 +98,13 @@ public abstract class DispenserBlockMixin extends BlockWithEntity implements Blo
         });
         ((CrafterInterface) blockEntity).setCraftingTicks(6);
         world.setBlockState(pos, state.with(Constant.IS_CRAFTING, true), Block.NOTIFY_ALL);
-        this.restoreMarkers(temp, crafterInterface);
+        crafterInterface.restoreMarkers(temp);
         crafterInterface.markDirty();
     }
 
+    /**
+     * Copied dispensing logic
+     */
     @Unique private void transferOrSpawnStack(World world, BlockPos pos, CrafterInterface blockEntity, ItemStack stack, BlockState state) {
         Direction direction = state.get(FACING);
         Inventory inventory = HopperBlockEntity.getInventoryAt(world, pos.offset(direction));
@@ -136,10 +124,9 @@ public abstract class DispenserBlockMixin extends BlockWithEntity implements Blo
         }
     }
 
-    @Unique private static Optional<CraftingRecipe> getCraftingRecipe(World world, RecipeInputInventory inputInventory) {
-        return RECIPE_CACHE.getRecipe(world, inputInventory);
-    }
-
+    /**
+     * Craft on scheduled tick, only called if crafting is not instant
+     */
     @Inject(method = "scheduledTick", at = @At("HEAD"), cancellable = true)
     private void craftInstead(BlockState state, ServerWorld world, BlockPos pos, Random random, CallbackInfo ci) {
         if (state.get(Constant.IS_CRAFTER)) {
@@ -151,12 +138,13 @@ public abstract class DispenserBlockMixin extends BlockWithEntity implements Blo
     /**
      * Override default comparator output with crafter logic
      */
-    @Inject(method = "getComparatorOutput", at = @At("HEAD"), cancellable = true)
-    private void getCrafterComparatorOutput(BlockState state, World world, BlockPos pos, CallbackInfoReturnable<Integer> cir) {
+    @ModifyReturnValue(method = "getComparatorOutput", at = @At("RETURN"))
+    private int getCrafterComparatorOutput(int out, @Local BlockState state, @Local World world, @Local BlockPos pos) {
         BlockEntity blockEntity = world.getBlockEntity(pos);
         if (state.get(Constant.IS_CRAFTER) && blockEntity instanceof CrafterInterface crafterInterface) {
-            cir.setReturnValue(crafterInterface.getComparatorOutput());
+            return crafterInterface.getComparatorOutput();
         }
+        return out;
     }
 
     /**
@@ -229,7 +217,7 @@ public abstract class DispenserBlockMixin extends BlockWithEntity implements Blo
     @ModifyReturnValue(method = "getPlacementState", at = @At("RETURN"))
     private BlockState applyCrafterNbt(BlockState b, @Local ItemPlacementContext ctx) {
         NbtCompound nbt;
-        if ((nbt = ctx.getStack().getNbt()) != null && nbt.getInt("CustomModelData") == 1) {
+        if ((nbt = ctx.getStack().getNbt()) != null && nbt.getInt("CustomModelData") == 13579) {
             Direction direction = ctx.getPlayerLookDirection().getOpposite();
             Direction direction2 = switch (direction) {
                 case DOWN -> ctx.getHorizontalPlayerFacing().getOpposite();
@@ -250,14 +238,25 @@ public abstract class DispenserBlockMixin extends BlockWithEntity implements Blo
                 .DROPPER, CrafterInterface::tickCrafting) : null;
     }
 
+    /**
+     * Applies custom name to crafters
+     */
     @Inject(method = "onPlaced", at = @At("TAIL"))
     private void applyCrafterName(World world, BlockPos pos, BlockState state, LivingEntity placer, ItemStack itemStack, CallbackInfo ci) {
-        if (!itemStack.hasCustomName() && world.getBlockEntity(pos) instanceof DispenserBlockEntity blockEntity &&
-                world.getBlockState(pos).get(Constant.IS_CRAFTER)) {
-            blockEntity.setCustomName(TextUtils.formattable("Crafter").setStyle(Style.EMPTY.withItalic(false)));
+        if (world.getBlockEntity(pos) instanceof DispenserBlockEntity blockEntity && world.getBlockState(pos).get(Constant
+                .IS_CRAFTER)) {
+            if ((Boolean) ConfigOptions.USE_TRANSLATABLE_TEXT.value()) {
+                blockEntity.setCustomName(TextUtils.translatable("container.crafter"));
+            }
+            else {
+                blockEntity.setCustomName(TextUtils.formattable("Crafter").setStyle(Style.EMPTY.withItalic(false)));
+            }
         }
     }
 
+    /**
+     * State initializers
+     */
     @ModifyArg(method = "<init>", at = @At(value = "INVOKE", target = "Lnet/minecraft/block/DispenserBlock;setDefaultState(Lnet/minecraft/block/BlockState;)V"))
     private BlockState defaultCrafterProperty(BlockState defaultState) {
         return defaultState.with(Constant.IS_CRAFTER, false).with(Constant.ORIENTATION, JigsawOrientation.NORTH_UP)
@@ -267,5 +266,22 @@ public abstract class DispenserBlockMixin extends BlockWithEntity implements Blo
     @Inject(method = "appendProperties", at = @At("HEAD"))
     private void addCrafterProperty(StateManager.Builder<Block, BlockState> builder, CallbackInfo ci) {
         builder.add(Constant.IS_CRAFTER).add(Constant.ORIENTATION).add(Constant.IS_CRAFTING);
+    }
+
+    /**
+     * Removes barrier blocks from crafters on break. Maybe doing additional nbt check is necessary... if you're putting
+     * barriers in crafters for some reason
+     */
+    @Inject(method = "onStateReplaced", at = @At(value = "INVOKE", target = "Lnet/minecraft/util/ItemScatterer;spawn(Lnet/minecraft/world/World;Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/inventory/Inventory;)V"))
+    private void removeDisabledSlots(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved, CallbackInfo ci) {
+        Optional<DropperBlockEntity> b = world.getBlockEntity(pos, BlockEntityType.DROPPER);
+        if (b.isPresent() && state.get(Constant.IS_CRAFTER)) {
+            DropperBlockEntity dropper = b.get();
+            for (int i = 0; i < 9; i++) {
+                if (dropper.getStack(i).isOf(Items.BARRIER)) {
+                    dropper.setStack(i, ItemStack.EMPTY);
+                }
+            }
+        }
     }
 }

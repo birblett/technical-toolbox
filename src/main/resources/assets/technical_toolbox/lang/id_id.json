@@ -1,0 +1,11 @@
+{
+    "block.minecraft.copper_bulb": "Bohlam Tembaga",
+    "block.minecraft.exposed_copper_bulb": "Bohlam Tembaga Terbuka",
+    "block.minecraft.oxidized_copper_bulb": "Bohlam Tembaga Teroksidasi",
+    "block.minecraft.waxed_copper_bulb": "Bohlam Tembaga Dilapisi",
+    "block.minecraft.waxed_exposed_copper_bulb": "Bohlam Tembaga Terbuka Dilapisi",
+    "block.minecraft.waxed_oxidized_copper_bulb": "Bohlam Tembaga Teroksidasi Dilapisi",
+    "block.minecraft.waxed_weathered_copper_bulb": "Bohlam Tembaga Diintai",
+    "block.minecraft.weathered_copper_bulb": "Bohlam Tembaga Diintai",
+    "container.crafter": "Crafter"
+}

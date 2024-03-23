@@ -1,0 +1,11 @@
+{
+    "block.minecraft.copper_bulb": "Медная лампа",
+    "block.minecraft.exposed_copper_bulb": "Потемневшая медная лампа",
+    "block.minecraft.oxidized_copper_bulb": "Лампа из окисленной меди",
+    "block.minecraft.waxed_copper_bulb": "Лампа из вощёной меди",
+    "block.minecraft.waxed_exposed_copper_bulb": "Лампа из вощёной потемневшей меди",
+    "block.minecraft.waxed_oxidized_copper_bulb": "Лампа из вощёной окисленной меди",
+    "block.minecraft.waxed_weathered_copper_bulb": "Лампа из вощёной состаренной меди",
+    "block.minecraft.weathered_copper_bulb": "Лампа из состаренной меди",
+    "container.crafter": "Сборщик"
+}

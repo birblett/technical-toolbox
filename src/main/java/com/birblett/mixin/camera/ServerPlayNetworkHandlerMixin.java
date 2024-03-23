@@ -1,8 +1,8 @@
 package com.birblett.mixin.camera;
 
+import com.birblett.impl.config.ConfigOptions;
 import com.birblett.lib.crafter.CameraInterface;
 import com.birblett.util.TextUtils;
-import com.birblett.util.config.ConfigOptions;
 import net.minecraft.entity.Entity;
 import net.minecraft.network.packet.c2s.play.SpectatorTeleportC2SPacket;
 import net.minecraft.server.network.ServerPlayNetworkHandler;

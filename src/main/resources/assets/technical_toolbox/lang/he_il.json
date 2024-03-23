@@ -1,0 +1,11 @@
+{
+    "block.minecraft.copper_bulb": "נורת נחושת",
+    "block.minecraft.exposed_copper_bulb": "נורת נחושת חשופה",
+    "block.minecraft.oxidized_copper_bulb": "נורת נחושת מחומצנת",
+    "block.minecraft.waxed_copper_bulb": "נורת נחושת מצופת שעווה",
+    "block.minecraft.waxed_exposed_copper_bulb": "נורת נחושת חשופה מצופת שעווה",
+    "block.minecraft.waxed_oxidized_copper_bulb": "נורת נחושת מחומצנת מצופת שעווה",
+    "block.minecraft.waxed_weathered_copper_bulb": "נורת נחושת בלויה מצופת שעווה",
+    "block.minecraft.weathered_copper_bulb": "נורת נחושת בלויה",
+    "container.crafter": "קראפטר"
+}

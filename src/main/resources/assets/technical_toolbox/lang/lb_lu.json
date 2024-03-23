@@ -1,0 +1,11 @@
+{
+    "block.minecraft.copper_bulb": "Kofferbier",
+    "block.minecraft.exposed_copper_bulb": "Ausgesate Kofferbier",
+    "block.minecraft.oxidized_copper_bulb": "Oxidéiert Kofferbier",
+    "block.minecraft.waxed_copper_bulb": "Gewuesste Kofferbier",
+    "block.minecraft.waxed_exposed_copper_bulb": "Gewuesst ausgesat Kofferbier",
+    "block.minecraft.waxed_oxidized_copper_bulb": "Gewuessten oxidéiert Kofferbier",
+    "block.minecraft.waxed_weathered_copper_bulb": "Gewuesste verwittert Kofferbier",
+    "block.minecraft.weathered_copper_bulb": "Verwittert Kofferbier",
+    "container.crafter": "Wierker"
+}

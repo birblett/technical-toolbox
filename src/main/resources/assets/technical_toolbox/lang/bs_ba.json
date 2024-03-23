@@ -1,0 +1,11 @@
+{
+    "block.minecraft.copper_bulb": "Bakar Sijalica",
+    "block.minecraft.exposed_copper_bulb": "Otkrivena bakarna lampa",
+    "block.minecraft.oxidized_copper_bulb": "Oksidirana bakarna lampa",
+    "block.minecraft.waxed_copper_bulb": "Voštana bakarna sijalica",
+    "block.minecraft.waxed_exposed_copper_bulb": "Voštana Otkrivena Bakarna Sijalica",
+    "block.minecraft.waxed_oxidized_copper_bulb": "Voštana Oksidirana Bakarna Sijalica",
+    "block.minecraft.waxed_weathered_copper_bulb": "Voštana Istrošena Bakarna Sijalica",
+    "block.minecraft.weathered_copper_bulb": "Istrošena Bakarna Sijalica",
+    "container.crafter": "Crafter"
+}

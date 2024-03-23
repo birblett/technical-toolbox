@@ -1,0 +1,11 @@
+{
+    "block.minecraft.copper_bulb": "Kobrezko bonbila",
+    "block.minecraft.exposed_copper_bulb": "Ageriko kobre bonbila",
+    "block.minecraft.oxidized_copper_bulb": "Oxidatutako kobre bonbila",
+    "block.minecraft.waxed_copper_bulb": "Kobrezko bombilla argizaritua",
+    "block.minecraft.waxed_exposed_copper_bulb": "Argizarizatutako kobrezko bonbilla",
+    "block.minecraft.waxed_oxidized_copper_bulb": "Kobrezko bombilla herdoildu argizaritua",
+    "block.minecraft.waxed_weathered_copper_bulb": "Ezkotatu eta eutsi dagoen kobre bonbilla",
+    "block.minecraft.weathered_copper_bulb": "Eutsi dagoen kobre bonbilla",
+    "container.crafter": "Egilea"
+}

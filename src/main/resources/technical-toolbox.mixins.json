@@ -9,8 +9,10 @@
     "commands.CommandManagerMixin",
     "commands.CommandNodeMixin",
     "config.MinecraftServerMixin",
+    "crafter.CraftingInventoryAccess",
     "crafter.DispenserBlockEntityMixin",
     "crafter.DispenserBlockMixin",
+    "crafter.ServerPlayNetworkHandlerMixin",
     "crafter.SuspiciousStewRecipeMixin",
     "mechanic.RedstoneWireBlockMixin"
   ],

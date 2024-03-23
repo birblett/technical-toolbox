@@ -1,0 +1,11 @@
+{
+    "block.minecraft.copper_bulb": "Deck lanterrrn o' copper",
+    "block.minecraft.exposed_copper_bulb": "Deck lanterrrn o' showin' copper",
+    "block.minecraft.oxidized_copper_bulb": "Deck lanterrrn o' rusty copper",
+    "block.minecraft.waxed_copper_bulb": "Deck lanterrrn o' glazed copper",
+    "block.minecraft.waxed_exposed_copper_bulb": "Deck lanterrrn o' glazed showin' copper",
+    "block.minecraft.waxed_oxidized_copper_bulb": "Deck lanterrrn o' glazed rusty copper",
+    "block.minecraft.waxed_weathered_copper_bulb": "Deck lanterrrn o' glazed weathered copper",
+    "block.minecraft.weathered_copper_bulb": "Deck lanterrrn o' weathered copper",
+    "container.crafter": "Crafter"
+}

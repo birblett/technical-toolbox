@@ -1,0 +1,11 @@
+{
+    "block.minecraft.copper_bulb": "Đèn đồng",
+    "block.minecraft.exposed_copper_bulb": "Đèn đồng bị ẩm",
+    "block.minecraft.oxidized_copper_bulb": "Đèn đồng bị oxi hóa",
+    "block.minecraft.waxed_copper_bulb": "Đèn đồng đã bôi sáp",
+    "block.minecraft.waxed_exposed_copper_bulb": "Đèn đồng đã bôi sáp bị ẩm",
+    "block.minecraft.waxed_oxidized_copper_bulb": "Đèn đồng đã bôi sáp bị oxi hóa",
+    "block.minecraft.waxed_weathered_copper_bulb": "Đèn đồng đã bôi sáp bị phong hóa",
+    "block.minecraft.weathered_copper_bulb": "Đèn đồng bị phong hóa",
+    "container.crafter": "Máy chế tạo"
+}

@@ -1,0 +1,11 @@
+{
+    "block.minecraft.copper_bulb": "Медна Крушка",
+    "block.minecraft.exposed_copper_bulb": "Оголена Медна Крушка",
+    "block.minecraft.oxidized_copper_bulb": "Окислена Медна Крушка",
+    "block.minecraft.waxed_copper_bulb": "Запечатана Медна Крушка",
+    "block.minecraft.waxed_exposed_copper_bulb": "Оголена Запечатана Медна Крушка",
+    "block.minecraft.waxed_oxidized_copper_bulb": "Окислена Запечатана Медна Крушка",
+    "block.minecraft.waxed_weathered_copper_bulb": "Изветряла Запечатана Медна Крушка",
+    "block.minecraft.weathered_copper_bulb": "Изветряла Медна Крушка",
+    "container.crafter": "Създател"
+}

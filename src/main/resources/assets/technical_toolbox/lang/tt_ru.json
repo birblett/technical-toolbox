@@ -1,0 +1,11 @@
+{
+    "block.minecraft.copper_bulb": "Бакыр лампа",
+    "block.minecraft.exposed_copper_bulb": "Караланган бакыр лампа",
+    "block.minecraft.oxidized_copper_bulb": "Оксидланган бакыр лампа",
+    "block.minecraft.waxed_copper_bulb": "Балавызлы бакыр лампа",
+    "block.minecraft.waxed_exposed_copper_bulb": "Балавызлы караланган бакыр лампа",
+    "block.minecraft.waxed_oxidized_copper_bulb": "Балавызлы оксидланган бакыр лампа",
+    "block.minecraft.waxed_weathered_copper_bulb": "Балавызлы искергән бакыр лампа",
+    "block.minecraft.weathered_copper_bulb": "Искергән бакыр лампа",
+    "container.crafter": "Җыйгыч"
+}

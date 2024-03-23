@@ -1,0 +1,11 @@
+{
+    "block.minecraft.copper_bulb": "Měďená lampa",
+    "block.minecraft.exposed_copper_bulb": "Měděná lampa s lehkou měděnkou",
+    "block.minecraft.oxidized_copper_bulb": "Měděná lampa s měděnkou",
+    "block.minecraft.waxed_copper_bulb": "Navoskovaná měděná lampa",
+    "block.minecraft.waxed_exposed_copper_bulb": "Navoskovaná měděná lampa s lehkou měděnkou",
+    "block.minecraft.waxed_oxidized_copper_bulb": "Navoskovaná měděná lampa s měděnkou",
+    "block.minecraft.waxed_weathered_copper_bulb": "Navoskovaná měděná lampa se střední měděnkou",
+    "block.minecraft.weathered_copper_bulb": "Měděná lampa se střední měděnkou",
+    "container.crafter": "Výrobník"
+}

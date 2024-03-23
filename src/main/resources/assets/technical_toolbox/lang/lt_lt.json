@@ -1,0 +1,11 @@
+{
+    "block.minecraft.copper_bulb": "Vario lemputė",
+    "block.minecraft.exposed_copper_bulb": "Paveikta vario lemputė",
+    "block.minecraft.oxidized_copper_bulb": "Oksiduoto vario lemputė",
+    "block.minecraft.waxed_copper_bulb": "Vaškuoto vario lemputė",
+    "block.minecraft.waxed_exposed_copper_bulb": "Vaškuota paveikta vario lemputė",
+    "block.minecraft.waxed_oxidized_copper_bulb": "Vaškuoto oksiduoto vario lemputė",
+    "block.minecraft.waxed_weathered_copper_bulb": "Vaškuota stipriai paveikta vario lemputė",
+    "block.minecraft.weathered_copper_bulb": "Stipriai paveikta vario lemputė",
+    "container.crafter": "Kurėjas"
+}

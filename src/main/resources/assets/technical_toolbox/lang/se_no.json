@@ -1,0 +1,11 @@
+{
+    "block.minecraft.copper_bulb": "Veaikelámpá",
+    "block.minecraft.exposed_copper_bulb": "Suojehis veaikelámpá",
+    "block.minecraft.oxidized_copper_bulb": "Giimman veaikelámpá",
+    "block.minecraft.waxed_copper_bulb": "Váksajuvvon veaikelámpá",
+    "block.minecraft.waxed_exposed_copper_bulb": "Váksajuvvon suojehis veaikelámpá",
+    "block.minecraft.waxed_oxidized_copper_bulb": "Váksajuvvon giimman veaikelámpá",
+    "block.minecraft.waxed_weathered_copper_bulb": "Váksajuvvon giimmagoahtan veaikelámpá",
+    "block.minecraft.weathered_copper_bulb": "Giimmagoahtan veaikelámpá",
+    "container.crafter": "Duojár"
+}

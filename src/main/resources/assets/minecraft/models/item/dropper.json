@@ -3,9 +3,9 @@
   "overrides": [
     {
       "predicate": {
-        "custom_model_data": 1
+        "custom_model_data": 13579
       },
-      "model": "minecraft:block/crafter"
+      "model": "technical_toolbox:block/crafter"
     }
   ]
 }

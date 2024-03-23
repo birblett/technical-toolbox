@@ -1,0 +1,11 @@
+{
+    "block.minecraft.copper_bulb": "Rézizzó",
+    "block.minecraft.exposed_copper_bulb": "Megviselt rézizzó",
+    "block.minecraft.oxidized_copper_bulb": "Patinás rézizzó",
+    "block.minecraft.waxed_copper_bulb": "Viaszolt rézizzó",
+    "block.minecraft.waxed_exposed_copper_bulb": "Viaszolt megviselt rézizzó",
+    "block.minecraft.waxed_oxidized_copper_bulb": "Viaszolt patinás rézizzó",
+    "block.minecraft.waxed_weathered_copper_bulb": "Viaszolt viharvert rézizzó",
+    "block.minecraft.weathered_copper_bulb": "Viharvert rézizzó",
+    "container.crafter": "Barkácsoló"
+}

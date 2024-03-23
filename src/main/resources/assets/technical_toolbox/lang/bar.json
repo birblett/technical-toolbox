@@ -1,0 +1,11 @@
+{
+    "block.minecraft.copper_bulb": "Kupfalampn",
+    "block.minecraft.exposed_copper_bulb": "Oglafane Kupfalampn",
+    "block.minecraft.oxidized_copper_bulb": "Oxidiate Kupfalampn",
+    "block.minecraft.waxed_copper_bulb": "Gwachste Kupfalampn",
+    "block.minecraft.waxed_exposed_copper_bulb": "Gwachste Oglafane Kupfalampn",
+    "block.minecraft.waxed_oxidized_copper_bulb": "Gwachste Oxidierte Kupfalampn",
+    "block.minecraft.waxed_weathered_copper_bulb": "Gwachste Verwitterte Kupfalampn",
+    "block.minecraft.weathered_copper_bulb": "Verwitterte Kupfalampn",
+    "container.crafter": "Werker"
+}

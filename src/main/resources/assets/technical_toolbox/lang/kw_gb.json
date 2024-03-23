@@ -1,0 +1,11 @@
+{
+    "block.minecraft.copper_bulb": "Bollen Gober",
+    "block.minecraft.exposed_copper_bulb": "Bollen Gober Godewedhys",
+    "block.minecraft.oxidized_copper_bulb": "Bollen Gober Gortewedhys",
+    "block.minecraft.waxed_copper_bulb": "Bollen Gober Korys",
+    "block.minecraft.waxed_exposed_copper_bulb": "Bollen Gober Korys Godewedhys",
+    "block.minecraft.waxed_oxidized_copper_bulb": "Bollen Gober Korys Gortewedhys Kervys",
+    "block.minecraft.waxed_weathered_copper_bulb": "Bollen Gober Korys Tewedhys",
+    "block.minecraft.weathered_copper_bulb": "Bollen Gober Tewedhys",
+    "container.crafter": "Krefter"
+}

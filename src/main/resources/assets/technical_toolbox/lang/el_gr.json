@@ -1,0 +1,11 @@
+{
+    "block.minecraft.copper_bulb": "Λάμπα Χαλκού",
+    "block.minecraft.exposed_copper_bulb": "Λάμπα Εκτεθειμένου Χαλκού",
+    "block.minecraft.oxidized_copper_bulb": "Λάμπα Οξειδωμένου Χαλκού",
+    "block.minecraft.waxed_copper_bulb": "Κερωμένη Λάμπα Χαλκού",
+    "block.minecraft.waxed_exposed_copper_bulb": "Κερωμένη Λάμπα Εκτεθειμένου Χαλκού",
+    "block.minecraft.waxed_oxidized_copper_bulb": "Κερωμένη Λάμπα Οξειδωμένου Χαλκού",
+    "block.minecraft.waxed_weathered_copper_bulb": "Κερωμένη Λάμπα Φθαρμένου Χαλκού",
+    "block.minecraft.weathered_copper_bulb": "Λάμπα Φθαρμένου Χαλκού",
+    "container.crafter": "Κατασκευαστής"
+}

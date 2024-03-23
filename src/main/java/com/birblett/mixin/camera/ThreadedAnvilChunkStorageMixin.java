@@ -1,8 +1,8 @@
 package com.birblett.mixin.camera;
 
 
+import com.birblett.impl.config.ConfigOptions;
 import com.birblett.lib.crafter.CameraInterface;
-import com.birblett.util.config.ConfigOptions;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ThreadedAnvilChunkStorage;
 import org.spongepowered.asm.mixin.Mixin;

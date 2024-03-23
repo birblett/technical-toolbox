@@ -1,0 +1,11 @@
+{
+    "block.minecraft.copper_bulb": "Koperen lampe",
+    "block.minecraft.exposed_copper_bulb": "Bleatstelde koperen lampe",
+    "block.minecraft.oxidized_copper_bulb": "Oksidearre koperen lampe",
+    "block.minecraft.waxed_copper_bulb": "Wakst koperen lampe",
+    "block.minecraft.waxed_exposed_copper_bulb": "Wakst bleatstelde koperen lampe",
+    "block.minecraft.waxed_oxidized_copper_bulb": "Wakst oksidearre koperen lampe",
+    "block.minecraft.waxed_weathered_copper_bulb": "Wakst ferware koperen lampe",
+    "block.minecraft.weathered_copper_bulb": "Ferware koperen lampe",
+    "container.crafter": "Makker"
+}

@@ -15,7 +15,7 @@
             },
             {
               "function": "minecraft:set_nbt",
-              "tag": "{CustomModelData:1}",
+              "tag": "{CustomModelData:13579}",
               "conditions": [
                 {
                   "condition": "minecraft:block_state_property",
