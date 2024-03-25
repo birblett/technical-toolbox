@@ -56,7 +56,8 @@ public class ConfigManager {
                     continue;
                 }
                 if (split.length != 2 && split[0].length() != 0) {
-                    TechnicalToolbox.log("Improperly separated config option on line " + lineCount + " ('"+ line + "')");
+                    TechnicalToolbox.log("Improperly separated config option on line " +
+                            lineCount + " ('"+ line + "')");
                     continue;
                 }
                 if (split.length == 2) {
@@ -74,13 +75,16 @@ public class ConfigManager {
                     options++;
                 }
             }
-            TechnicalToolbox.log("Read " + options + " valid configuration options from 'toolbox.conf'");
+            TechnicalToolbox.log("Read " + options + " valid configuration options from " +
+                    "'toolbox.conf'");
             if (configMap.size() - options > 0) {
-                TechnicalToolbox.log((configMap.size() - options) + " configuration options were not specified, using defaults");
+                TechnicalToolbox.log("" + (configMap.size() - options) + " configuration " +
+                        "options were not specified, using defaults");
             }
         }
         catch (IOException e) {
-            TechnicalToolbox.warn("Configuration file 'toolbox.conf' was not found, generating defaults");
+            TechnicalToolbox.warn("Configuration file 'toolbox.conf' was not found, generating" +
+                    " defaults");
             writeConfigsToFile();
         }
     }

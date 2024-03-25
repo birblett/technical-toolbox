@@ -56,6 +56,9 @@ public class ConfigUtil {
 
     public static Pair<Boolean, Text> getBooleanOption(String name, String value, boolean defaultValue) {
         boolean tmp;
+        if (!(value.equals("false") || value.equals("true"))) {
+            return new Pair<>(defaultValue, setFailGeneric(name, value));
+        }
         try {
             tmp = Boolean.parseBoolean(value);
         }

@@ -1,5 +1,6 @@
 package com.birblett.mixin.commands;
 
+import com.birblett.impl.command.AliasCommand;
 import com.birblett.impl.command.ToolboxCommand;
 import com.mojang.brigadier.CommandDispatcher;
 import net.minecraft.command.CommandRegistryAccess;
@@ -20,6 +21,7 @@ public class CommandManagerMixin {
     @Inject(method = "<init>", at = @At("RETURN"))
     private void onRegister(CommandManager.RegistrationEnvironment environment, CommandRegistryAccess commandRegistryAccess, CallbackInfo ci) {
         ToolboxCommand.register(dispatcher);
+        AliasCommand.register(dispatcher);
     }
 
 }

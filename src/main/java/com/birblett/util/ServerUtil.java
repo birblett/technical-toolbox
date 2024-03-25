@@ -1,7 +1,7 @@
 package com.birblett.util;
 
 import com.birblett.TechnicalToolbox;
-import com.birblett.lib.NodeRemovalInterface;
+import com.birblett.lib.command.CommandNodeModifier;
 import com.mojang.brigadier.tree.RootCommandNode;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.ServerTask;
@@ -20,7 +20,15 @@ public class ServerUtil {
      */
     public static void removeCommandByName(MinecraftServer server, String name) {
         RootCommandNode<ServerCommandSource> r = server.getCommandManager().getDispatcher().getRoot();
-        ((NodeRemovalInterface) r).removeStringInstance(name);
+        ((CommandNodeModifier) r).removeStringInstance(name);
+        refreshCommandTree(server);
+    }
+
+    /**
+     * Refreshes the server command tree.
+     * @param server target server\
+     */
+    public static void refreshCommandTree(MinecraftServer server) {
         server.send(new ServerTask(server.getTicks(), () -> {
             try {
                 for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {

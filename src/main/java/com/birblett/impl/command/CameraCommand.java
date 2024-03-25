@@ -29,13 +29,14 @@ public class CameraCommand {
                                         player.getEntityName() + ": " + feedback));
                             }
                         }
+                        return 1;
                     }
                     else {
                         context.getSource().sendFeedback(() -> TextUtils.formattable("/" + (CommandManager.literal((String)
                                 ConfigOptions.CAMERA_COMMAND.value())) + " can only be executed by a player"),
                                 false);
+                        return 0;
                     }
-                    return 1;
                 }));
     }
 

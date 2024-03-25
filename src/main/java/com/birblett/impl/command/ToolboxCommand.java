@@ -16,7 +16,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 /**
- * brigadier forces me to use 10 billion nested calls and lambdas so decipher it yourself lmao
+ * Ingame command for viewing and modifying configuration options
  */
 public class ToolboxCommand {
 
@@ -25,10 +25,10 @@ public class ToolboxCommand {
                 .requires(source -> source.hasPermissionLevel((Integer) ConfigOptions.CONFIG_VIEW_PERMISSION_LEVEL.value()))
                 .then(CommandManager.literal("config")
                         .then(CommandManager.argument("config_option", StringArgumentType.string())
-                                .requires(source -> source.hasPermissionLevel(4))
                                 .suggests((context, builder) -> CommandSource.suggestMatching(TechnicalToolbox.CONFIG_MANAGER
                                         .getAllConfigOptions(), builder))
                                 .then(CommandManager.argument("config_value", StringArgumentType.string())
+                                        .requires(source -> source.hasPermissionLevel(4))
                                         .suggests((context, builder) -> {
                                             Collection<String> suggestions = new ArrayList<>();
                                             String tmp = context.getArgument("config_option", String.class);
@@ -48,6 +48,7 @@ public class ToolboxCommand {
                                                 Text out = c.setFromString(value, context.getSource().getServer());
                                                 if (out != null) {
                                                     context.getSource().sendFeedback(() -> out, false);
+                                                    return 0;
                                                 }
                                                 else {
                                                     context.getSource().sendFeedback(() -> TextUtils
@@ -58,15 +59,24 @@ public class ToolboxCommand {
                                                     if ((Boolean) ConfigOptions.CONFIG_WRITE_ON_CHANGE.value()) {
                                                         TechnicalToolbox.CONFIG_MANAGER.writeConfigsToFile();
                                                     }
+                                                    return 1;
                                                 }
                                             }
-                                            return 1;
+                                            else {
+                                                context.getSource().sendError(TextUtils.formattable("No config option with " +
+                                                        "name \"" + option + "\""));
+                                                return 0;
+                                            }
                                         })))
                                 .executes(context -> {
                                     String option = context.getArgument("config_option", String.class);
                                     if (TechnicalToolbox.CONFIG_MANAGER.getAllConfigOptions().contains(option)) {
                                         ConfigOptions c = TechnicalToolbox.CONFIG_MANAGER.configMap.get(option);
                                         context.getSource().sendFeedback(c::getText, true);
+                                    }
+                                    else {
+                                        context.getSource().sendError(TextUtils.formattable("No config option with " +
+                                                "name \"" + option + "\""));
                                     }
                                     return 1;
                                 })))

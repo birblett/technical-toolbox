@@ -8,6 +8,7 @@
     "camera.ThreadedAnvilChunkStorageMixin",
     "commands.CommandManagerMixin",
     "commands.CommandNodeMixin",
+    "commands.ServerCommandSourceMixin",
     "config.MinecraftServerMixin",
     "crafter.CraftingInventoryAccess",
     "crafter.DispenserBlockEntityMixin",
