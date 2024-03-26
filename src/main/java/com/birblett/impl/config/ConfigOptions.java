@@ -34,7 +34,7 @@ public enum ConfigOptions implements ConfigOption<Object> {
         }
     },
     CONFIG_WRITE_ON_CHANGE("configWriteOnChange", "false", "If enabled, changing configurations will" +
-            " also write to file.", true, "false", "true") {
+            " also write to disk.", "false", "true") {
         private boolean value = false;
 
         @Override
@@ -49,7 +49,57 @@ public enum ConfigOptions implements ConfigOption<Object> {
             return out.getRight();
         }
     },
-    CAMERA_COMMAND("cameraCommand", "cam", "Camera command string, usage /[cmd string]",
+    CONFIG_WRITE_ONLY_CHANGES("configWriteOnlyChanges", "true", "If enabled, only changed " +
+            "configurations will be written to disk.", true, "false", "true") {
+        private boolean value = true;
+
+        @Override
+        public Boolean value() {
+            return this.value;
+        }
+
+        @Override
+        public Text setFromString(String value) {
+            Pair<Boolean, Text> out = ConfigUtil.getBooleanOption(this.getName(), value, false);
+            this.value = out.getLeft();
+            return out.getRight();
+        }
+    },
+    ALIAS_DEFAULT_PERMISSION("aliasDefaultPermission", "0", "Default permission level required to" +
+            " use aliases.", "0", "4") {
+        private int value = 0;
+
+        @Override
+        public Integer value() {
+            return this.value;
+        }
+
+        @Override
+        public Text setFromString(String value) {
+            Pair<Integer, Text> out = ConfigUtil.getIntOption(this.getName(), value, 0, 0, 4);
+            this.value = out.getLeft();
+            return out.getRight();
+        }
+    },
+    ALIAS_DEFAULT_SEPARATOR("aliasDefaultSeparator", ",", "Default separator for new aliases.",
+            ",", "\" \"") {
+        private String value = ",";
+
+        @Override
+        public String value() {
+            return this.value;
+        }
+
+        @Override
+        public Text setFromString(String value) {
+            if (value.length() > 0) {
+                this.value = value;
+                return null;
+            };
+            return TextUtils.formattable("Option aliasDefaultSeparator requires string of length > 0");
+        }
+    },
+    CAMERA_COMMAND("cameraCommand", "cam", "Camera command string, usage /[cmd string].",
             "cam", "c", "cs") {
         private String value = "cam";
 
@@ -144,7 +194,7 @@ public enum ConfigOptions implements ConfigOption<Object> {
     },
     CAMERA_PERMISSION_LEVEL("cameraPermissionLevel", "4", "Permission level required to use the " +
             "camera command.", true, "0", "4") {
-        private int value = 0;
+        private int value = 4;
 
         @Override
         public Integer value() {
@@ -260,6 +310,10 @@ public enum ConfigOptions implements ConfigOption<Object> {
 
     public String getName() {
         return this.name;
+    }
+
+    public String getDefaultValue() {
+        return this.defaultValue;
     }
 
     public Text getText() {

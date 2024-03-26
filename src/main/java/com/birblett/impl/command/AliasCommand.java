@@ -17,13 +17,14 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
 /**
- * OH MY GOD I NEED TO COMMENT THIS SO BAD PLEASE SOMEONE HELP
+ * Alias command for adding, modifying, and removing aliases.
  */
 public class AliasCommand {
 
     public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
         dispatcher.register((CommandManager.literal("alias")
                 .requires(source -> source.hasPermissionLevel(4))
+                // adds an alias by name, with a given command
                 .then(CommandManager.literal("add")
                         .then(CommandManager.argument("alias", StringArgumentType.string())
                                 .then(CommandManager.argument("command", StringArgumentType.greedyString())
@@ -32,7 +33,7 @@ public class AliasCommand {
                                             ServerPlayerEntity player = context.getSource().getPlayer();
                                             if (dispatcher.getRoot().getChild(alias) == null) {
                                                 String command = context.getArgument("command", String.class);
-                                                new AliasedCommand(alias, command, 0, dispatcher);
+                                                new AliasedCommand(alias, command, dispatcher);
                                                 Text out = TextUtils.formattable("Registered new command alias ")
                                                         .append(TextUtils.formattable(alias).formatted(Formatting.GREEN))
                                                         .append(" for command string ").append(TextUtils.formattable(
@@ -54,6 +55,7 @@ public class AliasCommand {
                                             }
                                             return 0;
                                         }))))
+                // removes an alias by name completely
                 .then(CommandManager.literal("remove")
                         .then(CommandManager.argument("alias", StringArgumentType.string())
                                 .suggests((context, builder) -> CommandSource.suggestMatching(AliasManager.ALIASES.keySet(), builder))
@@ -76,9 +78,23 @@ public class AliasCommand {
                                             alias));
                                     return 0;
                                 })))
+                // reads all alias from file
+                .then(CommandManager.literal("read")
+                        .executes(context -> {
+                            TechnicalToolbox.ALIAS_MANAGER.readAliases();
+                            return 1;
+                        }))
+                // writes all aliases to file
+                .then(CommandManager.literal("write")
+                        .executes(context -> {
+                            TechnicalToolbox.ALIAS_MANAGER.writeAliases();
+                            return 1;
+                        }))
+                // modifies an existing alias
                 .then(CommandManager.literal("modify")
                         .then(CommandManager.argument("alias", StringArgumentType.string())
                                 .suggests((context, builder) -> CommandSource.suggestMatching(AliasManager.ALIASES.keySet(), builder))
+                                // add a line to an alias
                                 .then(CommandManager.literal("add")
                                         .then(CommandManager.argument("line", StringArgumentType.greedyString())
                                                 .executes(context -> {
@@ -98,6 +114,7 @@ public class AliasCommand {
                                                             "find alias \"" + alias));
                                                     return 0;
                                                 })))
+                                // inserts a line to the alias at the given line
                                 .then(CommandManager.literal("insert")
                                         .then(CommandManager.argument("line number", IntegerArgumentType.integer(1))
                                                 .then(CommandManager.argument("line", StringArgumentType.greedyString())
@@ -124,6 +141,7 @@ public class AliasCommand {
                                                                     "find alias \"" + alias));
                                                             return 0;
                                                         }))))
+                                // replaces a specified line in the alias with another
                                 .then(CommandManager.literal("set")
                                         .then(CommandManager.argument("line number", IntegerArgumentType.integer(1))
                                                 .then(CommandManager.argument("line", StringArgumentType.greedyString())
@@ -156,6 +174,7 @@ public class AliasCommand {
                                                                     "find alias \"" + alias));
                                                             return 0;
                                                         }))))
+                                // removes a specified line from the alias if there is more than one line
                                 .then(CommandManager.literal("remove")
                                         .then(CommandManager.argument("line number", IntegerArgumentType.integer(1))
                                                 .executes(context -> {
@@ -170,7 +189,7 @@ public class AliasCommand {
                                                             return 0;
                                                         }
                                                         MutableText out = TextUtils.formattable("Removed command at " +
-                                                                "line " + line) .append(cmd.getCommandText());
+                                                                "line " + line + "\n").append(cmd.getCommandText());
                                                         context.getSource().sendFeedback(() -> out, false);
                                                         return 1;
                                                     }
@@ -178,6 +197,7 @@ public class AliasCommand {
                                                             "find alias \"" + alias));
                                                     return 0;
                                                 })))
+                                // sets the required permission level of the alias
                                 .then(CommandManager.literal("permission")
                                         .then(CommandManager.argument("permission level", IntegerArgumentType.integer(1, 4))
                                                 .executes(context -> {
@@ -199,6 +219,7 @@ public class AliasCommand {
                                                             "find alias \"" + alias));
                                                     return 0;
                                                 })))
+                                // sets the separator of the alias
                                 .then(CommandManager.literal("separator")
                                         .then(CommandManager.argument("argument separator", StringArgumentType.string())
                                                 .executes(context -> {
@@ -219,6 +240,7 @@ public class AliasCommand {
                                                             "find alias \"" + alias + "\n"));
                                                     return 0;
                                                 })))
+                                // if called without subcommands will instead output alias information
                                 .executes(context -> {
                                     String alias = context.getArgument("alias", String.class);
                                     AliasedCommand cmd = AliasManager.ALIASES.get(alias);

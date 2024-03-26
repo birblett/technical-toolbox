@@ -1,6 +1,5 @@
 package com.birblett.mixin.mechanic;
 
-import com.birblett.TechnicalToolbox;
 import com.birblett.impl.config.ConfigOptions;
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import com.llamalad7.mixinextras.sugar.Local;

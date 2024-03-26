@@ -11,16 +11,16 @@ public class TechnicalToolbox {
     public static final ConfigManager CONFIG_MANAGER = new ConfigManager();
     public static final AliasManager ALIAS_MANAGER = new AliasManager();
 
-    public static void log(String str) {
-        LOGGER.info("[Technical Toolbox] {}", str);
+    public static void log(String str, Object... tok) {
+        LOGGER.info("[Technical Toolbox] " + str, tok);
     }
 
-    public static void warn(String str) {
-        LOGGER.warn("[Technical Toolbox] {}", str);
+    public static void warn(String str, Object... tok) {
+        LOGGER.warn("[Technical Toolbox] " + str, tok);
     }
 
-    public static void error(String str) {
-        LOGGER.error("[Technical Toolbox] {}", str);
+    public static void error(String str, Object... tok) {
+        LOGGER.error("[Technical Toolbox] " + str, tok);
     }
 
 }

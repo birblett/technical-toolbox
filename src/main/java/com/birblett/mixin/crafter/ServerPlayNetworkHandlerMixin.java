@@ -1,6 +1,5 @@
 package com.birblett.mixin.crafter;
 
-import com.birblett.TechnicalToolbox;
 import com.birblett.impl.crafter.CrafterScreenHandler;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;

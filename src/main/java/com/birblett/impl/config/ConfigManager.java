@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 
 /**
@@ -31,24 +32,39 @@ public class ConfigManager {
         return this.configMap.keySet();
     }
 
-    public void onServerOpen(MinecraftServer server) {
-        this.server = server;
-        readConfigsFromFile();
-    }
-
-    public void onServerClose() {
-        this.writeConfigsToFile();
-    }
-
+    /**
+     * @return path to config file
+     */
     private Path getFile() {
         return server.getSavePath(WorldSavePath.ROOT).resolve("toolbox.conf");
     }
 
-    public void readConfigsFromFile() {
+    /**
+     * Called on server open, reads configurations
+     * @param server host server
+     */
+    public void onServerOpen(MinecraftServer server) {
+        this.server = server;
+        this.readConfigs();
+    }
+
+    /**
+     * Called on server close, writes configs back to disk.
+     */
+    public void onServerClose() {
+        this.writeConfigs();
+        this.server = null;
+    }
+
+    /**
+     * Loads configs from disk into memory.
+     */
+    public void readConfigs() {
         try (BufferedReader bufferedReader = Files.newBufferedReader(this.getFile())) {
             String line;
             int lineCount = 0;
             int options = 0;
+            HashSet<ConfigOptions> configOptions = new HashSet<>(this.configMap.values());
             while ((line = bufferedReader.readLine()) != null) {
                 lineCount++;
                 String[] split = line.split(":", 2);
@@ -63,11 +79,12 @@ public class ConfigManager {
                 if (split.length == 2) {
                     String name = split[0].strip();
                     String value = split[1].strip();
-                    if (!configMap.containsKey(name)) {
+                    if (!this.configMap.containsKey(name)) {
                         TechnicalToolbox.log("Option '" + name + "' does not exist");
                         continue;
                     }
                     Text out = configMap.get(name).setFromString(value, this.server);
+                    configOptions.remove(configMap.get(name));
                     if (out != null) {
                         TechnicalToolbox.log(out.getContent().toString());
                         continue;
@@ -75,29 +92,35 @@ public class ConfigManager {
                     options++;
                 }
             }
-            TechnicalToolbox.log("Read " + options + " valid configuration options from " +
+            TechnicalToolbox.log("Loaded " + options + " valid configuration options from " +
                     "'toolbox.conf'");
             if (configMap.size() - options > 0) {
-                TechnicalToolbox.log("" + (configMap.size() - options) + " configuration " +
-                        "options were not specified, using defaults");
+                TechnicalToolbox.log("" + (configMap.size() - options) + " configuration options were not " +
+                        "specified, using defaults");
+                for (ConfigOptions configOption : configOptions) {
+                    configOption.setFromString(configOption.getDefaultValue(), this.server);
+                }
             }
         }
         catch (IOException e) {
-            TechnicalToolbox.warn("Configuration file 'toolbox.conf' was not found, generating" +
-                    " defaults");
-            writeConfigsToFile();
+            TechnicalToolbox.warn("Configuration file 'toolbox.conf' was not found, using defaults");
         }
     }
 
-    public void writeConfigsToFile() {
+    /**
+     * Writes configs to disk.
+     */
+    public void writeConfigs() {
         try (BufferedWriter bufferedWriter = Files.newBufferedWriter(this.getFile())) {
             int options = 0;
             for (ConfigOptions c : ConfigOptions.values()) {
-                 bufferedWriter.write(c.getName() + ": " + c.getWriteable() + "\n");
-                 if (c.hasLineBreak()) {
-                     bufferedWriter.write("\n");
-                 }
-                 options++;
+                if (!(boolean) ConfigOptions.CONFIG_WRITE_ONLY_CHANGES.value() || !c.getWriteable().equals(c.getDefaultValue())) {
+                    bufferedWriter.write(c.getName() + ": " + c.getWriteable() + "\n");
+                    if (c.hasLineBreak()) {
+                        bufferedWriter.write("\n");
+                    }
+                    options++;
+                }
             }
             TechnicalToolbox.log("Wrote " + options + " configuration options to 'toolbox.conf'");
         }

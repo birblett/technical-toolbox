@@ -47,7 +47,7 @@ public class ToolboxCommand {
                                                 ConfigOptions c = TechnicalToolbox.CONFIG_MANAGER.configMap.get(option);
                                                 Text out = c.setFromString(value, context.getSource().getServer());
                                                 if (out != null) {
-                                                    context.getSource().sendFeedback(() -> out, false);
+                                                    context.getSource().sendError(out);
                                                     return 0;
                                                 }
                                                 else {
@@ -57,7 +57,7 @@ public class ToolboxCommand {
                                                             .GREEN))).append(TextUtils.formattable(" for option " + option)),
                                                             true);
                                                     if ((Boolean) ConfigOptions.CONFIG_WRITE_ON_CHANGE.value()) {
-                                                        TechnicalToolbox.CONFIG_MANAGER.writeConfigsToFile();
+                                                        TechnicalToolbox.CONFIG_MANAGER.writeConfigs();
                                                     }
                                                     return 1;
                                                 }
@@ -85,7 +85,7 @@ public class ToolboxCommand {
                         .executes(context -> {
                             context.getSource().sendFeedback(() -> TextUtils.formattable("Reloading configs from disk"),
                                     true);
-                            TechnicalToolbox.CONFIG_MANAGER.readConfigsFromFile();
+                            TechnicalToolbox.CONFIG_MANAGER.readConfigs();
                             return 1;
                         }))
                 .then(CommandManager.literal("write_configs")
@@ -93,7 +93,7 @@ public class ToolboxCommand {
                         .executes(context -> {
                             context.getSource().sendFeedback(() -> TextUtils.formattable("Writing configs to disk"),
                                     true);
-                            TechnicalToolbox.CONFIG_MANAGER.writeConfigsToFile();
+                            TechnicalToolbox.CONFIG_MANAGER.writeConfigs();
                             return 1;
                         })));
 

@@ -1,20 +1,15 @@
 package com.birblett.impl.alias;
 
 import com.birblett.TechnicalToolbox;
-import com.birblett.impl.config.ConfigOptions;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.text.Text;
-import net.minecraft.util.Pair;
 import net.minecraft.util.WorldSavePath;
 import org.apache.commons.io.FileUtils;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Handles writing and reading of configuration options, with methods called on server start and close
@@ -27,32 +22,46 @@ public class AliasManager {
     public AliasManager() {
     }
 
+    /**
+     * Called on server open, sets server and reads aliases into memory.
+     * @param server the server being opened
+     */
     public void onServerOpen(MinecraftServer server) {
         this.server = server;
         for (String key : AliasManager.ALIASES.keySet()) {
             AliasManager.ALIASES.get(key).deregister(this.server);
         }
         AliasManager.ALIASES.clear();
-        this.readConfigsFromFile();
+        this.readAliases();
     }
 
+    /**
+     * Called on server close, writes aliases to file and deregisters them.
+     */
     public void onServerClose() {
-        this.writeConfigsToFile();
+        this.writeAliases();
         for (Object key : AliasManager.ALIASES.keySet().toArray()) {
             AliasManager.ALIASES.get((String) key).deregister(this.server);
         }
         AliasManager.ALIASES.clear();
     }
 
+    /**
+     * @return relative path to toolbox_aliases folder
+     */
     private Path getDirectory() {
         return this.server.getSavePath(WorldSavePath.ROOT).resolve("toolbox_aliases");
     }
 
+    /**
+     * @param name alias name
+     * @return qualified name of an alias file specified by the name
+     */
     private Path getAliasPath(String name) {
         return this.getDirectory().resolve(name + ".alias");
     }
 
-    public void readConfigsFromFile() {
+    public void readAliases() {
         File directory = new File(this.getDirectory().toString());
         if (!directory.isDirectory()){
             return;
@@ -72,7 +81,10 @@ public class AliasManager {
         }
     }
 
-    public void writeConfigsToFile() {
+    /**
+     * Writes all aliases to disk.
+     */
+    public void writeAliases() {
         File directory = new File(this.getDirectory().toString());
         if (!directory.isDirectory()){
             TechnicalToolbox.log("Aliases directory not found, creating an empty alias directory");

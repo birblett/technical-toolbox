@@ -1,6 +1,7 @@
 package com.birblett.impl.alias;
 
 import com.birblett.TechnicalToolbox;
+import com.birblett.impl.config.ConfigOptions;
 import com.birblett.lib.command.CommandSourceModifier;
 import com.birblett.util.ServerUtil;
 import com.birblett.util.TextUtils;
@@ -13,6 +14,8 @@ import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.text.MutableText;
 import net.minecraft.util.Formatting;
+import org.apache.commons.lang3.StringUtils;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -20,6 +23,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -30,16 +34,17 @@ public class AliasedCommand {
 
     private final String alias;
     private final List<String> commands = new ArrayList<>();
+    private final Set<String> args = new LinkedHashSet<>();
     private int argCount;
     private int permission;
-    private final Set<String> args = new LinkedHashSet<>();
-    private static final Pattern ARG = Pattern.compile("\\{\\$[^{$}]+}");
     private String separator = " ";
+    private static final Pattern ARG = Pattern.compile("\\{\\$[^{$}]+}");
+    private static final String[] VALID = new String[]{"int", "float", "double", "boolean", "word", "alphanumeric"};
 
-    public AliasedCommand(String alias, String command, int permission, CommandDispatcher<ServerCommandSource> dispatcher) {
+    public AliasedCommand(String alias, String command, CommandDispatcher<ServerCommandSource> dispatcher) {
         this.alias = alias;
         this.commands.add(command);
-        this.permission = permission;
+        this.permission = (int) ConfigOptions.ALIAS_DEFAULT_PERMISSION.value();
         this.updateArgCount();
         this.register(dispatcher);
     }
@@ -51,6 +56,30 @@ public class AliasedCommand {
         this.separator = separator;
         this.updateArgCount();
         this.register(dispatcher);
+    }
+
+    public int getArgCount() {
+        return this.argCount;
+    }
+
+    public void setPermission(int permission) {
+        this.permission = permission;
+    }
+
+    public int getPermission() {
+        return this.permission;
+    }
+
+    public void setSeparator(String separator) {
+        this.separator = separator;
+    }
+
+    public String getSeparator() {
+        return this.separator;
+    }
+
+    public List<String> getCommands() {
+        return this.commands;
     }
 
     public void register(CommandDispatcher<ServerCommandSource> dispatcher) {
@@ -108,10 +137,9 @@ public class AliasedCommand {
                 }));
     }
 
-    public int getArgCount() {
-        return this.argCount;
-    }
-
+    /**
+     * Updates the current argument count based on all commands in the alias.
+     */
     private void updateArgCount() {
         this.args.clear();
         this.argCount = 0;
@@ -125,26 +153,18 @@ public class AliasedCommand {
         }
     }
 
-    public void setPermission(int permission) {
-        this.permission = permission;
+    /**
+     * Adds a command to the end of the current alias script and automatically updates argument count.
+     * @param command full command to add.
+     */
+    public void addCommand(String command) {
+        this.commands.add(command);
+        this.updateArgCount();
     }
 
-    public int getPermission() {
-        return this.permission;
-    }
-
-    public void setSeparator(String separator) {
-        this.separator = separator;
-    }
-
-    public String getSeparator() {
-        return this.separator;
-    }
-
-    public List<String> getCommands() {
-        return this.commands;
-    }
-
+    /**
+     * @return full command script as text.
+     */
     public MutableText getCommandText() {
         MutableText out = TextUtils.formattable("Commands:\n");
         int lineNum = 0;
@@ -158,11 +178,11 @@ public class AliasedCommand {
         return out;
     }
 
-    public void addCommand(String command) {
-        this.commands.add(command);
-        this.updateArgCount();
-    }
-
+    /**
+     * Removes the command at the given position. Can't remove the last line of an alias.
+     * @param line line number
+     * @return Fail message if removal failed, otherwise null.
+     */
     public MutableText removeCommand(int line) {
         if (this.commands.size() <= 1) {
             return TextUtils.formattable("Can't remove the last line in an alias");
@@ -175,6 +195,12 @@ public class AliasedCommand {
         return null;
     }
 
+    /**
+     * Inserts a command at a position, moving lines below down
+     * @param command command string to be inserted
+     * @param line line to insert at (or before)
+     * @return an error message if unsuccessful
+     */
     public MutableText insertCommand(String command, int line) {
         if (line < 1 || line - 1 > this.commands.size()) {
             return TextUtils.formattable("Line index " + line + " out of bounds");
@@ -184,6 +210,9 @@ public class AliasedCommand {
         return null;
     }
 
+    /**
+     * @return example of command usage
+     */
     public MutableText getSyntax() {
         MutableText out = TextUtils.formattable("/").formatted(Formatting.YELLOW);
         out.append(TextUtils.formattable(this.alias).formatted(Formatting.YELLOW)).append(" ");
@@ -224,30 +253,145 @@ public class AliasedCommand {
     }
 
     /**
-     * Execute commands with args. TODO: actual arg parsing
+     * Checks if command string is a validator
+     * @param command input command to check
+     * @return validation type if command string is a validator, else null
+     */
+    private String checkValidation(String command) {
+        String validationType = null;
+        for (String validation : AliasedCommand.VALID) {
+            if (command.startsWith(validation + "(")) {
+                if (!command.endsWith(")")) {
+                    return "invalid";
+                }
+                validationType = validation;
+            }
+        }
+        return validationType;
+    }
+
+    /**
+     * Executes command on server with command permission level override enabled
+     * @param context command context
+     * @param command command to execute
+     */
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
+    private boolean executeCmd(CommandContext<ServerCommandSource> context, String command) {
+        ServerCommandSource source = context.getSource();
+        CommandDispatcher<ServerCommandSource> dispatcher = source.getServer().getCommandManager().getDispatcher();
+        ((CommandSourceModifier) source).setPermissionOverride(true);
+        try {
+            dispatcher.execute(dispatcher.parse(command, source));
+        } catch (CommandSyntaxException e) {
+            context.getSource().sendError(TextUtils.formattable(e.getMessage()));
+            return false;
+        }
+        ((CommandSourceModifier) source).setPermissionOverride(false);
+        return true;
+    }
+
+    /**
+     * Attempts to parse input as a number
+     * @param argName argument name
+     * @param arg passed argument value
+     * @param parse parse function
+     * @param type argument type
+     * @param context command context; will send error messages here
+     * @return if number was successfully parsed
+     */
+    private boolean parseNumber(String argName, String arg, Function<String, ? extends Number> parse, String type, CommandContext<ServerCommandSource> context) {
+        try {
+            parse.apply(arg);
+            return true;
+        }
+        catch (NumberFormatException e) {
+            context.getSource().sendError(TextUtils.formattable(argName + ": Argument \"" + arg + "\" not a valid " + type));
+            return false;
+        }
+    }
+
+    /**
+     * Performs validation on a specific command argument, can handle ints, floats, doubles, bools, words, and alphanumeric string
+     * @param context command context
+     * @param type one of int, float, double, boolean, word, or alphanumeric
+     * @param command alias command string
+     * @param args provided command args
+     * @return false if invalid or not a valid type, otherwise true
+     */
+    private boolean validate(CommandContext<ServerCommandSource> context, @NotNull String type, String command, String[] args) {
+        String arg = command.substring(0, command.length() - 1).replace(type + "(", "");
+        if (!this.args.contains(arg)) {
+            context.getSource().sendError(TextUtils.formattable("No argument \"" + arg + "\" for alias " + this.alias));
+            return false;
+        }
+        int i = 0;
+        for (String tmp : this.args) {
+            if (arg.equals(tmp)) {
+                break;
+            }
+            ++i;
+        }
+        switch (type) {
+            case "int" -> {
+                return this.parseNumber(arg, args[i], Integer::parseInt, type, context);
+            }
+            case "float" -> {
+                return this.parseNumber(arg, args[i], Float::parseFloat, type, context);
+            }
+            case "double" -> {
+                return this.parseNumber(arg, args[i], Double::parseDouble, type, context);
+            }
+            case "boolean" -> {
+                if (!(args[i].equalsIgnoreCase("true") || args[i].equalsIgnoreCase("false"))) {
+                    context.getSource().sendError(TextUtils.formattable("Argument \"" + args[i] + "\" not a valid "
+                            + type));
+                    return false;
+                }
+            }
+            case "word" -> {
+                if (args[i].contains(" ")) {
+                    context.getSource().sendError(TextUtils.formattable("Argument \"" + args[i] + "\" not a valid "
+                            + type));
+                    return false;
+                }
+            }
+            case "alphanumeric" -> {
+                if (!StringUtils.isAlphanumeric(args[i])) {
+                    context.getSource().sendError(TextUtils.formattable("Argument \"" + args[i] + "\" not alphanumeric"));
+                    return false;
+                }
+            }
+            default -> {
+                context.getSource().sendError(TextUtils.formattable("Something went wrong parsing validation command"));
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Execute commands with args.
      * @param context command context
      * @param args input args
      */
     public void execute(CommandContext<ServerCommandSource> context, String[] args) {
         for (String command : this.commands) {
-            int i = 0;
-            for (String arg : this.args) {
-                command = command.replaceAll("\\{\\$" + arg + "}", args[i]);
-                i++;
+            String validation = this.checkValidation(command);
+            if (validation == null) {
+                int i = 0;
+                for (String arg : this.args) {
+                    command = command.replaceAll("\\{\\$" + arg + "}", args[i]);
+                    i++;
+                }
+                if (!this.executeCmd(context, command)) {
+                    break;
+                }
             }
-            ServerCommandSource source = context.getSource();
-            CommandDispatcher<ServerCommandSource> dispatcher = source.getServer().getCommandManager().getDispatcher();
-            ((CommandSourceModifier) source).setPermissionOverride(true);
-            try {
-                int result = dispatcher.execute(dispatcher.parse(command, source));
-            } catch (CommandSyntaxException e) {
-                context.getSource().sendError(TextUtils.formattable(e.getMessage()));
+            else if (!this.validate(context, validation, command, args)) {
                 break;
             }
-            ((CommandSourceModifier) source).setPermissionOverride(false);
         }
     }
-
 
     /**
      * Executes a command without any args.
@@ -255,24 +399,24 @@ public class AliasedCommand {
      */
     public void execute(CommandContext<ServerCommandSource> context) {
         for (String command : this.commands) {
-            ServerCommandSource source = context.getSource();
-            CommandDispatcher<ServerCommandSource> dispatcher = source.getServer().getCommandManager().getDispatcher();
-            ((CommandSourceModifier) source).setPermissionOverride(true);
-            try {
-                dispatcher.execute(dispatcher.parse(command, source));
-            } catch (CommandSyntaxException e) {
-                context.getSource().sendError(TextUtils.formattable(e.getMessage()));
+            if (!this.executeCmd(context, command)) {
                 break;
             }
-            ((CommandSourceModifier) source).setPermissionOverride(false);
         }
     }
 
+    /**
+     * Writes alias, permission level, separator (if applicable)
+     * @param path filepath to write to
+     * @return whether alias was written successfully or not
+     */
     public boolean writeToFile(Path path) {
         try (BufferedWriter bufferedWriter = Files.newBufferedWriter(path)) {
             bufferedWriter.write("Alias: " + this.alias + "\n");
-            bufferedWriter.write("Permission level: " + this.permission + "\n");
-            if (this.argCount > 0) {
+            if (this.permission != (int) ConfigOptions.ALIAS_DEFAULT_PERMISSION.value()) {
+                bufferedWriter.write("Permission level: " + this.permission + "\n");
+            }
+            if (!this.separator.equals(ConfigOptions.ALIAS_DEFAULT_SEPARATOR.getWriteable())) {
                 bufferedWriter.write("Argument separator: \"" + this.separator + "\"\n");
             }
             bufferedWriter.write("Command list:\n");
@@ -286,11 +430,18 @@ public class AliasedCommand {
         return true;
     }
 
+    /**
+     * Recreates an alias from an alias file. Alias, separator, and permlevel can come in any order and will use defaults
+     * if not provided, but commands must come last.
+     * @param server minecraft server, used to get dispatcher
+     * @param path path to read from
+     * @return whether alias was successfully restored or not; outputs errors if failed
+     */
     public static boolean readFromFile(MinecraftServer server, Path path) {
         try (BufferedReader bufferedReader = Files.newBufferedReader(path)) {
             boolean readingCommandState = false;
-            String line, alias = null, separator = ",";
-            int permission = 0;
+            String line, alias = null, separator = ConfigOptions.ALIAS_DEFAULT_SEPARATOR.getWriteable();
+            int permission = (int) ConfigOptions.ALIAS_DEFAULT_PERMISSION.value();
             List<String> commands = new ArrayList<>();
             while ((line = bufferedReader.readLine()) != null) {
                 if (!readingCommandState) {

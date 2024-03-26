@@ -11,7 +11,7 @@ public interface ConfigOption<T> {
     };
     Text setFromString(String value);
     default String getWriteable() {
-        return this.value().toString();
+        return String.valueOf(this.value());
     };
 
 }

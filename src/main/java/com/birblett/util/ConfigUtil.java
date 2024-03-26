@@ -1,9 +1,7 @@
 package com.birblett.util;
 
 import net.minecraft.text.MutableText;
-import net.minecraft.text.Style;
 import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
 import net.minecraft.util.Pair;
 
 import java.util.Collection;
@@ -13,15 +11,8 @@ import java.util.Collection;
  */
 public class ConfigUtil {
 
-    public static Text setFailCustom(String substr1, String value, Formatting color, String substr2, String value2, Formatting color2) {
-        return TextUtils.formattable(substr1).append(TextUtils.formattable(value).setStyle(Style.EMPTY.withColor(color)))
-                .append(TextUtils.formattable(substr2)).append(TextUtils.formattable(value2)).setStyle(Style.EMPTY
-                        .withColor(color2));
-    }
-
     private static Text setFailGeneric(String name, String value) {
-        return TextUtils.formattable("Failed to parse value ").append(TextUtils.formattable(value).setStyle(Style.EMPTY
-                .withColor(Formatting.RED))).append(TextUtils.formattable(" for option " + name));
+        return TextUtils.formattable("Failed to parse value " + value + " for option " + name);
     }
 
     public static Pair<Integer, Text> getIntOption(String name, String value, int defaultValue, int left, int right) {
@@ -29,22 +20,16 @@ public class ConfigUtil {
         try {
             tmp = Integer.parseInt(value);
             if (tmp < left || tmp > right) {
-                MutableText t = TextUtils.formattable("Invalid input ").append(TextUtils.formattable(value)
-                        .setStyle(Style.EMPTY.withColor(Formatting.RED))).append(TextUtils.formattable(": " + name +
-                        " only accepts values "));
+                MutableText t = TextUtils.formattable("Invalid input " + value + ": " + name + " only accepts values ");
                 if (left != Integer.MIN_VALUE && right != Integer.MAX_VALUE) {
-                    return new Pair<>(defaultValue, t.append(TextUtils.formattable("in range [")).append(TextUtils
-                                    .formattable("" + left).setStyle(Style.EMPTY.withColor(Formatting.GREEN)))
-                                    .append(TextUtils.formattable(", ")).append(TextUtils.formattable("" + right)
-                                    .setStyle(Style.EMPTY.withColor(Formatting.GREEN))).append(TextUtils.formattable("]")));
+                    return new Pair<>(defaultValue, t.append(TextUtils.formattable("in range [" + left + ", " + right
+                            + "]")));
                 }
                 else if (left != Integer.MIN_VALUE) {
-                    return new Pair<>(defaultValue, t.append(TextUtils.formattable(">= ")).append(TextUtils
-                            .formattable("" + left).setStyle(Style.EMPTY.withColor(Formatting.GREEN))));
+                    return new Pair<>(defaultValue, t.append(TextUtils.formattable(">= " + left)));
                 }
                 else if (right != Integer.MAX_VALUE) {
-                    return new Pair<>(defaultValue, t.append(TextUtils.formattable("<= ")).append(Text.literal("" + right)
-                            .setStyle(Style.EMPTY.withColor(Formatting.GREEN))));
+                    return new Pair<>(defaultValue, t.append(TextUtils.formattable("<= " + right)));
                 }
             }
         }
@@ -77,12 +62,11 @@ public class ConfigUtil {
 
     public static Pair<String, Text> getRestrictedStringOptions(String name, String value, String defaultValue, Collection<String> suggestions) {
         if (!suggestions.contains(value)) {
-            MutableText out = TextUtils.formattable("Invalid input ").append(TextUtils.formattable(value)
-                    .setStyle(Style.EMPTY.withColor(Formatting.RED))).append(TextUtils.formattable(": must be one of " +
-                    "["));
+            MutableText out = TextUtils.formattable("Invalid input \"" + value + "\" for option " + name + ": must " +
+                    "be one of " + "[");
             int i = 0;
             for (String suggestion : suggestions) {
-                out = out.append(TextUtils.formattable(suggestion).setStyle(Style.EMPTY.withColor(Formatting.GREEN)));
+                out = out.append(TextUtils.formattable(suggestion));
                 if (++i != suggestions.size()) {
                     out = out.append(TextUtils.formattable(","));
                 }

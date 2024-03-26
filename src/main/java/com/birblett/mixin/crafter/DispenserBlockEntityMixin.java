@@ -2,7 +2,6 @@ package com.birblett.mixin.crafter;
 
 import com.birblett.impl.crafter.CrafterScreenHandler;
 import com.birblett.lib.crafter.CrafterInterface;
-import com.birblett.util.ConfigUtil;
 import com.birblett.util.Constant;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -13,7 +12,6 @@ import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.SidedInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.recipe.Recipe;
 import net.minecraft.recipe.RecipeMatcher;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.util.collection.DefaultedList;
