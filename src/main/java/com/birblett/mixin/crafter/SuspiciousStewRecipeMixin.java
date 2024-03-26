@@ -32,7 +32,7 @@ public class SuspiciousStewRecipeMixin {
 
     @ModifyReturnValue(method = "matches", at = @At("RETURN"))
     private boolean matchCrafter(boolean out, @Local RecipeInputInventory recipeInputInventory) {
-        if (!out && recipeInputInventory.size() == 9) {
+        if ((boolean) ConfigOptions.CRAFTER_ENABLED.value() && !out && recipeInputInventory.size() == 9) {
             NbtCompound nbt;
             for (int i = 0; i < 9; i++) {
                 ItemStack stack = recipeInputInventory.getStack(i);
@@ -52,7 +52,8 @@ public class SuspiciousStewRecipeMixin {
     @Inject(method = "craft(Lnet/minecraft/inventory/RecipeInputInventory;Lnet/minecraft/registry/DynamicRegistryManager;)Lnet/minecraft/item/ItemStack;",
             at = @At("HEAD"), cancellable = true)
     private void craftCustom(RecipeInputInventory recipeInputInventory, DynamicRegistryManager dynamicRegistryManager, CallbackInfoReturnable<ItemStack> cir) {
-        if (recipeInputInventory.size() > 0 && recipeInputInventory.getStack(0).isOf(Items.IRON_INGOT)) {
+        if ((boolean) ConfigOptions.CRAFTER_ENABLED.value() && recipeInputInventory.size() > 0 && recipeInputInventory
+                .getStack(0).isOf(Items.IRON_INGOT)) {
             ItemStack stack = Items.DROPPER.getDefaultStack();
             stack.getOrCreateNbt().putInt("CustomModelData", 13579);
             if ((Boolean) ConfigOptions.USE_TRANSLATABLE_TEXT.value()) {

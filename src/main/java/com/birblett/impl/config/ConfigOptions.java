@@ -208,8 +208,24 @@ public enum ConfigOptions implements ConfigOption<Object> {
             return out.getRight();
         }
     },
-    CRAFTER_COOLDOWN("crafterCooldown", "4", "Gameticks of crafter block cooldown, will be " +
-            "instant if set to 0.", "0", "4") {
+    CRAFTER_ENABLED("crafterEnabled", "false", "Whether crafting the crafter is enabled or not",
+            true, "true", "false") {
+        private boolean value = false;
+
+        @Override
+        public Boolean value() {
+            return this.value;
+        }
+
+        @Override
+        public Text setFromString(String value) {
+            Pair<Boolean, Text> out = ConfigUtil.getBooleanOption(this.getName(), value, false);
+            this.value = out.getLeft();
+            return out.getRight();
+        }
+    },
+    CRAFTER_COOLDOWN("crafterCooldown", "4", "Gameticks of crafter cooldown, will be instant if " +
+            "set to 0.", "0", "4") {
         private int value = 4;
 
         @Override
@@ -224,8 +240,8 @@ public enum ConfigOptions implements ConfigOption<Object> {
             return out.getRight();
         }
     },
-    CRAFTER_QUASI_POWER("crafterQuasiPower", "false", "Whether crafter droppers can be quasi-" +
-            "powered or not.", true, "true", "false") {
+    CRAFTER_QUASI_POWER("crafterQuasiPower", "false", "Whether crafters can be quasi-powered or " +
+            "not.", true, "true", "false") {
         private boolean value = false;
 
         @Override
