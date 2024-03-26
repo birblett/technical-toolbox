@@ -26,7 +26,7 @@ public class ServerUtil {
 
     /**
      * Refreshes the server command tree.
-     * @param server target server\
+     * @param server target server
      */
     public static void refreshCommandTree(MinecraftServer server) {
         server.send(new ServerTask(server.getTicks(), () -> {

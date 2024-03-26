@@ -10,6 +10,9 @@ import org.spongepowered.asm.mixin.Shadow;
 
 import java.util.Map;
 
+/**
+ * Interface to remove existing commands from the command tree.
+ */
 @Mixin(CommandNode.class)
 public class CommandNodeMixin<S> implements CommandNodeModifier {
 

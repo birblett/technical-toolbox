@@ -7,6 +7,9 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+/**
+ * Config and alias initialize and cleanup.
+ */
 @Mixin(MinecraftServer.class)
 public class MinecraftServerMixin {
 

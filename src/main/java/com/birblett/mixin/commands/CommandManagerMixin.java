@@ -13,6 +13,9 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+/**
+ * Registers some custom commands. Aliases and camera command are registered on-demand instead of on initialization.
+ */
 @Mixin(CommandManager.class)
 public class CommandManagerMixin {
 

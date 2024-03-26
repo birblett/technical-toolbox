@@ -67,6 +67,64 @@ public class CrafterScreenHandler extends AbstractRecipeScreenHandler<RecipeInpu
         }
     }
 
+    @Override
+    public int getCraftingResultSlotIndex() {
+        return 0;
+    }
+
+    @Override
+    public int getCraftingWidth() {
+        return this.input.getWidth();
+    }
+
+    @Override
+    public int getCraftingHeight() {
+        return this.input.getHeight();
+    }
+
+    @Override
+    public int getCraftingSlotCount() {
+        return 10;
+    }
+
+    @Override
+    public RecipeBookCategory getCategory() {
+        return RecipeBookCategory.CRAFTING;
+    }
+
+    @Override
+    public boolean canInsertIntoSlot(int index) {
+        return index != this.getCraftingResultSlotIndex();
+    }
+
+    @Override
+    public boolean canInsertIntoSlot(ItemStack stack, Slot slot) {
+        return slot.inventory != this.result && super.canInsertIntoSlot(stack, slot);
+    }
+
+    @Override
+    public boolean canUse(PlayerEntity player) {
+        return this.blockEntity.canPlayerUse(player);
+    }
+
+    @Override
+    public boolean matches(Recipe<? super RecipeInputInventory> recipe) {
+        return recipe.matches(this.input, this.player.getWorld());
+    }
+
+    @Override
+    public void populateRecipeFinder(RecipeMatcher finder) {
+        this.input.provideRecipeInputs(finder);
+    }
+
+    private Optional<CraftingRecipe> getCurrentRecipe() {
+        World world = this.blockEntity.getWorld();
+        if (world == null) {
+            return Optional.empty();
+        }
+        return world.getRecipeManager().getFirstMatch(RecipeType.CRAFTING, this.input, world);
+    }
+
     /**
      * Force-update player screens with crafted items
      */
@@ -99,19 +157,9 @@ public class CrafterScreenHandler extends AbstractRecipeScreenHandler<RecipeInpu
     }
 
     @Override
-    public void populateRecipeFinder(RecipeMatcher finder) {
-        this.input.provideRecipeInputs(finder);
-    }
-
-    @Override
     public void clearCraftingSlots() {
         this.input.clear();
         this.result.clear();
-    }
-
-    @Override
-    public boolean matches(Recipe<? super RecipeInputInventory> recipe) {
-        return recipe.matches(this.input, this.player.getWorld());
     }
 
     /**
@@ -121,11 +169,6 @@ public class CrafterScreenHandler extends AbstractRecipeScreenHandler<RecipeInpu
     public void onClosed(PlayerEntity player) {
         ((CrafterInterface) this.blockEntity).getViewers().remove(this);
         super.onClosed(player);
-    }
-
-    @Override
-    public boolean canUse(PlayerEntity player) {
-        return this.blockEntity.canPlayerUse(player);
     }
 
     /**
@@ -157,49 +200,6 @@ public class CrafterScreenHandler extends AbstractRecipeScreenHandler<RecipeInpu
             }
         }
         return itemStack;
-    }
-
-    @Override
-    public boolean canInsertIntoSlot(ItemStack stack, Slot slot) {
-        return slot.inventory != this.result && super.canInsertIntoSlot(stack, slot);
-    }
-
-    @Override
-    public int getCraftingResultSlotIndex() {
-        return 0;
-    }
-
-    @Override
-    public int getCraftingWidth() {
-        return this.input.getWidth();
-    }
-
-    @Override
-    public int getCraftingHeight() {
-        return this.input.getHeight();
-    }
-
-    @Override
-    public int getCraftingSlotCount() {
-        return 10;
-    }
-
-    @Override
-    public RecipeBookCategory getCategory() {
-        return RecipeBookCategory.CRAFTING;
-    }
-
-    @Override
-    public boolean canInsertIntoSlot(int index) {
-        return index != this.getCraftingResultSlotIndex();
-    }
-
-    private Optional<CraftingRecipe> getCurrentRecipe() {
-        World world = this.blockEntity.getWorld();
-        if (world == null) {
-            return Optional.empty();
-        }
-        return world.getRecipeManager().getFirstMatch(RecipeType.CRAFTING, this.input, world);
     }
 
     /**

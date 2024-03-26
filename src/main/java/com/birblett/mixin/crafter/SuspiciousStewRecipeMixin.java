@@ -19,7 +19,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * Disgusting hardcoded recipes WHY was nbt crafting so hard to do
+ * Disgusting hardcoded recipes WHY did it take til 1.21 for anything SIMILAR to nbt crafting to be added
  */
 @Mixin(SuspiciousStewRecipe.class)
 public class SuspiciousStewRecipeMixin {

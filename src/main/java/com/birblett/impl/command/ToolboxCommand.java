@@ -27,6 +27,7 @@ public class ToolboxCommand {
                         .then(CommandManager.argument("config_option", StringArgumentType.string())
                                 .suggests((context, builder) -> CommandSource.suggestMatching(TechnicalToolbox.CONFIG_MANAGER
                                         .getAllConfigOptions(), builder))
+                                // branch for modifying configs; requires admin perms
                                 .then(CommandManager.argument("config_value", StringArgumentType.string())
                                         .requires(source -> source.hasPermissionLevel(4))
                                         .suggests((context, builder) -> {
@@ -80,6 +81,7 @@ public class ToolboxCommand {
                                     }
                                     return 1;
                                 })))
+                // force-reloads configs from disk
                 .then(CommandManager.literal("reload_configs")
                         .requires(source -> source.hasPermissionLevel(4))
                         .executes(context -> {
@@ -88,6 +90,7 @@ public class ToolboxCommand {
                             TechnicalToolbox.CONFIG_MANAGER.readConfigs();
                             return 1;
                         }))
+                // force-writes configs to disk
                 .then(CommandManager.literal("write_configs")
                         .requires(source -> source.hasPermissionLevel(4))
                         .executes(context -> {

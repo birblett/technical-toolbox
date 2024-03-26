@@ -18,11 +18,17 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+/**
+ * Modifies certain crafting-related event behavior while using the crafter GUI
+ */
 @Mixin(ServerPlayNetworkHandler.class)
 public class ServerPlayNetworkHandlerMixin {
 
     @Shadow public ServerPlayerEntity player;
 
+    /**
+     * Removes disabled slots when crafting book is used
+     */
     @Inject(method = "onCraftRequest", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/MinecraftServer;getRecipeManager()Lnet/minecraft/recipe/RecipeManager;"))
     private void cancelCraftRequest(CraftRequestC2SPacket packet, CallbackInfo ci) {
         if (this.player.currentScreenHandler instanceof CrafterScreenHandler c) {
@@ -35,6 +41,9 @@ public class ServerPlayNetworkHandlerMixin {
         }
     }
 
+    /**
+     * Prevents manual crafting in the crafter and also handles slot toggling
+     */
     @WrapOperation(method = "onClickSlot", at = @At(value = "INVOKE", target = "Lnet/minecraft/screen/ScreenHandler;onSlotClick(IILnet/minecraft/screen/slot/SlotActionType;Lnet/minecraft/entity/player/PlayerEntity;)V"))
     private void cancelCraft(ScreenHandler screenHandler, int i, int button, SlotActionType action, PlayerEntity player, Operation<Void> original) {
         if (screenHandler instanceof CrafterScreenHandler c) {
