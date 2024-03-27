@@ -208,6 +208,38 @@ public enum ConfigOptions implements ConfigOption<Object> {
             return out.getRight();
         }
     },
+    COPPER_BULB_ENABLED("copperBulbEnabled", "false", "Whether crafting copper bulbs is enabled " +
+            "or not", true, "true", "false") {
+        private boolean value = false;
+
+        @Override
+        public Boolean value() {
+            return this.value;
+        }
+
+        @Override
+        public Text setFromString(String value) {
+            Pair<Boolean, Text> out = ConfigUtil.getBooleanOption(this.getName(), value, false);
+            this.value = out.getLeft();
+            return out.getRight();
+        }
+    },
+    COPPER_BULB_DELAY("copperBulbDelay", "0", "Gameticks of copper bulb delay when powered",
+            "0", "1") {
+        private int value = 0;
+
+        @Override
+        public Integer value() {
+            return this.value;
+        }
+
+        @Override
+        public Text setFromString(String value) {
+            Pair<Integer, Text> out = ConfigUtil.getIntOption(this.getName(), value, 4, 0, Integer.MAX_VALUE);
+            this.value = out.getLeft();
+            return out.getRight();
+        }
+    },
     CRAFTER_ENABLED("crafterEnabled", "false", "Whether crafting the crafter is enabled or not",
             true, "true", "false") {
         private boolean value = false;
