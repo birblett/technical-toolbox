@@ -1,0 +1,29 @@
+{
+  "parent": "minecraft:block/redstone_lamp",
+  "overrides": [
+    {
+      "predicate": {
+        "custom_model_data": 1
+      },
+      "model": "technical_toolbox:block/copper_bulb"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 2
+      },
+      "model": "technical_toolbox:block/exposed_copper_bulb"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 3
+      },
+      "model": "technical_toolbox:block/weathered_copper_bulb"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 4
+      },
+      "model": "technical_toolbox:block/oxidized_copper_bulb"
+    }
+  ]
+}

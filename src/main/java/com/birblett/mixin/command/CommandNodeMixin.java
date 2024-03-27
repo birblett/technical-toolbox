@@ -1,4 +1,4 @@
-package com.birblett.mixin.commands;
+package com.birblett.mixin.command;
 
 import com.birblett.lib.command.CommandNodeModifier;
 import com.mojang.brigadier.tree.ArgumentCommandNode;

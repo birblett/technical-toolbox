@@ -81,20 +81,20 @@ public class ToolboxCommand {
                                     }
                                     return 1;
                                 })))
-                // force-reloads configs from disk
+                // force-reloads configs from storage
                 .then(CommandManager.literal("reload_configs")
                         .requires(source -> source.hasPermissionLevel(4))
                         .executes(context -> {
-                            context.getSource().sendFeedback(() -> TextUtils.formattable("Reloading configs from disk"),
+                            context.getSource().sendFeedback(() -> TextUtils.formattable("Reloading configs from storage"),
                                     true);
                             TechnicalToolbox.CONFIG_MANAGER.readConfigs();
                             return 1;
                         }))
-                // force-writes configs to disk
-                .then(CommandManager.literal("write_configs")
+                // force-writes configs to storage
+                .then(CommandManager.literal("save_configs")
                         .requires(source -> source.hasPermissionLevel(4))
                         .executes(context -> {
-                            context.getSource().sendFeedback(() -> TextUtils.formattable("Writing configs to disk"),
+                            context.getSource().sendFeedback(() -> TextUtils.formattable("Saving configs to storage"),
                                     true);
                             TechnicalToolbox.CONFIG_MANAGER.writeConfigs();
                             return 1;

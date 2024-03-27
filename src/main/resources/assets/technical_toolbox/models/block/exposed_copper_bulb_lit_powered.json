@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/cube_all",
+  "textures": {
+    "all": "technical_toolbox:block/exposed_copper_bulb_lit_powered"
+  }
+}

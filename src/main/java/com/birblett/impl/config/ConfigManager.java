@@ -49,7 +49,7 @@ public class ConfigManager {
     }
 
     /**
-     * Called on server close, writes configs back to disk.
+     * Called on server close, writes configs back to storage.
      */
     public void onServerClose() {
         this.writeConfigs();
@@ -57,7 +57,7 @@ public class ConfigManager {
     }
 
     /**
-     * Loads configs from disk into memory.
+     * Loads configs from storage into memory.
      */
     public void readConfigs() {
         try (BufferedReader bufferedReader = Files.newBufferedReader(this.getFile())) {
@@ -108,7 +108,7 @@ public class ConfigManager {
     }
 
     /**
-     * Writes configs to disk.
+     * Writes configs to storage.
      */
     public void writeConfigs() {
         try (BufferedWriter bufferedWriter = Files.newBufferedWriter(this.getFile())) {

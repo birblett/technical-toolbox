@@ -1,4 +1,4 @@
-package com.birblett.mixin.commands;
+package com.birblett.mixin.command;
 
 import com.birblett.lib.command.CommandSourceModifier;
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;

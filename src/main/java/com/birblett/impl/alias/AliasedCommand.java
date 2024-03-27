@@ -45,6 +45,7 @@ public class AliasedCommand {
         this.alias = alias;
         this.commands.add(command);
         this.permission = (int) ConfigOptions.ALIAS_DEFAULT_PERMISSION.value();
+        this.separator = (String) ConfigOptions.ALIAS_DEFAULT_SEPARATOR.value();
         this.updateArgCount();
         this.register(dispatcher);
     }
@@ -109,16 +110,7 @@ public class AliasedCommand {
                 .then(CommandManager.literal("help")
                         .requires(source -> this.argCount > 0)
                         .executes(context -> {
-                            MutableText text;
-                            if (this.argCount > 1) {
-                                text = TextUtils.formattable("Requires " + this.argCount + " arguments (\"")
-                                        .append(TextUtils.formattable(this.separator).formatted(Formatting.YELLOW))
-                                        .append("\" separated): ");
-                            }
-                            else {
-                                text = TextUtils.formattable("Requires " + this.argCount + " arguments: ");
-                            }
-                            text.append(this.getCommaSeparateArgs());
+                            MutableText text = TextUtils.formattable("Syntax: ").append(this.getSyntax());
                             context.getSource().sendFeedback(() -> text, false);
                             return 1;
                         }))

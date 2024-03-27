@@ -82,7 +82,7 @@ public class AliasManager {
     }
 
     /**
-     * Writes all aliases to disk.
+     * Writes all aliases to storage.
      */
     public void writeAliases() {
         File directory = new File(this.getDirectory().toString());

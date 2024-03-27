@@ -4,7 +4,6 @@ import com.birblett.lib.crafter.CrafterInterface;
 import com.birblett.mixin.crafter.CraftingInventoryAccess;
 import com.birblett.util.TextUtils;
 import net.minecraft.block.Blocks;
-import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.DispenserBlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;

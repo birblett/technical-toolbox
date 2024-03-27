@@ -24,6 +24,7 @@ import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.DirectionProperty;
 import net.minecraft.text.Style;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
@@ -38,7 +39,6 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
-import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
@@ -247,7 +247,7 @@ public abstract class DispenserBlockMixin extends BlockWithEntity implements Blo
         if (world.getBlockEntity(pos) instanceof DispenserBlockEntity blockEntity && world.getBlockState(pos).get(Constant
                 .IS_CRAFTER)) {
             if ((Boolean) ConfigOptions.USE_TRANSLATABLE_TEXT.value()) {
-                blockEntity.setCustomName(TextUtils.translatable("container.crafter"));
+                blockEntity.setCustomName(TextUtils.translatable("container.crafter").setStyle(Style.EMPTY.withItalic(false)));
             }
             else {
                 blockEntity.setCustomName(TextUtils.formattable("Crafter").setStyle(Style.EMPTY.withItalic(false)));

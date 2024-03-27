@@ -1,0 +1,58 @@
+{
+  "variants": {
+    "oxidation=0,lit=false": {
+      "model": "minecraft:block/redstone_lamp"
+    },
+    "oxidation=0,lit=true": {
+      "model": "minecraft:block/redstone_lamp_on"
+    },
+    "oxidation=1,lit=false,powered=false": {
+      "model": "technical_toolbox:block/copper_bulb"
+    },
+    "oxidation=1,lit=true,powered=false": {
+      "model": "technical_toolbox:block/copper_bulb_lit"
+    },
+    "oxidation=1,lit=false,powered=true": {
+      "model": "technical_toolbox:block/copper_bulb_powered"
+    },
+    "oxidation=1,lit=true,powered=true": {
+      "model": "technical_toolbox:block/copper_bulb_lit_powered"
+    },
+    "oxidation=2,lit=false,powered=false": {
+      "model": "technical_toolbox:block/exposed_copper_bulb"
+    },
+    "oxidation=2,lit=true,powered=false": {
+      "model": "technical_toolbox:block/exposed_copper_bulb_lit"
+    },
+    "oxidation=2,lit=false,powered=true": {
+      "model": "technical_toolbox:block/exposed_copper_bulb_powered"
+    },
+    "oxidation=2,lit=true,powered=true": {
+      "model": "technical_toolbox:block/exposed_copper_bulb_lit_powered"
+    },
+    "oxidation=3,lit=false,powered=false": {
+      "model": "technical_toolbox:block/weathered_copper_bulb"
+    },
+    "oxidation=3,lit=true,powered=false": {
+      "model": "technical_toolbox:block/weathered_copper_bulb_lit"
+    },
+    "oxidation=3,lit=false,powered=true": {
+      "model": "technical_toolbox:block/weathered_copper_bulb_powered"
+    },
+    "oxidation=3,lit=true,powered=true": {
+      "model": "technical_toolbox:block/weathered_copper_bulb_lit_powered"
+    },
+    "oxidation=4,lit=false,powered=false": {
+      "model": "technical_toolbox:block/oxidized_copper_bulb"
+    },
+    "oxidation=4,lit=true,powered=false": {
+      "model": "technical_toolbox:block/oxidized_copper_bulb_lit"
+    },
+    "oxidation=4,lit=false,powered=true": {
+      "model": "technical_toolbox:block/oxidized_copper_bulb_powered"
+    },
+    "oxidation=4,lit=true,powered=true": {
+      "model": "technical_toolbox:block/oxidized_copper_bulb_lit_powered"
+    }
+  }
+}

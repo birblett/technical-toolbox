@@ -1,4 +1,4 @@
-package com.birblett.mixin.commands;
+package com.birblett.mixin.command;
 
 import com.birblett.impl.command.AliasCommand;
 import com.birblett.impl.command.ToolboxCommand;

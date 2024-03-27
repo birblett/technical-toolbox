@@ -34,7 +34,7 @@ public enum ConfigOptions implements ConfigOption<Object> {
         }
     },
     CONFIG_WRITE_ON_CHANGE("configWriteOnChange", "false", "If enabled, changing configurations will" +
-            " also write to disk.", "false", "true") {
+            " also write to storage.", "false", "true") {
         private boolean value = false;
 
         @Override
@@ -50,7 +50,7 @@ public enum ConfigOptions implements ConfigOption<Object> {
         }
     },
     CONFIG_WRITE_ONLY_CHANGES("configWriteOnlyChanges", "true", "If enabled, only changed " +
-            "configurations will be written to disk.", true, "false", "true") {
+            "configurations will be written to storage.", true, "false", "true") {
         private boolean value = true;
 
         @Override
@@ -66,7 +66,7 @@ public enum ConfigOptions implements ConfigOption<Object> {
         }
     },
     ALIAS_DEFAULT_PERMISSION("aliasDefaultPermission", "0", "Default permission level required to" +
-            " use aliases.", "0", "4") {
+            " execute aliases.", "0", "4") {
         private int value = 0;
 
         @Override
@@ -81,8 +81,8 @@ public enum ConfigOptions implements ConfigOption<Object> {
             return out.getRight();
         }
     },
-    ALIAS_DEFAULT_SEPARATOR("aliasDefaultSeparator", ",", "Default separator for new aliases.",
-            ",", "\" \"") {
+    ALIAS_DEFAULT_SEPARATOR("aliasDefaultSeparator", ",", "Default argument separator for new " +
+            "aliases.", ",", "\" \"") {
         private String value = ",";
 
         @Override
