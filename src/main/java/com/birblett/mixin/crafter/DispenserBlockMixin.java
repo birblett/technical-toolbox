@@ -5,6 +5,7 @@ import com.birblett.lib.crafter.CrafterInterface;
 import com.birblett.lib.crafter.RecipeCache;
 import com.birblett.util.Constant;
 import com.birblett.util.TextUtils;
+import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import com.llamalad7.mixinextras.sugar.Local;
 import net.minecraft.block.*;
@@ -150,10 +151,10 @@ public abstract class DispenserBlockMixin extends BlockWithEntity implements Blo
     /**
      * Disables quasi-power for crafters if matching config option is disabled
      */
-    @ModifyVariable(method = "neighborUpdate", at = @At(value = "INVOKE", target = "Lnet/minecraft/block/BlockState;get(Lnet/minecraft/state/property/Property;)Ljava/lang/Comparable;"), index = 7)
+    @ModifyExpressionValue(method = "neighborUpdate", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/World;isReceivingRedstonePower(Lnet/minecraft/util/math/BlockPos;)Z", ordinal = 1))
     private boolean disableQuasi(boolean b, @Local BlockState state, @Local World world, @Local(ordinal = 0) BlockPos pos) {
         if (state.get(Constant.IS_CRAFTER) && !(Boolean) ConfigOptions.CRAFTER_QUASI_POWER.value()) {
-            return b && world.isReceivingRedstonePower(pos);
+            return false;
         }
         return b;
     }
