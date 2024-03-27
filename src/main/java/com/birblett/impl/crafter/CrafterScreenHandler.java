@@ -3,6 +3,8 @@ package com.birblett.impl.crafter;
 import com.birblett.lib.crafter.CrafterInterface;
 import com.birblett.mixin.crafter.CraftingInventoryAccess;
 import com.birblett.util.TextUtils;
+import net.minecraft.block.Blocks;
+import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.DispenserBlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
@@ -130,7 +132,7 @@ public class CrafterScreenHandler extends AbstractRecipeScreenHandler<RecipeInpu
      */
     @Override
     public void onContentChanged(Inventory inventory) {
-        if (this.player instanceof ServerPlayerEntity) {
+        if (this.player instanceof ServerPlayerEntity && this.blockEntity.getWorld() != null) {
             ServerPlayNetworkHandler handler = ((ServerPlayerEntity) this.player).networkHandler;
             CraftingInventoryAccess c = (CraftingInventoryAccess) this.input;
             // same dumb hack from dispenserblockmixin, remove disabled slot items
@@ -152,6 +154,7 @@ public class CrafterScreenHandler extends AbstractRecipeScreenHandler<RecipeInpu
             }
             this.result.setStack(0, maybeRecipe.isPresent() ? maybeRecipe.get().getOutput(this.player.getWorld()
                     .getRegistryManager()) : ItemStack.EMPTY);
+            this.blockEntity.getWorld().updateComparators(this.blockEntity.getPos(), Blocks.DISPENSER);
             handler.sendPacket(new ScreenHandlerSlotUpdateS2CPacket(this.syncId, 0, 0, this.result.getStack(0)));
         }
     }
