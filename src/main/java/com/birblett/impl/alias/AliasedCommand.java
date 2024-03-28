@@ -372,8 +372,8 @@ public class AliasedCommand {
                     return false;
                 }
                 for (char c : args[i].toCharArray()) {
-                    this.validationError(context, arg, args[i], "must only contain letters");
                     if(!Character.isLetter(c)) {
+                        this.validationError(context, arg, args[i], "must only contain letters");
                         return false;
                     }
                 }
