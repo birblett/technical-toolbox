@@ -21,5 +21,5 @@ Configurations and aliases are generated on a per-world basis. By default, all o
 
 * [Aliases](https://github.com/birblett/technical-toolbox/wiki/Aliases)
 * [Camera Mode](https://github.com/birblett/technical-toolbox/wiki/Camera-Mode#list-of-configurable-options)
-* [Crafter and Copper Block]([https://github.com/birblett/technical-toolbox/wiki/Aliases](https://github.com/birblett/technical-toolbox/wiki/Crafter-and-Copper-Block#setup))
+* [Crafter and Copper Block](https://github.com/birblett/technical-toolbox/wiki/Crafter-and-Copper-Block#setup)
 * [Mechanics](https://github.com/birblett/technical-toolbox/wiki/Mechanics#list-of-configurable-mechanics)
