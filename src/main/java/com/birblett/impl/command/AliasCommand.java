@@ -80,14 +80,14 @@ public class AliasCommand {
                                     return 0;
                                 })))
                 // reads all alias from file
-                .then(CommandManager.literal("read")
+                .then(CommandManager.literal("reload")
                         .requires(source -> source.hasPermissionLevel(4))
                         .executes(context -> {
                             TechnicalToolbox.ALIAS_MANAGER.readAliases();
                             return 1;
                         }))
                 // writes all aliases to file
-                .then(CommandManager.literal("write")
+                .then(CommandManager.literal("save")
                         .requires(source -> source.hasPermissionLevel(4))
                         .executes(context -> {
                             TechnicalToolbox.ALIAS_MANAGER.writeAliases();
