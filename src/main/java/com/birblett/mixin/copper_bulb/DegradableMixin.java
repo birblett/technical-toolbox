@@ -10,20 +10,29 @@ import net.minecraft.block.Oxidizable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 
+/**
+ * Custom degradation logic for copper bulbs
+ */
 @Mixin(Degradable.class)
 public interface DegradableMixin <T extends Enum<T>> {
 
+    /**
+     * Prevent regular redstone lamps and waxed bulbs from being factored into degradation calculation
+     */
     @ModifyExpressionValue(method = "tryDegrade", at = @At(value = "INVOKE", target = "Lnet/minecraft/util/math/BlockPos;equals(Ljava/lang/Object;)Z"))
     private boolean copperBulbState(boolean b, @Local BlockState state) {
-        if (state.isOf(Blocks.REDSTONE_BLOCK) && (state.get(Constant.OXIDATION) == 0 || state.get(Constant.WAXED))) {
+        if (state.isOf(Blocks.REDSTONE_LAMP) && (state.get(Constant.OXIDATION) == 0 || state.get(Constant.WAXED))) {
             return true;
         }
         return b;
     }
 
+    /**
+     * Degradation outputs for different levels of oxidation
+     */
     @ModifyExpressionValue(method = "tryDegrade", at = @At(value = "INVOKE", target = "Lnet/minecraft/block/Degradable;getDegradationLevel()Ljava/lang/Enum;"))
     private Enum copperBulbDegradationLevel(Enum e, @Local BlockState state) {
-        if (state.isOf(Blocks.REDSTONE_BLOCK)) {
+        if (state.isOf(Blocks.REDSTONE_LAMP)) {
             switch (state.get(Constant.OXIDATION)) {
                 case 1 -> {
                     return Oxidizable.OxidationLevel.UNAFFECTED;

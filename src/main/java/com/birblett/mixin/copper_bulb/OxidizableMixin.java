@@ -17,6 +17,9 @@ import java.util.Optional;
 @Mixin(Oxidizable.class)
 public interface OxidizableMixin {
 
+    /**
+     * Get decreased bulb oxidation for each level of oxidation above 1
+     */
     @Inject(method = "getDecreasedOxidationState", at = @At("HEAD"), cancellable = true)
     private static void copperBulbDecreasedOxidationState(BlockState state, CallbackInfoReturnable<Optional<BlockState>> cir) {
         if (state.isOf(Blocks.REDSTONE_LAMP)) {
@@ -33,6 +36,9 @@ public interface OxidizableMixin {
         }
     }
 
+    /**
+     * Get increased bulb oxidation for each level of oxidatio below 4
+     */
     @Inject(method = "getDegradationResult", at = @At("HEAD"), cancellable = true)
     private void copperBulbDegradationResult(BlockState state, CallbackInfoReturnable<Optional<BlockState>> cir) {
         if (state.isOf(Blocks.REDSTONE_LAMP)) {
@@ -49,6 +55,9 @@ public interface OxidizableMixin {
         }
     }
 
+    /**
+     * For lightning de-oxidation calculation
+     */
     @Inject(method = "getUnaffectedOxidationState", at = @At("HEAD"), cancellable = true)
     private static void copperBulbUnaffectedOxidationState(BlockState state, CallbackInfoReturnable<BlockState> cir) {
         if (state.isOf(Blocks.REDSTONE_LAMP)) {
