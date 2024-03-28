@@ -104,6 +104,12 @@ public class ConfigManager {
         }
         catch (IOException e) {
             TechnicalToolbox.warn("Configuration file 'toolbox.conf' was not found, using defaults");
+            try {
+                BufferedWriter bufferedWriter = Files.newBufferedWriter(this.getFile());
+                bufferedWriter.write("");
+            } catch (IOException ex) {
+                TechnicalToolbox.error("Failed to generate configuration file `toolbox.conf`");
+            }
         }
     }
 
