@@ -23,9 +23,9 @@ public class AliasCommand {
 
     public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
         dispatcher.register((CommandManager.literal("alias")
-                .requires(source -> source.hasPermissionLevel(4))
                 // adds an alias by name, with a given command
                 .then(CommandManager.literal("add")
+                        .requires(source -> source.hasPermissionLevel(4))
                         .then(CommandManager.argument("alias", StringArgumentType.string())
                                 .then(CommandManager.argument("command", StringArgumentType.greedyString())
                                         .executes(context -> {
@@ -57,6 +57,7 @@ public class AliasCommand {
                                         }))))
                 // removes an alias by name completely
                 .then(CommandManager.literal("remove")
+                        .requires(source -> source.hasPermissionLevel(4))
                         .then(CommandManager.argument("alias", StringArgumentType.string())
                                 .suggests((context, builder) -> CommandSource.suggestMatching(AliasManager.ALIASES.keySet(), builder))
                                 .executes(context -> {
@@ -80,18 +81,34 @@ public class AliasCommand {
                                 })))
                 // reads all alias from file
                 .then(CommandManager.literal("read")
+                        .requires(source -> source.hasPermissionLevel(4))
                         .executes(context -> {
                             TechnicalToolbox.ALIAS_MANAGER.readAliases();
                             return 1;
                         }))
                 // writes all aliases to file
                 .then(CommandManager.literal("write")
+                        .requires(source -> source.hasPermissionLevel(4))
                         .executes(context -> {
                             TechnicalToolbox.ALIAS_MANAGER.writeAliases();
                             return 1;
                         }))
+                // lists all aliases the executing player can use
+                .then(CommandManager.literal("list")
+                        .executes(context -> {
+                            MutableText text = TextUtils.formattable("Aliases:");
+                            for (AliasedCommand cmd : AliasManager.ALIASES.values()) {
+                                if (!context.getSource().isExecutedByPlayer() || context.getSource().getPlayer() != null
+                                        && context.getSource().getPlayer().hasPermissionLevel(cmd.getPermission())) {
+                                    text.append("\n  " + cmd.getAlias() + ": ").append(cmd.getSyntax());
+                                }
+                            }
+                            context.getSource().sendFeedback(() -> text, false);
+                            return 1;
+                        }))
                 // modifies an existing alias
                 .then(CommandManager.literal("modify")
+                        .requires(source -> source.hasPermissionLevel(4))
                         .then(CommandManager.argument("alias", StringArgumentType.string())
                                 .suggests((context, builder) -> CommandSource.suggestMatching(AliasManager.ALIASES.keySet(), builder))
                                 // add a line to an alias

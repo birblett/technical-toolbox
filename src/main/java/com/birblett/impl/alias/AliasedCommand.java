@@ -37,9 +37,10 @@ public class AliasedCommand {
     private final Set<String> args = new LinkedHashSet<>();
     private int argCount;
     private int permission;
-    private String separator = " ";
+    private String separator;
     private static final Pattern ARG = Pattern.compile("\\{\\$[^{$}]+}");
-    private static final String[] VALID = new String[]{"int", "float", "double", "boolean", "word", "alphanumeric"};
+    private static final String[] VALID = new String[]{"int", "float", "double", "boolean", "word", "letters",
+            "alphanumeric", "equals", "ci_equals", "regex"};
 
     public AliasedCommand(String alias, String command, CommandDispatcher<ServerCommandSource> dispatcher) {
         this.alias = alias;
@@ -57,6 +58,10 @@ public class AliasedCommand {
         this.separator = separator;
         this.updateArgCount();
         this.register(dispatcher);
+    }
+
+    public String getAlias() {
+        return this.alias;
     }
 
     public int getArgCount() {
@@ -210,7 +215,7 @@ public class AliasedCommand {
         out.append(TextUtils.formattable(this.alias).formatted(Formatting.YELLOW)).append(" ");
         int i = 0;
         for (String arg : this.args) {
-            out.append(TextUtils.formattable(arg).formatted(Formatting.YELLOW));
+            out.append(TextUtils.formattable(arg).formatted(Formatting.GREEN));
             ++i;
             if (i < this.args.size()) {
                 out.append(TextUtils.formattable(separator).formatted(Formatting.YELLOW));
@@ -297,59 +302,127 @@ public class AliasedCommand {
             return true;
         }
         catch (NumberFormatException e) {
-            context.getSource().sendError(TextUtils.formattable(argName + ": Argument \"" + arg + "\" not a valid " + type));
+            this.validationError(context, argName, arg, "not a valid " + type);
             return false;
         }
     }
 
     /**
-     * Performs validation on a specific command argument, can handle ints, floats, doubles, bools, words, and alphanumeric string
+     * Performs validation on a specific command argument, with various types of validators accepted<br/>
+     * dude this is unreadable oh my god this needs a refactor
      * @param context command context
-     * @param type one of int, float, double, boolean, word, or alphanumeric
+     * @param type see {@link AliasedCommand#VALID} for accepted validation types
      * @param command alias command string
      * @param args provided command args
      * @return false if invalid or not a valid type, otherwise true
      */
     private boolean validate(CommandContext<ServerCommandSource> context, @NotNull String type, String command, String[] args) {
         String arg = command.substring(0, command.length() - 1).replace(type + "(", "");
-        if (!this.args.contains(arg)) {
+        String[] argList = arg.split(" *" + this.separator + " *");
+        if (!this.args.contains(argList[0])) {
             context.getSource().sendError(TextUtils.formattable("No argument \"" + arg + "\" for alias " + this.alias));
             return false;
         }
         int i = 0;
         for (String tmp : this.args) {
-            if (arg.equals(tmp)) {
+            if (argList[0].equals(tmp)) {
                 break;
             }
             ++i;
         }
         switch (type) {
             case "int" -> {
+                if (!this.exactArgumentCount(context, argList, type, 1)) {
+                    return false;
+                }
                 return this.parseNumber(arg, args[i], Integer::parseInt, type, context);
             }
             case "float" -> {
+                if (!this.exactArgumentCount(context, argList, type, 1)) {
+                    return false;
+                }
                 return this.parseNumber(arg, args[i], Float::parseFloat, type, context);
             }
             case "double" -> {
+                if (!this.exactArgumentCount(context, argList, type, 1)) {
+                    return false;
+                }
                 return this.parseNumber(arg, args[i], Double::parseDouble, type, context);
             }
             case "boolean" -> {
+                if (!this.exactArgumentCount(context, argList, type, 1)) {
+                    return false;
+                }
                 if (!(args[i].equalsIgnoreCase("true") || args[i].equalsIgnoreCase("false"))) {
-                    context.getSource().sendError(TextUtils.formattable("Argument \"" + args[i] + "\" not a valid "
-                            + type));
+                    this.validationError(context, arg, args[i], "not a valid boolean");
                     return false;
                 }
             }
             case "word" -> {
+                if (!this.exactArgumentCount(context, argList, type, 1)) {
+                    return false;
+                }
                 if (args[i].contains(" ")) {
-                    context.getSource().sendError(TextUtils.formattable("Argument \"" + args[i] + "\" not a valid "
-                            + type));
+                    this.validationError(context, arg, args[i], "not a valid word");
                     return false;
                 }
             }
+            case "letters" -> {
+                if (!this.exactArgumentCount(context, argList, type, 1)) {
+                    return false;
+                }
+                for (char c : args[i].toCharArray()) {
+                    this.validationError(context, arg, args[i], "must only contain letters");
+                    if(!Character.isLetter(c)) {
+                        return false;
+                    }
+                }
+            }
             case "alphanumeric" -> {
+                if (!this.exactArgumentCount(context, argList, type, 1)) {
+                    return false;
+                }
                 if (!StringUtils.isAlphanumeric(args[i])) {
-                    context.getSource().sendError(TextUtils.formattable("Argument \"" + args[i] + "\" not alphanumeric"));
+                    this.validationError(context, arg, args[i], "not alphanumeric");
+                    return false;
+                }
+            }
+            case "equals", "ci_equals" -> {
+                boolean isIn = false;
+                StringBuilder validArgs = new StringBuilder();
+                if (!this.multiArgumentCount(context, argList, type, 2)) {
+                    return false;
+                }
+                boolean caseInsensitive = type.equals("ci_equals");
+                for (int j = 1; j < argList.length; j++) {
+                    String cmp1 = caseInsensitive ? args[i].toLowerCase() : args[i];
+                    String cmp2 = caseInsensitive ? argList[j].toLowerCase() : argList[j];
+                    validArgs.append(cmp2);
+                    if (j < argList.length - 1) {
+                        validArgs.append(", ");
+                    }
+                    if (cmp1.equals(cmp2)) {
+                        isIn = true;
+                    }
+                }
+                if (!isIn) {
+                    this.validationError(context, argList[0], args[i], "should be one of [" + validArgs + "]" +
+                            (caseInsensitive ? " (case insensitive)" : ""));
+                    return false;
+                }
+            }
+            case "regex" -> {
+                if (!this.exactArgumentCount(context, argList, type, 2)) {
+                    return false;
+                }
+                String re = argList[1];
+                int len = re.length();
+                if (re.charAt(0) == '"' && re.charAt(len - 1) == '"') {
+                    re = re.substring(1, len - 1);
+                }
+                TechnicalToolbox.log("{} {} {}", args[i], re, argList[0].matches(re));
+                if (!args[i].matches(re)) {
+                    this.validationError(context, argList[0], args[i], "does not match regex \"" + argList[1] + "\"");
                     return false;
                 }
             }
@@ -359,6 +432,28 @@ public class AliasedCommand {
             }
         }
         return true;
+    }
+
+    private boolean exactArgumentCount(CommandContext<ServerCommandSource> context, String[] argList, String validator, int count) {
+        if (argList.length != count) {
+            context.getSource().sendError(TextUtils.formattable("Syntax error: \"" + validator + "\" validator " +
+                    "requires " + count + " argument" + (count > 1 ? "s" : "")));
+            return false;
+        }
+        return true;
+    }
+
+    private boolean multiArgumentCount(CommandContext<ServerCommandSource> context, String[] argList, String validator, int atLeast) {
+        if (argList.length < atLeast) {
+            context.getSource().sendError(TextUtils.formattable("Syntax error: \"" + validator + "\" validator " +
+                    "requires at least " + atLeast + " arguments"));
+            return false;
+        }
+        return true;
+    }
+
+    private void validationError(CommandContext<ServerCommandSource> context, String name, String arg, String isNot) {
+        context.getSource().sendError(TextUtils.formattable(name + ": \"" + arg + "\" " + isNot));
     }
 
     /**
