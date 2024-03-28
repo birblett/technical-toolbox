@@ -7,7 +7,7 @@ import org.slf4j.LoggerFactory;
 
 public class TechnicalToolbox {
 
-    public static final Logger LOGGER = LoggerFactory.getLogger("technical-toolbox");
+    public static final Logger LOGGER = LoggerFactory.getLogger("technical_toolbox");
     public static final ConfigManager CONFIG_MANAGER = new ConfigManager();
     public static final AliasManager ALIAS_MANAGER = new AliasManager();
 
