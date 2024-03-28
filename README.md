@@ -13,6 +13,8 @@ All features are disabled by default, and are enabled on a per-world basis. See 
 4. `/cam` command, similar to the [Carpet Mod camera Scarpet app](https://github.com/gnembon/fabric-carpet/wiki/Built-in-Scarpet-apps#camera-app-camerasc)
 5. Toggleable mechanic forward-ports and bug unfixes
 
+***
+
 ### Setup
 
 Configurations and aliases are generated on a per-world basis. By default, all options will be disabled (subject to change!). If you wish to use use this mod's features on a new server, please refer to the [configuration command](https://github.com/birblett/technical-toolbox/wiki/Configuration#configuration-command) and [configuration file structure](https://github.com/birblett/technical-toolbox/wiki/Configuration#file-structure) wiki pages. Information on aliases may be found on the [aliases page](https://github.com/birblett/technical-toolbox/wiki/Aliases).
