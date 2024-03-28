@@ -420,7 +420,6 @@ public class AliasedCommand {
                 if (re.charAt(0) == '"' && re.charAt(len - 1) == '"') {
                     re = re.substring(1, len - 1);
                 }
-                TechnicalToolbox.log("{} {} {}", args[i], re, argList[0].matches(re));
                 if (!args[i].matches(re)) {
                     this.validationError(context, argList[0], args[i], "does not match regex \"" + argList[1] + "\"");
                     return false;

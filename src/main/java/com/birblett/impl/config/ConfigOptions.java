@@ -82,7 +82,7 @@ public enum ConfigOptions implements ConfigOption<Object> {
         }
     },
     ALIAS_DEFAULT_SEPARATOR("aliasDefaultSeparator", ",", "Default argument separator for new " +
-            "aliases.", ",", "\" \"") {
+            "aliases.", true, ",", "\" \"") {
         private String value = ",";
 
         @Override
@@ -209,7 +209,7 @@ public enum ConfigOptions implements ConfigOption<Object> {
         }
     },
     COPPER_BULB_ENABLED("copperBulbEnabled", "false", "Whether crafting copper bulbs is enabled " +
-            "or not", true, "true", "false") {
+            "or not", "true", "false") {
         private boolean value = false;
 
         @Override
@@ -241,7 +241,7 @@ public enum ConfigOptions implements ConfigOption<Object> {
         }
     },
     CRAFTER_ENABLED("crafterEnabled", "false", "Whether crafting the crafter is enabled or not",
-            true, "true", "false") {
+            "true", "false") {
         private boolean value = false;
 
         @Override
@@ -273,7 +273,7 @@ public enum ConfigOptions implements ConfigOption<Object> {
         }
     },
     CRAFTER_QUASI_POWER("crafterQuasiPower", "false", "Whether crafters can be quasi-powered or " +
-            "not.", true, "true", "false") {
+            "not.", "true", "false") {
         private boolean value = false;
 
         @Override

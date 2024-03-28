@@ -7,6 +7,7 @@ import org.apache.commons.io.FileUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
@@ -94,7 +95,9 @@ public class AliasManager {
             }
         }
         try {
-            FileUtils.cleanDirectory(directory);
+            for (File file : FileUtils.listFiles(directory, new String[]{"alias"}, true)) {
+                Files.deleteIfExists(file.toPath());
+            }
         } catch (IOException e) {
             TechnicalToolbox.warn("Failed to clean alias directory, please report");
         }
