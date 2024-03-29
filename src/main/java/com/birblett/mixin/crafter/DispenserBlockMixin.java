@@ -11,7 +11,7 @@ import com.llamalad7.mixinextras.sugar.Local;
 import net.minecraft.block.*;
 import net.minecraft.block.dispenser.ItemDispenserBehavior;
 import net.minecraft.block.entity.*;
-import net.minecraft.block.enums.JigsawOrientation;
+import net.minecraft.block.enums.Orientation;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemPlacementContext;
@@ -90,7 +90,7 @@ public abstract class DispenserBlockMixin extends BlockWithEntity implements Blo
             this.transferOrSpawnStack(world, pos, crafterInterface, itemStack2, state);
         }
         // restore marker items after disgusting hack from earlier
-        crafterInterface.getInputStacks().forEach(stack -> {
+        crafterInterface.getHeldStacks().forEach(stack -> {
             if (stack.isEmpty()) {
                 return;
             }
@@ -224,7 +224,7 @@ public abstract class DispenserBlockMixin extends BlockWithEntity implements Blo
                 case UP -> ctx.getHorizontalPlayerFacing();
                 case NORTH, SOUTH, WEST, EAST -> Direction.UP;
             };
-            b = b.with(Constant.IS_CRAFTER, true).with(Constant.ORIENTATION, JigsawOrientation.byDirections(direction, direction2));
+            b = b.with(Constant.IS_CRAFTER, true).with(Constant.ORIENTATION, Orientation.byDirections(direction, direction2));
         }
         return b;
     }
@@ -234,7 +234,7 @@ public abstract class DispenserBlockMixin extends BlockWithEntity implements Blo
      */
     @Override @Nullable
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(World world, BlockState state, BlockEntityType<T> type) {
-        return world.isClient ? null : state.get(Constant.IS_CRAFTER) ? DispenserBlock.checkType(type, BlockEntityType
+        return world.isClient ? null : state.get(Constant.IS_CRAFTER) ? DispenserBlock.validateTicker(type, BlockEntityType
                 .DROPPER, CrafterInterface::tickCrafting) : null;
     }
 
@@ -259,7 +259,7 @@ public abstract class DispenserBlockMixin extends BlockWithEntity implements Blo
      */
     @ModifyArg(method = "<init>", at = @At(value = "INVOKE", target = "Lnet/minecraft/block/DispenserBlock;setDefaultState(Lnet/minecraft/block/BlockState;)V"))
     private BlockState defaultCrafterProperty(BlockState defaultState) {
-        return defaultState.with(Constant.IS_CRAFTER, false).with(Constant.ORIENTATION, JigsawOrientation.NORTH_UP)
+        return defaultState.with(Constant.IS_CRAFTER, false).with(Constant.ORIENTATION, Orientation.NORTH_UP)
                 .with(Constant.IS_CRAFTING, false);
     }
 
@@ -272,7 +272,7 @@ public abstract class DispenserBlockMixin extends BlockWithEntity implements Blo
      * Removes barrier blocks from crafters on break. Maybe doing additional nbt check is necessary... if you're putting
      * barriers in crafters for some reason
      */
-    @Inject(method = "onStateReplaced", at = @At(value = "INVOKE", target = "Lnet/minecraft/util/ItemScatterer;spawn(Lnet/minecraft/world/World;Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/inventory/Inventory;)V"))
+    @Inject(method = "onStateReplaced", at = @At(value = "INVOKE", target = "Lnet/minecraft/util/ItemScatterer;onStateReplaced(Lnet/minecraft/block/BlockState;Lnet/minecraft/block/BlockState;Lnet/minecraft/world/World;Lnet/minecraft/util/math/BlockPos;)V"))
     private void removeDisabledSlots(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved, CallbackInfo ci) {
         Optional<DropperBlockEntity> b = world.getBlockEntity(pos, BlockEntityType.DROPPER);
         if (b.isPresent() && state.get(Constant.IS_CRAFTER)) {

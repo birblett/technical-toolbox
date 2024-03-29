@@ -49,8 +49,8 @@ public class ServerPlayNetworkHandlerMixin {
         }
         else if (((CameraInterface) this.player).isCamera() && ConfigOptions.CAMERA_CONSOLE_LOGGING.value().equals("spectate")
                 && this.player.getServer() != null) {
-            this.player.getServer().sendMessage(TextUtils.formattable("[Camera Mode] " + this.player.getEntityName() +
-                    " teleported to " + entity.getEntityName()));
+            this.player.getServer().sendMessage(TextUtils.formattable("[Camera Mode] " + this.player.getNameForScoreboard() +
+                    " teleported to " + entity.getNameForScoreboard()));
         }
     }
 

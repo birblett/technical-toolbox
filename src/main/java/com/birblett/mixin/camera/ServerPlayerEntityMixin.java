@@ -197,8 +197,8 @@ public class ServerPlayerEntityMixin implements CameraInterface {
         }
         else if (this.isCamera && ConfigOptions.CAMERA_CONSOLE_LOGGING.value().equals("spectate") && player.getServer()
                 != null) {
-            player.getServer().sendMessage(TextUtils.formattable("[Camera Mode] " + player.getEntityName() +
-                    " is spectating " + target.getEntityName()));
+            player.getServer().sendMessage(TextUtils.formattable("[Camera Mode] " + player.getNameForScoreboard() +
+                    " is spectating " + target.getNameForScoreboard()));
         }
     }
 

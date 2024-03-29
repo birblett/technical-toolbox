@@ -26,7 +26,7 @@ public class CameraCommand {
                             Object logLevel = ConfigOptions.CAMERA_CONSOLE_LOGGING.value();
                             if (logLevel.equals("command") || logLevel.equals("spectate")) {
                                 context.getSource().getServer().sendMessage(TextUtils.formattable("[Camera Mode] " +
-                                        player.getEntityName() + ": " + feedback));
+                                        player.getNameForScoreboard() + ": " + feedback));
                             }
                         }
                         return 1;

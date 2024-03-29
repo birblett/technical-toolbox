@@ -111,7 +111,7 @@ public enum ConfigOptions implements ConfigOption<Object> {
         @Override
         public Text setFromString(String value, MinecraftServer server) {
             String oldValue = this.value;
-            Text s = setFromString(value);
+            Text s = this.setFromString(value);
             if (s == null && server != null) {
                 ServerUtil.removeCommandByName(server, oldValue);
                 CameraCommand.register(server.getCommandManager().getDispatcher());

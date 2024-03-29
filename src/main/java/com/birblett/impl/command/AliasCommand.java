@@ -41,7 +41,7 @@ public class AliasCommand {
                                                 if (player != null) {
                                                     context.getSource().sendFeedback(() -> out, false);
                                                     context.getSource().getServer().sendMessage(TextUtils.formattable(player
-                                                            .getEntityName() + ": ").append(out));
+                                                            .getNameForScoreboard() + ": ").append(out));
                                                 } else {
                                                     context.getSource().sendFeedback(() -> out, false);
                                                 }
@@ -71,7 +71,7 @@ public class AliasCommand {
                                         context.getSource().sendFeedback(() -> out, false);
                                         if (player != null) {
                                             context.getSource().getServer().sendMessage(TextUtils.formattable(player
-                                                    .getEntityName() + ": ").append(out));
+                                                    .getNameForScoreboard() + ": ").append(out));
                                         }
                                         return 1;
                                     }

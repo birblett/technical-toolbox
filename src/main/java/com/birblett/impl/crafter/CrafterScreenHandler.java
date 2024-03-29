@@ -1,6 +1,5 @@
 package com.birblett.impl.crafter;
 
-import com.birblett.TechnicalToolbox;
 import com.birblett.lib.crafter.CrafterInterface;
 import com.birblett.mixin.crafter.CraftingInventoryAccess;
 import com.birblett.util.TextUtils;
@@ -15,10 +14,7 @@ import net.minecraft.inventory.RecipeInputInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.network.packet.s2c.play.ScreenHandlerSlotUpdateS2CPacket;
-import net.minecraft.recipe.CraftingRecipe;
-import net.minecraft.recipe.Recipe;
-import net.minecraft.recipe.RecipeMatcher;
-import net.minecraft.recipe.RecipeType;
+import net.minecraft.recipe.*;
 import net.minecraft.recipe.book.RecipeBookCategory;
 import net.minecraft.screen.AbstractRecipeScreenHandler;
 import net.minecraft.screen.ScreenHandlerType;
@@ -50,6 +46,22 @@ public class CrafterScreenHandler extends AbstractRecipeScreenHandler<RecipeInpu
         super(ScreenHandlerType.CRAFTING, syncId);
         this.blockEntity = blockEntity;
         this.player = playerInventory.player;
+        ((CraftingInventoryAccess) this.input).setStacks(((CrafterInterface) this.blockEntity).getInventory());
+        int i, j;
+        this.addSlot(new CraftingResultSlot(playerInventory.player, this.input, this.result, 0, 124, 35));
+        for (i = 0; i < 3; ++i) {
+            for (j = 0; j < 3; ++j) {
+                this.addSlot(new Slot(this.input, j + i * 3, 30 + j * 18, 17 + i * 18));
+            }
+        }
+        for (i = 0; i < 3; ++i) {
+            for (j = 0; j < 9; ++j) {
+                this.addSlot(new Slot(playerInventory, j + i * 9 + 9, 8 + j * 18, 84 + i * 18));
+            }
+        }
+        for (i = 0; i < 9; ++i) {
+            this.addSlot(new Slot(playerInventory, i, 8 + i * 18, 142));
+        }
         this.updateStacks();
     }
 
@@ -94,8 +106,8 @@ public class CrafterScreenHandler extends AbstractRecipeScreenHandler<RecipeInpu
     }
 
     @Override
-    public boolean matches(Recipe<? super RecipeInputInventory> recipe) {
-        return recipe.matches(this.input, this.player.getWorld());
+    public boolean matches(RecipeEntry<? extends Recipe<RecipeInputInventory>> recipeEntry) {
+        return recipeEntry.value().matches(this.input, this.player.getWorld());
     }
 
     @Override
@@ -103,7 +115,7 @@ public class CrafterScreenHandler extends AbstractRecipeScreenHandler<RecipeInpu
         this.input.provideRecipeInputs(finder);
     }
 
-    private Optional<CraftingRecipe> getCurrentRecipe() {
+    private Optional<RecipeEntry<CraftingRecipe>> getCurrentRecipe() {
         World world = this.blockEntity.getWorld();
         if (world == null) {
             return Optional.empty();
@@ -205,7 +217,7 @@ public class CrafterScreenHandler extends AbstractRecipeScreenHandler<RecipeInpu
             }
         }
         // get possible recipe
-        Optional<CraftingRecipe> maybeRecipe = this.getCurrentRecipe();
+        Optional<CraftingRecipe> maybeRecipe = this.getCurrentRecipe().map(RecipeEntry::value);
         // restore disabled slot items
         for (int slot = 0; slot < 9; slot++) {
             if (temp[slot] != null) {

@@ -6,6 +6,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.recipe.CraftingRecipe;
+import net.minecraft.recipe.RecipeEntry;
 import net.minecraft.recipe.RecipeManager;
 import net.minecraft.recipe.RecipeType;
 import net.minecraft.util.collection.DefaultedList;
@@ -35,7 +36,7 @@ public class RecipeCache {
         this.validateRecipeManager(world);
         for (int i = 0; i < this.cache.length; ++i) {
             CachedRecipe cachedRecipe = this.cache[i];
-            if (cachedRecipe == null || !cachedRecipe.matches(inputInventory.getInputStacks())) continue;
+            if (cachedRecipe == null || !cachedRecipe.matches(inputInventory.getHeldStacks())) continue;
             this.sendToFront(i);
             return Optional.ofNullable(cachedRecipe.value());
         }
@@ -51,9 +52,9 @@ public class RecipeCache {
     }
 
     private Optional<CraftingRecipe> getAndCacheRecipe(RecipeInputInventory inputInventory, World world) {
-        Optional<CraftingRecipe> optional = world.getRecipeManager().getFirstMatch(RecipeType.CRAFTING, inputInventory, world);
-        this.cache(inputInventory.getInputStacks(), optional.orElse(null));
-        return optional;
+        Optional<RecipeEntry<CraftingRecipe>> optional = world.getRecipeManager().getFirstMatch(RecipeType.CRAFTING, inputInventory, world);
+        this.cache(inputInventory.getHeldStacks(), optional.map(RecipeEntry::value).orElse(null));
+        return optional.map(RecipeEntry::value);
     }
 
     private void sendToFront(int index) {

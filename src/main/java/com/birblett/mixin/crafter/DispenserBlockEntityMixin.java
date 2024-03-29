@@ -72,11 +72,6 @@ public abstract class DispenserBlockEntityMixin extends LootableContainerBlockEn
     }
 
     @Override
-    public List<ItemStack> getInputStacks() {
-        return this.inventory;
-    }
-
-    @Override
     public int[] getAvailableSlots(Direction side) {
         return this.AVAILABLE_SLOTS;
     }
@@ -99,7 +94,7 @@ public abstract class DispenserBlockEntityMixin extends LootableContainerBlockEn
 
     @Override
     public void provideRecipeInputs(RecipeMatcher finder) {
-        for (ItemStack itemStack : this.getInvStackList()) {
+        for (ItemStack itemStack : this.getInventory()) {
             if (!itemStack.isOf(Items.BARRIER)) {
                 finder.addUnenchantedInput(itemStack);
             }
@@ -163,7 +158,7 @@ public abstract class DispenserBlockEntityMixin extends LootableContainerBlockEn
             if (this.isSlotDisabled(slot)) {
                 return false;
             }
-            ItemStack itemStack = this.getInputStacks().get(slot);
+            ItemStack itemStack = this.inventory.get(slot);
             int i = itemStack.getCount();
             if (i >= itemStack.getMaxCount()) {
                 return false;

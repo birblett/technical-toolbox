@@ -1,6 +1,6 @@
 package com.birblett.util;
 
-import net.minecraft.block.enums.JigsawOrientation;
+import net.minecraft.block.enums.Orientation;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.EnumProperty;
 import net.minecraft.state.property.IntProperty;
@@ -13,7 +13,7 @@ public class Constant {
 
     public static final BooleanProperty IS_CRAFTER = BooleanProperty.of("crafter");
     public static final BooleanProperty IS_CRAFTING = BooleanProperty.of("crafting");
-    public static final EnumProperty<JigsawOrientation> ORIENTATION = Properties.ORIENTATION;
+    public static final EnumProperty<Orientation> ORIENTATION = Properties.ORIENTATION;
 
     /**
      * Oxidation determines type - 0 oxidation corresponds to redstone lamp, 1-4 correspond to copper bulbs of various
