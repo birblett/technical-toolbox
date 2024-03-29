@@ -1,8 +1,6 @@
 package com.birblett.mixin.recipe;
 
-import com.birblett.TechnicalToolbox;
 import com.birblett.impl.config.ConfigOptions;
-import com.birblett.util.Constant;
 import com.birblett.util.TextUtils;
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import com.llamalad7.mixinextras.sugar.Local;
@@ -14,7 +12,6 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.recipe.SuspiciousStewRecipe;
 import net.minecraft.registry.DynamicRegistryManager;
 import net.minecraft.text.Style;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.text.WordUtils;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
