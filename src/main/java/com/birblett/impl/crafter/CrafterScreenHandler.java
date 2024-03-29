@@ -1,5 +1,6 @@
 package com.birblett.impl.crafter;
 
+import com.birblett.TechnicalToolbox;
 import com.birblett.lib.crafter.CrafterInterface;
 import com.birblett.mixin.crafter.CraftingInventoryAccess;
 import com.birblett.util.TextUtils;
@@ -49,23 +50,7 @@ public class CrafterScreenHandler extends AbstractRecipeScreenHandler<RecipeInpu
         super(ScreenHandlerType.CRAFTING, syncId);
         this.blockEntity = blockEntity;
         this.player = playerInventory.player;
-        // make the crafting inventory hold a reference to the crafter inventory instead
-        ((CraftingInventoryAccess) this.input).setStacks(((CrafterInterface) this.blockEntity).getInventory());
-        int i, j;
-        this.addSlot(new CraftingResultSlot(playerInventory.player, this.input, this.result, 0, 124, 35));
-        for (i = 0; i < 3; ++i) {
-            for (j = 0; j < 3; ++j) {
-                this.addSlot(new Slot(this.input, j + i * 3, 30 + j * 18, 17 + i * 18));
-            }
-        }
-        for (i = 0; i < 3; ++i) {
-            for (j = 0; j < 9; ++j) {
-                this.addSlot(new Slot(playerInventory, j + i * 9 + 9, 8 + j * 18, 84 + i * 18));
-            }
-        }
-        for (i = 0; i < 9; ++i) {
-            this.addSlot(new Slot(playerInventory, i, 8 + i * 18, 142));
-        }
+        this.updateStacks();
     }
 
     @Override
@@ -133,26 +118,7 @@ public class CrafterScreenHandler extends AbstractRecipeScreenHandler<RecipeInpu
     public void onContentChanged(Inventory inventory) {
         if (this.player instanceof ServerPlayerEntity && this.blockEntity.getWorld() != null) {
             ServerPlayNetworkHandler handler = ((ServerPlayerEntity) this.player).networkHandler;
-            CraftingInventoryAccess c = (CraftingInventoryAccess) this.input;
-            // same dumb hack from dispenserblockmixin, remove disabled slot items
-            ItemStack[] temp = new ItemStack[9];
-            for (int slot = 0; slot < 9; slot++) {
-                ItemStack stack = c.getStacks().get(slot);
-                if (stack.isOf(Items.BARRIER)) {
-                    temp[slot] = stack;
-                    c.getStacks().set(slot, ItemStack.EMPTY);
-                }
-            }
-            // get possible recipe
-            Optional<CraftingRecipe> maybeRecipe = this.getCurrentRecipe();
-            // restore disabled slot items
-            for (int slot = 0; slot < 9; slot++) {
-                if (temp[slot] != null) {
-                    c.getStacks().set(slot, temp[slot]);
-                }
-            }
-            this.result.setStack(0, maybeRecipe.isPresent() ? maybeRecipe.get().getOutput(this.player.getWorld()
-                    .getRegistryManager()) : ItemStack.EMPTY);
+            this.updateStacks();
             this.blockEntity.getWorld().updateComparators(this.blockEntity.getPos(), Blocks.DISPENSER);
             handler.sendPacket(new ScreenHandlerSlotUpdateS2CPacket(this.syncId, 0, 0, this.result.getStack(0)));
         }
@@ -225,6 +191,29 @@ public class CrafterScreenHandler extends AbstractRecipeScreenHandler<RecipeInpu
             return true;
         }
         return false;
+    }
+
+    private void updateStacks() {
+        CraftingInventoryAccess c = (CraftingInventoryAccess) this.input;
+        // same dumb hack from dispenserblockmixin, remove disabled slot items
+        ItemStack[] temp = new ItemStack[9];
+        for (int slot = 0; slot < 9; slot++) {
+            ItemStack stack = c.getStacks().get(slot);
+            if (stack.isOf(Items.BARRIER)) {
+                temp[slot] = stack;
+                c.getStacks().set(slot, ItemStack.EMPTY);
+            }
+        }
+        // get possible recipe
+        Optional<CraftingRecipe> maybeRecipe = this.getCurrentRecipe();
+        // restore disabled slot items
+        for (int slot = 0; slot < 9; slot++) {
+            if (temp[slot] != null) {
+                c.getStacks().set(slot, temp[slot]);
+            }
+        }
+        this.result.setStack(0, maybeRecipe.isPresent() ? maybeRecipe.get().craft(this.input, this.player
+                .getWorld().getRegistryManager()) : ItemStack.EMPTY);
     }
 
 }
