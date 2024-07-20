@@ -13,5 +13,20 @@ public interface ConfigOption<T> {
     default String getWriteable() {
         return String.valueOf(this.value());
     };
+    default String getString() {
+        return this.value().toString();
+    }
+    default int getInt() {
+        return (int) this.value();
+    }
+    default float getFloat() {
+        return (float) this.value();
+    }
+    default double getDouble() {
+        return (double) this.value();
+    }
+    default boolean getBool() {
+        return (boolean) this.value();
+    }
 
 }

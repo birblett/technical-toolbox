@@ -17,8 +17,8 @@ import org.spongepowered.asm.mixin.injection.At;
 public class StateMixin {
 
     @ModifyReturnValue(method = "contains", at = @At("RETURN"))
-    private <T extends Comparable<T>> boolean get(boolean out, @Local Property<T> property) {
-        if (property.equals(Properties.HORIZONTAL_AXIS) && (Boolean) ConfigOptions.MECHANIC_DISABLE_POI_PROPERTY_CHECK.value()) {
+    private <T extends Comparable<T>> boolean get(boolean out, @Local(argsOnly = true) Property<T> p) {
+        if (p.equals(Properties.HORIZONTAL_AXIS) && ConfigOptions.MECHANIC_DISABLE_POI_PROPERTY_CHECK.getBool()) {
             return true;
         }
         return out;

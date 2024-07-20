@@ -39,6 +39,54 @@ public class ConfigUtil {
         return new Pair<>(tmp, null);
     }
 
+    public static Pair<Float, Text> getFloatOptions(String name, String value, float defaultValue, float left, float right) {
+        float tmp;
+        try {
+            tmp = Float.parseFloat(value);
+            if (tmp < left || tmp > right) {
+                MutableText t = TextUtils.formattable("Invalid input " + value + ": " + name + " only accepts values ");
+                if (left != Float.MIN_VALUE && right != Float.MAX_VALUE) {
+                    return new Pair<>(defaultValue, t.append(TextUtils.formattable("in range [" + left + ", " + right
+                            + "]")));
+                }
+                else if (left != Float.MIN_VALUE) {
+                    return new Pair<>(defaultValue, t.append(TextUtils.formattable(">= " + left)));
+                }
+                else if (right != Float.MAX_VALUE) {
+                    return new Pair<>(defaultValue, t.append(TextUtils.formattable("<= " + right)));
+                }
+            }
+        }
+        catch (Exception e) {
+            return new Pair<>(defaultValue, setFailGeneric(name, value));
+        }
+        return new Pair<>(tmp, null);
+    }
+
+    public static Pair<Double, Text> getDoubleOption(String name, String value, double defaultValue, double left, double right) {
+        double tmp;
+        try {
+            tmp = Double.parseDouble(value);
+            if (tmp < left || tmp > right) {
+                MutableText t = TextUtils.formattable("Invalid input " + value + ": " + name + " only accepts values ");
+                if (left != Double.MIN_VALUE && right != Double.MAX_VALUE) {
+                    return new Pair<>(defaultValue, t.append(TextUtils.formattable("in range [" + left + ", " + right
+                            + "]")));
+                }
+                else if (left != Double.MIN_VALUE) {
+                    return new Pair<>(defaultValue, t.append(TextUtils.formattable(">= " + left)));
+                }
+                else if (right != Double.MAX_VALUE) {
+                    return new Pair<>(defaultValue, t.append(TextUtils.formattable("<= " + right)));
+                }
+            }
+        }
+        catch (Exception e) {
+            return new Pair<>(defaultValue, setFailGeneric(name, value));
+        }
+        return new Pair<>(tmp, null);
+    }
+
     public static Pair<Boolean, Text> getBooleanOption(String name, String value, boolean defaultValue) {
         boolean tmp;
         if (!(value.equals("false") || value.equals("true"))) {

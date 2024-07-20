@@ -22,7 +22,7 @@ public class ToolboxCommand {
 
     public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
         dispatcher.register(CommandManager.literal("toolbox")
-                .requires(source -> source.hasPermissionLevel((Integer) ConfigOptions.CONFIG_VIEW_PERMISSION_LEVEL.value()))
+                .requires(source -> source.hasPermissionLevel(ConfigOptions.CONFIG_VIEW_PERMISSION_LEVEL.getInt()))
                 .then(CommandManager.literal("config")
                         .then(CommandManager.argument("config_option", StringArgumentType.string())
                                 .suggests((context, builder) -> CommandSource.suggestMatching(TechnicalToolbox.CONFIG_MANAGER
@@ -57,7 +57,7 @@ public class ToolboxCommand {
                                                             .formattable(value).setStyle(Style.EMPTY.withColor(Formatting
                                                             .GREEN))).append(TextUtils.formattable(" for option " + option)),
                                                             true);
-                                                    if ((Boolean) ConfigOptions.CONFIG_WRITE_ON_CHANGE.value()) {
+                                                    if (ConfigOptions.CONFIG_WRITE_ON_CHANGE.getBool()) {
                                                         TechnicalToolbox.CONFIG_MANAGER.writeConfigs();
                                                     }
                                                     return 1;

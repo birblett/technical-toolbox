@@ -1,7 +1,7 @@
 package com.birblett.mixin.camera;
 
 import com.birblett.impl.config.ConfigOptions;
-import com.birblett.lib.crafter.CameraInterface;
+import com.birblett.lib.camera.CameraInterface;
 import com.birblett.util.TextUtils;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.effect.StatusEffectInstance;
@@ -101,7 +101,7 @@ public class ServerPlayerEntityMixin implements CameraInterface {
             if (!player.getStatusEffects().isEmpty()) {
                 NbtList nbtList = new NbtList();
                 for (StatusEffectInstance statusEffectInstance : player.getStatusEffects()) {
-                    nbtList.add(statusEffectInstance.writeNbt(new NbtCompound()));
+                    nbtList.add(statusEffectInstance.writeNbt());
                 }
                 nbt.put("ActiveEffects", nbtList);
             }
@@ -115,7 +115,7 @@ public class ServerPlayerEntityMixin implements CameraInterface {
                 // restore world
                 ServerWorld world = player.getServerWorld();
                 if (player.getServer() != null) {
-                    world = player.getServer().getWorld(RegistryKey.of(RegistryKeys.WORLD, new Identifier(nbt.getString("Dimension"))));
+                    world = player.getServer().getWorld(RegistryKey.of(RegistryKeys.WORLD, Identifier.of(nbt.getString("Dimension"))));
                 }
                 // restore position
                 NbtList pos = nbt.getList("Pos", NbtElement.DOUBLE_TYPE);
@@ -191,11 +191,12 @@ public class ServerPlayerEntityMixin implements CameraInterface {
             value = "INVOKE"), cancellable = true)
     protected void cameraSpectating(Entity target, CallbackInfo ci) {
         ServerPlayerEntity player = (ServerPlayerEntity) (Object) this;
-        if (this.isCamera && !(boolean) ConfigOptions.CAMERA_CAN_SPECTATE.value()) {
-            player.sendMessage(TextUtils.formattable("Entity spectating is currently disabled in camera mode"), true);
+        if (this.isCamera && ! ConfigOptions.CAMERA_CAN_SPECTATE.getBool()) {
+            player.sendMessage(TextUtils.formattable("Entity spectating is currently disabled in camera mode"),
+                    true);
             ci.cancel();
         }
-        else if (this.isCamera && ConfigOptions.CAMERA_CONSOLE_LOGGING.value().equals("spectate") && player.getServer()
+        else if (this.isCamera && ConfigOptions.CAMERA_CONSOLE_LOGGING.getString().equals("spectate") && player.getServer()
                 != null) {
             player.getServer().sendMessage(TextUtils.formattable("[Camera Mode] " + player.getNameForScoreboard() +
                     " is spectating " + target.getNameForScoreboard()));

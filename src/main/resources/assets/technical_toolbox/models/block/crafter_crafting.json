@@ -1,9 +1,0 @@
-{
-  "parent": "technical_toolbox:block/crafter_triggered",
-  "textures": {
-    "top": "technical_toolbox:block/crafter_top_crafting",
-    "north": "technical_toolbox:block/crafter_north_crafting",
-    "east": "technical_toolbox:block/crafter_east_crafting",
-    "west": "technical_toolbox:block/crafter_west_crafting"
-  }
-}

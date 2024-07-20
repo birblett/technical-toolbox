@@ -92,7 +92,7 @@ public enum ConfigOptions implements ConfigOption<Object> {
 
         @Override
         public Text setFromString(String value) {
-            if (value.length() > 0) {
+            if (!value.isEmpty()) {
                 this.value = value;
                 return null;
             };
@@ -208,24 +208,56 @@ public enum ConfigOptions implements ConfigOption<Object> {
             return out.getRight();
         }
     },
-    COPPER_BULB_ENABLED("copperBulbEnabled", "false", "Whether crafting copper bulbs is enabled " +
-            "or not", "true", "false") {
-        private boolean value = false;
+    FIX_SPEED_LIMIT("fixSpeedLimit", "100.0", "The velocity threshold after which the server " +
+            "corrects player velocity.","100.0", String.valueOf(Integer.MAX_VALUE)) {
+        private float value = 100;
 
         @Override
-        public Boolean value() {
+        public Float value() {
             return this.value;
         }
 
         @Override
         public Text setFromString(String value) {
-            Pair<Boolean, Text> out = ConfigUtil.getBooleanOption(this.getName(), value, false);
+            Pair<Float, Text> out = ConfigUtil.getFloatOptions(this.getName(), value, 100, 0, Float.MAX_VALUE);
             this.value = out.getLeft();
             return out.getRight();
         }
     },
-    COPPER_BULB_DELAY("copperBulbDelay", "0", "Gameticks of copper bulb delay when powered",
-            "0", "1") {
+    FIX_ELYTRA_SPEED_LIMIT("fixElytraSpeedLimit", "300.0", "The elytra velocity threshold after " +
+            "which the server corrects player velocity.", "300.0", String.valueOf(Integer.MAX_VALUE)) {
+        private float value = 300;
+
+        @Override
+        public Float value() {
+            return this.value;
+        }
+
+        @Override
+        public Text setFromString(String value) {
+            Pair<Float, Text> out = ConfigUtil.getFloatOptions(this.getName(), value, 100, 0, Float.MAX_VALUE);
+            this.value = out.getLeft();
+            return out.getRight();
+        }
+    },
+    FIX_VEHICLE_SPEED_LIMIT("fixVehicleSpeedLimit", "100.0", "The riding velocity threshold " +
+            "after which the server corrects player velocity.","100.0", String.valueOf(Integer.MAX_VALUE)) {
+        private double value = 100;
+
+        @Override
+        public Double value() {
+            return this.value;
+        }
+
+        @Override
+        public Text setFromString(String value) {
+            Pair<Double, Text> out = ConfigUtil.getDoubleOption(this.getName(), value, 100, 0, Double.MAX_VALUE);
+            this.value = out.getLeft();
+            return out.getRight();
+        }
+    },
+    MECHANIC_COPPER_BULB_DELAY("mechanicCopperBulbDelay", "0", "Gameticks of copper bulb delay " +
+            "when powered", "0", "1") {
         private int value = 0;
 
         @Override
@@ -240,24 +272,8 @@ public enum ConfigOptions implements ConfigOption<Object> {
             return out.getRight();
         }
     },
-    CRAFTER_ENABLED("crafterEnabled", "false", "Whether crafting the crafter is enabled or not",
-            "true", "false") {
-        private boolean value = false;
-
-        @Override
-        public Boolean value() {
-            return this.value;
-        }
-
-        @Override
-        public Text setFromString(String value) {
-            Pair<Boolean, Text> out = ConfigUtil.getBooleanOption(this.getName(), value, false);
-            this.value = out.getLeft();
-            return out.getRight();
-        }
-    },
-    CRAFTER_COOLDOWN("crafterCooldown", "4", "Gameticks of crafter cooldown, will be instant if " +
-            "set to 0.", "0", "4") {
+    MECHANIC_CRAFTER_COOLDOWN("mechanicCrafterCooldown", "4", "Gameticks of crafter cooldown, " +
+            "will be instant if set to 0.", "0", "4") {
         private int value = 4;
 
         @Override
@@ -272,41 +288,8 @@ public enum ConfigOptions implements ConfigOption<Object> {
             return out.getRight();
         }
     },
-    CRAFTER_QUASI_POWER("crafterQuasiPower", "false", "Whether crafters can be quasi-powered or " +
-            "not.", "true", "false") {
-        private boolean value = false;
-
-        @Override
-        public Boolean value() {
-            return this.value;
-        }
-
-        @Override
-        public Text setFromString(String value) {
-            Pair<Boolean, Text> out = ConfigUtil.getBooleanOption(this.getName(), value, false);
-            this.value = out.getLeft();
-            return out.getRight();
-        }
-    },
-    USE_TRANSLATABLE_TEXT("useTranslatableText", "false", "Whether crafters and copper bulbs" +
-            " (future) should use TranslatableText for their display name or not.", true, "true",
-            "false") {
-        private boolean value = false;
-
-        @Override
-        public Boolean value() {
-            return this.value;
-        }
-
-        @Override
-        public Text setFromString(String value) {
-            Pair<Boolean, Text> out = ConfigUtil.getBooleanOption(this.getName(), value, false);
-            this.value = out.getLeft();
-            return out.getRight();
-        }
-    },
-    MECHANIC_UPDATE_SKIPPING("mechanicUpdateSkipping", "false", "Whether update skipping (for " +
-            "1.20+ should be allowed.", "true", "false") {
+    MECHANIC_CRAFTER_QUASI_POWER("mechanicCrafterQuasiPower", "false", "Whether crafters can be " +
+            "quasi-powered or not.", "true", "false") {
         private boolean value = false;
 
         @Override
@@ -323,6 +306,22 @@ public enum ConfigOptions implements ConfigOption<Object> {
     },
     MECHANIC_DISABLE_POI_PROPERTY_CHECK("mechanicDisablePoiPropertyCheck", "false", "Whether portal " +
             "POIs should perform a check for the HORIZONTAL_AXIS property.", "true", "false") {
+        private boolean value = false;
+
+        @Override
+        public Boolean value() {
+            return this.value;
+        }
+
+        @Override
+        public Text setFromString(String value) {
+            Pair<Boolean, Text> out = ConfigUtil.getBooleanOption(this.getName(), value, false);
+            this.value = out.getLeft();
+            return out.getRight();
+        }
+    },
+    MECHANIC_UPDATE_SKIPPING("mechanicUpdateSkipping", "false", "Whether update skipping (for " +
+            "1.20+ should be allowed.", "true", "false") {
         private boolean value = false;
 
         @Override

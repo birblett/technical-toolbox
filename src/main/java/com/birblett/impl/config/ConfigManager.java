@@ -120,7 +120,7 @@ public class ConfigManager {
         try (BufferedWriter bufferedWriter = Files.newBufferedWriter(this.getFile())) {
             int options = 0;
             for (ConfigOptions c : ConfigOptions.values()) {
-                if (!(boolean) ConfigOptions.CONFIG_WRITE_ONLY_CHANGES.value() || !c.getWriteable().equals(c.getDefaultValue())) {
+                if (!ConfigOptions.CONFIG_WRITE_ONLY_CHANGES.getBool() || !c.getWriteable().equals(c.getDefaultValue())) {
                     bufferedWriter.write(c.getName() + ": " + c.getWriteable() + "\n");
                     if (c.hasLineBreak()) {
                         bufferedWriter.write("\n");

@@ -45,8 +45,8 @@ public class AliasedCommand {
     public AliasedCommand(String alias, String command, CommandDispatcher<ServerCommandSource> dispatcher) {
         this.alias = alias;
         this.commands.add(command);
-        this.permission = (int) ConfigOptions.ALIAS_DEFAULT_PERMISSION.value();
-        this.separator = (String) ConfigOptions.ALIAS_DEFAULT_SEPARATOR.value();
+        this.permission = ConfigOptions.ALIAS_DEFAULT_PERMISSION.getInt();
+        this.separator = ConfigOptions.ALIAS_DEFAULT_SEPARATOR.getString();
         this.updateArgCount();
         this.register(dispatcher);
     }
@@ -499,7 +499,7 @@ public class AliasedCommand {
     public boolean writeToFile(Path path) {
         try (BufferedWriter bufferedWriter = Files.newBufferedWriter(path)) {
             bufferedWriter.write("Alias: " + this.alias + "\n");
-            if (this.permission != (int) ConfigOptions.ALIAS_DEFAULT_PERMISSION.value()) {
+            if (this.permission != ConfigOptions.ALIAS_DEFAULT_PERMISSION.getInt()) {
                 bufferedWriter.write("Permission level: " + this.permission + "\n");
             }
             if (!this.separator.equals(ConfigOptions.ALIAS_DEFAULT_SEPARATOR.getWriteable())) {
@@ -527,7 +527,7 @@ public class AliasedCommand {
         try (BufferedReader bufferedReader = Files.newBufferedReader(path)) {
             boolean readingCommandState = false;
             String line, alias = null, separator = ConfigOptions.ALIAS_DEFAULT_SEPARATOR.getWriteable();
-            int permission = (int) ConfigOptions.ALIAS_DEFAULT_PERMISSION.value();
+            int permission = ConfigOptions.ALIAS_DEFAULT_PERMISSION.getInt();
             List<String> commands = new ArrayList<>();
             while ((line = bufferedReader.readLine()) != null) {
                 if (!readingCommandState) {
