@@ -1,28 +1,29 @@
 {
-	"schemaVersion": 1,
-	"id": "technical_toolbox",
-	"version": "${version}",
-	"name": "Technical Toolbox",
-	"description": "A collection of technical Minecraft-related utilities",
-	"authors": [
-		"birblett"
-	],
-	"contact": {
-		"homepage": "https://github.com/birblett/technical-toolbox/wiki",
-		"sources": "https://github.com/birblett/technical-toolbox"
-	},
-	"license": "MIT",
-	"icon": "assets/technical_toolbox/icon.png",
-	"environment": "*",
-	"entrypoints": {},
-	"mixins": [
-		"technical_toolbox.mixins.json"
-	],
-	"depends": {
-		"fabricloader": ">=0.15.7",
-		"minecraft": "1.21",
-		"java": ">=21"
-	},
-	"suggests": {
-	}
+  "schemaVersion": 1,
+  "id": "technical_toolbox",
+  "version": "1.0.0",
+  "name": "Technical Toolbox",
+  "description": "A collection of technical Minecraft-related utilities",
+  "authors": [
+    "birblett"
+  ],
+  "contact": {
+    "homepage": "https://github.com/birblett/technical-toolbox/wiki",
+    "sources": "https://github.com/birblett/technical-toolbox"
+  },
+  "license": "MIT",
+  "icon": "assets/technical_toolbox/icon.png",
+  "environment": "*",
+  "accessWidener" : "technical_toolbox.accesswidener",
+  "entrypoints": {},
+  "mixins": [
+    "technical_toolbox.mixins.json",
+    "technical_toolbox.compat.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.15.7",
+    "minecraft": "1.21",
+    "java": ">=21"
+  },
+  "suggests": {}
 }

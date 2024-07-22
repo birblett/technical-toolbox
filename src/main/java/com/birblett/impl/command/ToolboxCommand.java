@@ -1,7 +1,7 @@
 package com.birblett.impl.command;
 
 import com.birblett.TechnicalToolbox;
-import com.birblett.impl.config.ConfigOptions;
+import com.birblett.impl.config.ConfigOption;
 import com.birblett.util.TextUtils;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -22,7 +22,7 @@ public class ToolboxCommand {
 
     public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
         dispatcher.register(CommandManager.literal("toolbox")
-                .requires(source -> source.hasPermissionLevel(ConfigOptions.CONFIG_VIEW_PERMISSION_LEVEL.getInt()))
+                .requires(source -> source.hasPermissionLevel(ConfigOption.CONFIG_VIEW_PERMISSION_LEVEL.val()))
                 .then(CommandManager.literal("config")
                         .then(CommandManager.argument("config_option", StringArgumentType.string())
                                 .suggests((context, builder) -> CommandSource.suggestMatching(TechnicalToolbox.CONFIG_MANAGER
@@ -34,7 +34,7 @@ public class ToolboxCommand {
                                             Collection<String> suggestions = new ArrayList<>();
                                             String tmp = context.getArgument("config_option", String.class);
                                             if (TechnicalToolbox.CONFIG_MANAGER.getAllConfigOptions().contains(tmp)) {
-                                                ConfigOptions c = TechnicalToolbox.CONFIG_MANAGER.configMap.get(tmp);
+                                                ConfigOption c = TechnicalToolbox.CONFIG_MANAGER.configMap.get(tmp);
                                                 if (c != null) {
                                                     suggestions =  c.commandSuggestions();
                                                 }
@@ -45,7 +45,7 @@ public class ToolboxCommand {
                                             String option = context.getArgument("config_option", String.class);
                                             String value = context.getArgument("config_value", String.class);
                                             if (TechnicalToolbox.CONFIG_MANAGER.getAllConfigOptions().contains(option)) {
-                                                ConfigOptions c = TechnicalToolbox.CONFIG_MANAGER.configMap.get(option);
+                                                ConfigOption c = TechnicalToolbox.CONFIG_MANAGER.configMap.get(option);
                                                 Text out = c.setFromString(value, context.getSource().getServer());
                                                 if (out != null) {
                                                     context.getSource().sendError(out);
@@ -57,7 +57,7 @@ public class ToolboxCommand {
                                                             .formattable(value).setStyle(Style.EMPTY.withColor(Formatting
                                                             .GREEN))).append(TextUtils.formattable(" for option " + option)),
                                                             true);
-                                                    if (ConfigOptions.CONFIG_WRITE_ON_CHANGE.getBool()) {
+                                                    if (ConfigOption.CONFIG_WRITE_ON_CHANGE.val()) {
                                                         TechnicalToolbox.CONFIG_MANAGER.writeConfigs();
                                                     }
                                                     return 1;
@@ -72,7 +72,7 @@ public class ToolboxCommand {
                                 .executes(context -> {
                                     String option = context.getArgument("config_option", String.class);
                                     if (TechnicalToolbox.CONFIG_MANAGER.getAllConfigOptions().contains(option)) {
-                                        ConfigOptions c = TechnicalToolbox.CONFIG_MANAGER.configMap.get(option);
+                                        ConfigOption c = TechnicalToolbox.CONFIG_MANAGER.configMap.get(option);
                                         context.getSource().sendFeedback(c::getText, true);
                                     }
                                     else {

@@ -1,7 +1,7 @@
 {
   "required": true,
   "package": "com.birblett.mixin",
-  "compatibilityLevel": "JAVA_17",
+  "compatibilityLevel": "JAVA_21",
   "mixins": [
     "camera.ServerChunkLoadingManagerMixin",
     "camera.ServerPlayerEntityMixin",
@@ -10,13 +10,17 @@
     "command.CommandNodeMixin",
     "command.ServerCommandSourceMixin",
     "config.MinecraftServerMixin",
+    "feature.BulbBlockMixin",
+    "feature.CrafterBlockMixin",
     "fix.ServerPlayNetworkHandlerMixin",
-    "mechanic.BulbBlockMixin",
-    "mechanic.CrafterBlockMixin",
-    "mechanic.RedstoneWireBlockMixin",
-    "mechanic.StateMixin"
+    "legacy.BadOmenStatusEffectMixin",
+    "legacy.EndCrystalEntityMixin",
+    "legacy.EntityTypeMixin",
+    "legacy.PortalForcerMixin",
+    "legacy.RaiderEntityMixin",
+    "legacy.RedstoneWireBlockMixin"
   ],
   "injectors": {
     "defaultRequire": 1
-	}
+  }
 }

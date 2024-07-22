@@ -1,7 +1,7 @@
 package com.birblett.mixin.camera;
 
 
-import com.birblett.impl.config.ConfigOptions;
+import com.birblett.impl.config.ConfigOption;
 import com.birblett.lib.camera.CameraInterface;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerChunkLoadingManager;
@@ -18,7 +18,7 @@ public class ServerChunkLoadingManagerMixin {
 
     @Inject(method = "doesNotGenerateChunks", at = @At("RETURN"), cancellable = true)
     protected void cameraGeneratesChunks(ServerPlayerEntity player, CallbackInfoReturnable<Boolean> cir) {
-        if (((CameraInterface) player).isCamera() && !ConfigOptions.CAMERA_GENERATES_CHUNKS.getBool()) {
+        if (((CameraInterface) player).isCamera() && !ConfigOption.CAMERA_GENERATES_CHUNKS.val()) {
             cir.setReturnValue(true);
         }
     }

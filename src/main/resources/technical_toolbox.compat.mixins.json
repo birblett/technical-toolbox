@@ -1,0 +1,12 @@
+{
+  "required": true,
+  "package": "com.birblett.compat.mixin",
+  "plugin": "com.birblett.compat.MixinPlugin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "Lithium_PointOfInterestStorageMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

@@ -20,10 +20,10 @@ import java.util.LinkedHashMap;
 public class ConfigManager {
 
     private MinecraftServer server = null;
-    public final LinkedHashMap<String, ConfigOptions> configMap = new LinkedHashMap<>();
+    public final LinkedHashMap<String, ConfigOption<?>> configMap = new LinkedHashMap<>();
 
     public ConfigManager() {
-        for (ConfigOptions c : ConfigOptions.values()) {
+        for (ConfigOption<?> c : ConfigOption.OPTIONS) {
             this.configMap.put(c.getName(), c);
         }
     }
@@ -64,7 +64,7 @@ public class ConfigManager {
             String line;
             int lineCount = 0;
             int options = 0;
-            HashSet<ConfigOptions> configOptions = new HashSet<>(this.configMap.values());
+            HashSet<ConfigOption> configOptions = new HashSet<>(this.configMap.values());
             while ((line = bufferedReader.readLine()) != null) {
                 lineCount++;
                 String[] split = line.split(":", 2);
@@ -97,7 +97,7 @@ public class ConfigManager {
             if (configMap.size() - options > 0) {
                 TechnicalToolbox.log("" + (configMap.size() - options) + " configuration options were not " +
                         "specified, using defaults");
-                for (ConfigOptions configOption : configOptions) {
+                for (ConfigOption configOption : configOptions) {
                     configOption.setFromString(configOption.getDefaultValue(), this.server);
                 }
             }
@@ -119,8 +119,8 @@ public class ConfigManager {
     public void writeConfigs() {
         try (BufferedWriter bufferedWriter = Files.newBufferedWriter(this.getFile())) {
             int options = 0;
-            for (ConfigOptions c : ConfigOptions.values()) {
-                if (!ConfigOptions.CONFIG_WRITE_ONLY_CHANGES.getBool() || !c.getWriteable().equals(c.getDefaultValue())) {
+            for (ConfigOption c : ConfigOption.OPTIONS) {
+                if (!ConfigOption.CONFIG_WRITE_ONLY_CHANGES.val() || !c.getWriteable().equals(c.getDefaultValue())) {
                     bufferedWriter.write(c.getName() + ": " + c.getWriteable() + "\n");
                     if (c.hasLineBreak()) {
                         bufferedWriter.write("\n");

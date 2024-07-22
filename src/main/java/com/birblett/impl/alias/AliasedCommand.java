@@ -1,7 +1,7 @@
 package com.birblett.impl.alias;
 
 import com.birblett.TechnicalToolbox;
-import com.birblett.impl.config.ConfigOptions;
+import com.birblett.impl.config.ConfigOption;
 import com.birblett.lib.command.CommandSourceModifier;
 import com.birblett.util.ServerUtil;
 import com.birblett.util.TextUtils;
@@ -45,8 +45,8 @@ public class AliasedCommand {
     public AliasedCommand(String alias, String command, CommandDispatcher<ServerCommandSource> dispatcher) {
         this.alias = alias;
         this.commands.add(command);
-        this.permission = ConfigOptions.ALIAS_DEFAULT_PERMISSION.getInt();
-        this.separator = ConfigOptions.ALIAS_DEFAULT_SEPARATOR.getString();
+        this.permission = ConfigOption.ALIAS_DEFAULT_PERMISSION.val();
+        this.separator = ConfigOption.ALIAS_DEFAULT_SEPARATOR.val();
         this.updateArgCount();
         this.register(dispatcher);
     }
@@ -499,10 +499,10 @@ public class AliasedCommand {
     public boolean writeToFile(Path path) {
         try (BufferedWriter bufferedWriter = Files.newBufferedWriter(path)) {
             bufferedWriter.write("Alias: " + this.alias + "\n");
-            if (this.permission != ConfigOptions.ALIAS_DEFAULT_PERMISSION.getInt()) {
+            if (this.permission != ConfigOption.ALIAS_DEFAULT_PERMISSION.val()) {
                 bufferedWriter.write("Permission level: " + this.permission + "\n");
             }
-            if (!this.separator.equals(ConfigOptions.ALIAS_DEFAULT_SEPARATOR.getWriteable())) {
+            if (!this.separator.equals(ConfigOption.ALIAS_DEFAULT_SEPARATOR.getWriteable())) {
                 bufferedWriter.write("Argument separator: \"" + this.separator + "\"\n");
             }
             bufferedWriter.write("Command list:\n");
@@ -526,8 +526,8 @@ public class AliasedCommand {
     public static boolean readFromFile(MinecraftServer server, Path path) {
         try (BufferedReader bufferedReader = Files.newBufferedReader(path)) {
             boolean readingCommandState = false;
-            String line, alias = null, separator = ConfigOptions.ALIAS_DEFAULT_SEPARATOR.getWriteable();
-            int permission = ConfigOptions.ALIAS_DEFAULT_PERMISSION.getInt();
+            String line, alias = null, separator = ConfigOption.ALIAS_DEFAULT_SEPARATOR.getWriteable();
+            int permission = ConfigOption.ALIAS_DEFAULT_PERMISSION.val();
             List<String> commands = new ArrayList<>();
             while ((line = bufferedReader.readLine()) != null) {
                 if (!readingCommandState) {

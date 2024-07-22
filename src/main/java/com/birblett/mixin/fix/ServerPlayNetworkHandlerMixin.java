@@ -1,6 +1,6 @@
 package com.birblett.mixin.fix;
 
-import com.birblett.impl.config.ConfigOptions;
+import com.birblett.impl.config.ConfigOption;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import net.minecraft.server.network.ServerPlayNetworkHandler;
 import org.spongepowered.asm.mixin.Mixin;
@@ -17,7 +17,7 @@ public class ServerPlayNetworkHandlerMixin {
      */
     @ModifyExpressionValue(method = "onPlayerMove", at = @At(value = "CONSTANT", args = "floatValue=100.0f"))
     private float speedLimit(float f) {
-        return ConfigOptions.FIX_SPEED_LIMIT.getFloat();
+        return ConfigOption.FEATURE_SPEED_LIMIT.val();
     }
 
     /**
@@ -25,7 +25,7 @@ public class ServerPlayNetworkHandlerMixin {
      */
     @ModifyExpressionValue(method = "onPlayerMove", at = @At(value = "CONSTANT", args = "floatValue=300.0f"))
     private float elytraSpeedLimit(float f) {
-        return ConfigOptions.FIX_ELYTRA_SPEED_LIMIT.getFloat();
+        return ConfigOption.FEATURE_SPEED_LIMIT_ELYTRA.val();
     }
 
     /**
@@ -33,7 +33,7 @@ public class ServerPlayNetworkHandlerMixin {
      */
     @ModifyExpressionValue(method = "onVehicleMove", at = @At(value = "CONSTANT", args = "doubleValue=100.0"))
     private double disableCameraOnDisconnect(double d) {
-        return ConfigOptions.FIX_VEHICLE_SPEED_LIMIT.getDouble();
+        return ConfigOption.FEATURE_SPEED_LIMIT_VEHICLE.val();
     }
 
 }
