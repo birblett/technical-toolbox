@@ -13,14 +13,14 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
  * Instant activation of raids while having Bad Omen, while legacy raid mechanics are active. See
- * {@link ConfigOption#LEGACY_RAID_MECHANICS}
+ * {@link ConfigOption#LEGACY_BAD_OMEN}
  */
 @Mixin(BadOmenStatusEffect.class)
 public class BadOmenStatusEffectMixin {
 
     @Inject(method = "applyUpdateEffect", at = @At("HEAD"), cancellable = true)
     private void instantRaidProc(LivingEntity entity, int amplifier, CallbackInfoReturnable<Boolean> cir) {
-        if (ConfigOption.LEGACY_RAID_MECHANICS.val() && entity instanceof ServerPlayerEntity serverPlayerEntity &&
+        if (ConfigOption.LEGACY_BAD_OMEN.val() && entity instanceof ServerPlayerEntity serverPlayerEntity &&
                 !entity.isSpectator()) {
             ServerWorld serverWorld = serverPlayerEntity.getServerWorld();
             if (serverWorld.getDifficulty() == Difficulty.PEACEFUL) {

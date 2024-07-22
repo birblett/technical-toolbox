@@ -125,17 +125,17 @@ public class ConfigOption<T> {
             "Whether crafters can be quasi-powered or not.", true,
             "true", "false");
     public static final ConfigOption<Float> FEATURE_SPEED_LIMIT = floatConfig(
-            "fixSpeedLimit", 100.0f,
+            "featureSpeedLimit", 100.0f,
             "The velocity threshold after which the server corrects player velocity.",
             0.0f, Float.MAX_VALUE,
             "100.0", String.valueOf(Integer.MAX_VALUE));
     public static final ConfigOption<Float> FEATURE_SPEED_LIMIT_ELYTRA = floatConfig(
-            "fixSpeedLimitElytra", 300.0f,
+            "featureSpeedLimitElytra", 300.0f,
             "The elytra velocity threshold after which the server corrects player velocity.",
             0.0f, Float.MAX_VALUE,
             "300.0", String.valueOf(Integer.MAX_VALUE));
     public static final ConfigOption<Double> FEATURE_SPEED_LIMIT_VEHICLE = doubleConfig(
-            "fixSpeedLimitVehicle", 100.0,
+            "featureSpeedLimitVehicle", 100.0,
             "The riding velocity threshold after which the server corrects player velocity.",
             0.0, Double.MAX_VALUE, true,
             "100.0", String.valueOf(Integer.MAX_VALUE)) ;
@@ -151,12 +151,12 @@ public class ConfigOption<T> {
             "legacyEndCrystalFireDamage", false,
             "Allow end crystals to take fire damage.",
             "true", "false");
-    public static final ConfigOption<Boolean> LEGACY_RAID_MECHANICS = boolConfig(
-            "legacyRaidMechanics", false,
+    public static final ConfigOption<Boolean> LEGACY_BAD_OMEN = boolConfig(
+            "legacyBadOmen", false,
             "Whether pre-1.21 bad omen/raid mechanics should be used.",
             "true", "false");
-    public static final ConfigOption<Boolean> LEGACY_UPDATE_SKIPPING = boolConfig(
-            "legacyUpdateSkipping", false,
+    public static final ConfigOption<Boolean> LEGACY_TRAPDOOR_UPDATE_SKIPPING = boolConfig(
+            "legacyTrapdoorUpdateSkipping", false,
             "Whether update skipping (for 1.20+ should be allowed.",
             "true", "false");
 

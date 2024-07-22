@@ -1,4 +1,4 @@
-package com.birblett.mixin.fix;
+package com.birblett.mixin.feature;
 
 import com.birblett.impl.config.ConfigOption;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
