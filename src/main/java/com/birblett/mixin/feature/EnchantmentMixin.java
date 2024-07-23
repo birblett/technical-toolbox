@@ -14,6 +14,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.Optional;
 
+/**
+ * Allows different protection enchantments to be combined. See {@link ConfigOption#LEGACY_PROTECTION_COMPATIBILITY}
+ */
 @Mixin(Enchantment.class)
 public abstract class EnchantmentMixin {
 

@@ -7,7 +7,8 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 
 /**
- * Velocity-related fixes for rubberbanding
+ * Increase player velocity thresholds before correcting packets are sent. See {@link ConfigOption#FEATURE_SPEED_LIMIT},
+ * {@link ConfigOption#FEATURE_SPEED_LIMIT_ELYTRA}, and {@link ConfigOption#FEATURE_SPEED_LIMIT_VEHICLE}
  */
 @Mixin(ServerPlayNetworkHandler.class)
 public class ServerPlayNetworkHandlerMixin {
