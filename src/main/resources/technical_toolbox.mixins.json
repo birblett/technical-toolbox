@@ -12,6 +12,7 @@
     "config.MinecraftServerMixin",
     "feature.BulbBlockMixin",
     "feature.CrafterBlockMixin",
+    "feature.EnchantmentMixin",
     "feature.ServerPlayNetworkHandlerMixin",
     "legacy.BadOmenStatusEffectMixin",
     "legacy.EndCrystalEntityMixin",

@@ -1,7 +1,6 @@
 package com.birblett.compat.mixin;
 
 import com.bawnorton.mixinsquared.TargetHandler;
-import com.birblett.TechnicalToolbox;
 import com.birblett.compat.MixinPlugin;
 import com.birblett.impl.config.ConfigOption;
 import net.minecraft.world.poi.PointOfInterest;

@@ -138,14 +138,18 @@ public class ConfigOption<T> {
             "featureSpeedLimitVehicle", 100.0,
             "The riding velocity threshold after which the server corrects player velocity.",
             0.0, Double.MAX_VALUE, true,
-            "100.0", String.valueOf(Integer.MAX_VALUE)) ;
+            "100.0", String.valueOf(Integer.MAX_VALUE));
     public static final ConfigOption<Boolean> LEGACY_POI_PROPERTY_CHECK = boolConfig(
             "legacyDisablePoiPropertyCheck", false,
             "Disables portal POI HORIZONTAL_AXIS property check.",
             "true", "false");
+    public static final ConfigOption<Boolean> LEGACY_PROTECTION_COMPATIBILITY = boolConfig(
+            "legacyProtectionCompatibility", false,
+            "Makes all protection types compatible with each other.",
+            "true", "false");
     public static final ConfigOption<Boolean> LEGACY_END_CRYSTAL_COLLISION = boolConfig(
             "legacyEndCrystalCollision", false,
-            "While true, end crystals won't check for collision in their tick method.",
+            "End crystals won't check for collision in their tick method.",
             "true", "false");
     public static final ConfigOption<Boolean> LEGACY_END_CRYSTAL_FIRE_DAMAGE = boolConfig(
             "legacyEndCrystalFireDamage", false,
@@ -157,7 +161,7 @@ public class ConfigOption<T> {
             "true", "false");
     public static final ConfigOption<Boolean> LEGACY_TRAPDOOR_UPDATE_SKIPPING = boolConfig(
             "legacyTrapdoorUpdateSkipping", false,
-            "Whether update skipping (for 1.20+ should be allowed.",
+            "Whether update skipping should be allowed.",
             "true", "false");
 
     private final String name;

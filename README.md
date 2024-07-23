@@ -2,7 +2,7 @@
 <hr/>
 
 ### Overview
-A collection of technical-related commands, utilities, and backports, for major versions between 1.17-1.20.4. Extensive documentation can be found on the [wiki](https://github.com/birblett/technical-toolbox/wiki).
+A collection of technical-related commands, utilities, and backports, for major versions between 1.17-1.21. Extensive documentation can be found on the [wiki](https://github.com/birblett/technical-toolbox/wiki).
 <hr/>
 
 ### Features
