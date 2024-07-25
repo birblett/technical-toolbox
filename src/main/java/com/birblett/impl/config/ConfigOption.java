@@ -53,6 +53,10 @@ public class ConfigOption<T> {
             return TextUtils.formattable("Option aliasDefaultSeparator requires string of length > 0");
         }
     };
+    public static final ConfigOption<Boolean> ALIAS_DEFAULT_SILENT = boolConfig(
+            "aliasDefaultSilent", false,
+            "Whether aliases default to sending feedback or not.",
+            "true", "false");
     public static final ConfigOption<String> CAMERA_COMMAND = new ConfigOption<>(
             "cameraCommand", "cam",
             "Camera command string, usage /[cmd string].",

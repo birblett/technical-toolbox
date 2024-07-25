@@ -6,6 +6,7 @@ import com.birblett.impl.alias.AliasedCommand;
 import com.birblett.util.ServerUtil;
 import com.birblett.util.TextUtils;
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import net.minecraft.command.CommandSource;
@@ -256,6 +257,27 @@ public class AliasCommand {
                                                                         TextUtils.formattable(" set to \"").append(TextUtils
                                                                                 .formattable(separator).formatted(Formatting.
                                                                                         YELLOW)).append("\"")), false);
+                                                        return 1;
+                                                    }
+                                                    context.getSource().sendError(TextUtils.formattable("Couldn't " +
+                                                            "find alias \"" + alias + "\n"));
+                                                    return 0;
+                                                })))
+                                // sets the separator of the alias
+                                .then(CommandManager.literal("silent")
+                                        .then(CommandManager.argument("silent execution", BoolArgumentType.bool())
+                                                .executes(context -> {
+                                                    String alias = context.getArgument("alias", String.class);
+                                                    boolean silent = context.getArgument("silent execution", Boolean.class);
+                                                    AliasedCommand cmd = AliasManager.ALIASES.get(alias);
+                                                    if (cmd != null) {
+                                                        cmd.setSilent(silent);
+                                                        context.getSource().sendFeedback(() -> TextUtils
+                                                                .formattable("Alias ").append(TextUtils
+                                                                        .formattable(alias).formatted(Formatting.GREEN))
+                                                                .append(TextUtils.formattable(" set to " + (silent ?
+                                                                        "silent " : "verbose ") + "execution mode")),
+                                                                false);
                                                         return 1;
                                                     }
                                                     context.getSource().sendError(TextUtils.formattable("Couldn't " +

@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "technical_toolbox",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "name": "Technical Toolbox",
   "description": "A collection of technical Minecraft-related utilities",
   "authors": [

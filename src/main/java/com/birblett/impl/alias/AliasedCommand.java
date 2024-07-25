@@ -37,6 +37,7 @@ public class AliasedCommand {
     private final Set<String> args = new LinkedHashSet<>();
     private int argCount;
     private int permission;
+    private boolean silent;
     private String separator;
     private static final Pattern ARG = Pattern.compile("\\{\\$[^{$}]+}");
     private static final String[] VALID = new String[]{"int", "float", "double", "boolean", "word", "letters",
@@ -47,15 +48,17 @@ public class AliasedCommand {
         this.commands.add(command);
         this.permission = ConfigOption.ALIAS_DEFAULT_PERMISSION.val();
         this.separator = ConfigOption.ALIAS_DEFAULT_SEPARATOR.val();
+        this.silent = ConfigOption.ALIAS_DEFAULT_SILENT.val();
         this.updateArgCount();
         this.register(dispatcher);
     }
 
-    private AliasedCommand(String alias, int permission, String separator, CommandDispatcher<ServerCommandSource> dispatcher, Collection<String> commands) {
+    private AliasedCommand(String alias, int permission, String separator, boolean silent, CommandDispatcher<ServerCommandSource> dispatcher, Collection<String> commands) {
         this.alias = alias;
         this.commands.addAll(commands);
         this.permission = permission;
         this.separator = separator;
+        this.silent = silent;
         this.updateArgCount();
         this.register(dispatcher);
     }
@@ -78,6 +81,10 @@ public class AliasedCommand {
 
     public void setSeparator(String separator) {
         this.separator = separator;
+    }
+
+    public void setSilent(boolean silent) {
+        this.silent = silent;
     }
 
     public String getSeparator() {
@@ -273,17 +280,23 @@ public class AliasedCommand {
      * @param command command to execute
      */
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
-    private boolean executeCmd(CommandContext<ServerCommandSource> context, String command) {
+    private boolean executeCommand(CommandContext<ServerCommandSource> context, String command) {
         ServerCommandSource source = context.getSource();
         CommandDispatcher<ServerCommandSource> dispatcher = source.getServer().getCommandManager().getDispatcher();
-        ((CommandSourceModifier) source).setPermissionOverride(true);
+        ((CommandSourceModifier) source).technicalToolbox$setPermissionOverride(true);
+        if (this.silent) {
+            ((CommandSourceModifier) source).technicalToolbox$shutUp(true);
+        }
         try {
             dispatcher.execute(dispatcher.parse(command, source));
-        } catch (CommandSyntaxException e) {
+            ((CommandSourceModifier) source).technicalToolbox$shutUp(false);
+        }
+        catch (CommandSyntaxException e) {
             context.getSource().sendError(TextUtils.formattable(e.getMessage()));
+            ((CommandSourceModifier) source).technicalToolbox$shutUp(false);
             return false;
         }
-        ((CommandSourceModifier) source).setPermissionOverride(false);
+        ((CommandSourceModifier) source).technicalToolbox$setPermissionOverride(false);
         return true;
     }
 
@@ -469,7 +482,7 @@ public class AliasedCommand {
                     command = command.replaceAll("\\{\\$" + arg + "}", args[i]);
                     i++;
                 }
-                if (!this.executeCmd(context, command)) {
+                if (!this.executeCommand(context, command)) {
                     break;
                 }
             }
@@ -485,7 +498,7 @@ public class AliasedCommand {
      */
     public void execute(CommandContext<ServerCommandSource> context) {
         for (String command : this.commands) {
-            if (!this.executeCmd(context, command)) {
+            if (!this.executeCommand(context, command)) {
                 break;
             }
         }
@@ -525,7 +538,7 @@ public class AliasedCommand {
      */
     public static boolean readFromFile(MinecraftServer server, Path path) {
         try (BufferedReader bufferedReader = Files.newBufferedReader(path)) {
-            boolean readingCommandState = false;
+            boolean readingCommandState = false, silent = ConfigOption.ALIAS_DEFAULT_SILENT.val();
             String line, alias = null, separator = ConfigOption.ALIAS_DEFAULT_SEPARATOR.getWriteable();
             int permission = ConfigOption.ALIAS_DEFAULT_PERMISSION.val();
             List<String> commands = new ArrayList<>();
@@ -548,6 +561,10 @@ public class AliasedCommand {
                                     return false;
                                 }
                             }
+                            case "silent" -> {
+                                String tmp = line.replaceFirst("(?i)Silent: *", "");
+                                silent = Boolean.parseBoolean(tmp);
+                            }
                         }
                     }
                     else if (split.length == 1 && split[0].equalsIgnoreCase("command list")) {
@@ -564,11 +581,11 @@ public class AliasedCommand {
                 TechnicalToolbox.log(path + ": Alias not specified in file");
                 return false;
             }
-            if (commands.size() < 1) {
+            if (commands.isEmpty()) {
                 TechnicalToolbox.log(path + ": Missing script body");
                 return false;
             }
-            new AliasedCommand(alias, permission, separator, server.getCommandManager().getDispatcher(), commands);
+            new AliasedCommand(alias, permission, separator, silent, server.getCommandManager().getDispatcher(), commands);
         }
         catch (IOException e) {
             TechnicalToolbox.warn("Something went wrong reading from file " + path);
