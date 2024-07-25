@@ -84,6 +84,9 @@ public class AliasCommand {
                         .requires(source -> source.hasPermissionLevel(4))
                         .executes(context -> {
                             TechnicalToolbox.ALIAS_MANAGER.readAliases();
+                            context.getSource().sendFeedback(() -> TextUtils.formattable("Reloaded aliases from " +
+                                    "disk"), false);
+                            ServerUtil.refreshCommandTree(context.getSource().getServer());
                             return 1;
                         }))
                 // writes all aliases to file
@@ -91,6 +94,8 @@ public class AliasCommand {
                         .requires(source -> source.hasPermissionLevel(4))
                         .executes(context -> {
                             TechnicalToolbox.ALIAS_MANAGER.writeAliases();
+                            context.getSource().sendFeedback(() -> TextUtils.formattable("Wrote aliases to " +
+                                    "disk"), false);
                             return 1;
                         }))
                 // lists all aliases the executing player can use

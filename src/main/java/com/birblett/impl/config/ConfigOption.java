@@ -139,13 +139,9 @@ public class ConfigOption<T> {
             "The riding velocity threshold after which the server corrects player velocity.",
             0.0, Double.MAX_VALUE, true,
             "100.0", String.valueOf(Integer.MAX_VALUE));
-    public static final ConfigOption<Boolean> LEGACY_POI_PROPERTY_CHECK = boolConfig(
-            "legacyDisablePoiPropertyCheck", false,
-            "Disables portal POI HORIZONTAL_AXIS property check.",
-            "true", "false");
-    public static final ConfigOption<Boolean> LEGACY_PROTECTION_COMPATIBILITY = boolConfig(
-            "legacyProtectionCompatibility", false,
-            "Makes all protection types compatible with each other.",
+    public static final ConfigOption<Boolean> LEGACY_BAD_OMEN = boolConfig(
+            "legacyBadOmen", false,
+            "Whether pre-1.21 bad omen/raid mechanics should be used.",
             "true", "false");
     public static final ConfigOption<Boolean> LEGACY_END_CRYSTAL_COLLISION = boolConfig(
             "legacyEndCrystalCollision", false,
@@ -155,9 +151,17 @@ public class ConfigOption<T> {
             "legacyEndCrystalFireDamage", false,
             "Allow end crystals to take fire damage.",
             "true", "false");
-    public static final ConfigOption<Boolean> LEGACY_BAD_OMEN = boolConfig(
-            "legacyBadOmen", false,
-            "Whether pre-1.21 bad omen/raid mechanics should be used.",
+    public static final ConfigOption<Boolean> LEGACY_END_PLATFORM = boolConfig(
+            "legacyEndPlatform", false,
+            "Re-enables pre-1.21 end portal logic.",
+            "true", "false");
+    public static final ConfigOption<Boolean> LEGACY_POI_PROPERTY_CHECK = boolConfig(
+            "legacyDisablePoiPropertyCheck", false,
+            "Disables portal POI HORIZONTAL_AXIS property check.",
+            "true", "false");
+    public static final ConfigOption<Boolean> LEGACY_PROTECTION_COMPATIBILITY = boolConfig(
+            "legacyProtectionCompatibility", false,
+            "Makes all protection types compatible with each other.",
             "true", "false");
     public static final ConfigOption<Boolean> LEGACY_TRAPDOOR_UPDATE_SKIPPING = boolConfig(
             "legacyTrapdoorUpdateSkipping", false,

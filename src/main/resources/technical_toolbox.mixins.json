@@ -16,6 +16,7 @@
     "feature.ServerPlayNetworkHandlerMixin",
     "legacy.BadOmenStatusEffectMixin",
     "legacy.EndCrystalEntityMixin",
+    "legacy.EndPortalBlockMixin",
     "legacy.EntityTypeMixin",
     "legacy.PortalForcerMixin",
     "legacy.RaiderEntityMixin",
