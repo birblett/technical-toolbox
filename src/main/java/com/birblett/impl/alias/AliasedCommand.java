@@ -518,6 +518,9 @@ public class AliasedCommand {
             if (!this.separator.equals(ConfigOption.ALIAS_DEFAULT_SEPARATOR.getWriteable())) {
                 bufferedWriter.write("Argument separator: \"" + this.separator + "\"\n");
             }
+            if (this.silent != (ConfigOption.ALIAS_DEFAULT_SILENT.val())) {
+                bufferedWriter.write("Silent: \"" + this.silent + "\"\n");
+            }
             bufferedWriter.write("Command list:\n");
             for (String command : this.commands) {
                 bufferedWriter.write(command + "\n");
