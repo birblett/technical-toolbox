@@ -53,7 +53,6 @@ public class ConfigManager {
      */
     public void onServerClose() {
         this.writeConfigs();
-        this.server = null;
     }
 
     /**
