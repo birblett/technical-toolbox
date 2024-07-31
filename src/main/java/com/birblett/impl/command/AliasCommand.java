@@ -84,7 +84,7 @@ public class AliasCommand {
                 .then(CommandManager.literal("reload")
                         .requires(source -> source.hasPermissionLevel(4))
                         .executes(context -> {
-                            TechnicalToolbox.ALIAS_MANAGER.readAliases();
+                            TechnicalToolbox.ALIAS_MANAGER.readAliases(context.getSource().getServer());
                             context.getSource().sendFeedback(() -> TextUtils.formattable("Reloaded aliases from " +
                                     "disk"), false);
                             ServerUtil.refreshCommandTree(context.getSource().getServer());
@@ -94,7 +94,7 @@ public class AliasCommand {
                 .then(CommandManager.literal("save")
                         .requires(source -> source.hasPermissionLevel(4))
                         .executes(context -> {
-                            TechnicalToolbox.ALIAS_MANAGER.writeAliases();
+                            TechnicalToolbox.ALIAS_MANAGER.writeAliases(context.getSource().getServer());
                             context.getSource().sendFeedback(() -> TextUtils.formattable("Wrote aliases to " +
                                     "disk"), false);
                             return 1;

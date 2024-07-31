@@ -22,8 +22,8 @@ public class MinecraftServerMixin {
     @Inject(method = "stop", at = @At("HEAD"))
     private void serverStopped(CallbackInfo ci) {
         if ((MinecraftServer) (Object) this != null) {
-            TechnicalToolbox.CONFIG_MANAGER.onServerClose();
-            TechnicalToolbox.ALIAS_MANAGER.onServerClose();
+            TechnicalToolbox.CONFIG_MANAGER.onServerClose((MinecraftServer) (Object) this);
+            TechnicalToolbox.ALIAS_MANAGER.onServerClose((MinecraftServer) (Object) this);
         }
     }
 

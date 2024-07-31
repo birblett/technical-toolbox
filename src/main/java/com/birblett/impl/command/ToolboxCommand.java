@@ -58,7 +58,8 @@ public class ToolboxCommand {
                                                             .GREEN))).append(TextUtils.formattable(" for option " + option)),
                                                             true);
                                                     if (ConfigOption.CONFIG_WRITE_ON_CHANGE.val()) {
-                                                        TechnicalToolbox.CONFIG_MANAGER.writeConfigs();
+                                                        TechnicalToolbox.CONFIG_MANAGER.writeConfigs(context.getSource()
+                                                                .getServer());
                                                     }
                                                     return 1;
                                                 }
@@ -87,7 +88,7 @@ public class ToolboxCommand {
                         .executes(context -> {
                             context.getSource().sendFeedback(() -> TextUtils.formattable("Reloading configs from storage"),
                                     true);
-                            TechnicalToolbox.CONFIG_MANAGER.readConfigs();
+                            TechnicalToolbox.CONFIG_MANAGER.readConfigs(context.getSource().getServer());
                             return 1;
                         }))
                 // force-writes configs to storage
@@ -96,7 +97,7 @@ public class ToolboxCommand {
                         .executes(context -> {
                             context.getSource().sendFeedback(() -> TextUtils.formattable("Saving configs to storage"),
                                     true);
-                            TechnicalToolbox.CONFIG_MANAGER.writeConfigs();
+                            TechnicalToolbox.CONFIG_MANAGER.writeConfigs(context.getSource().getServer());
                             return 1;
                         })));
 

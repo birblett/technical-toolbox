@@ -20,14 +20,14 @@ import java.util.Optional;
 @Mixin(AnvilScreenHandler.class)
 public class AnvilScreenHandlerMixin {
 
-    @Unique private static final Identifier technicalToolbox$PROTECTION_ID = Identifier.of("exclusive_set/armor");
+    @Unique private static final Identifier PROTECTION_ID = Identifier.of("exclusive_set/armor");
 
     @WrapOperation(method = "updateResult", at = @At(value = "INVOKE", target = "Lnet/minecraft/enchantment/Enchantment;canBeCombined(Lnet/minecraft/registry/entry/RegistryEntry;Lnet/minecraft/registry/entry/RegistryEntry;)Z"))
     private boolean allowProtectionCombination(RegistryEntry<Enchantment> first, RegistryEntry<Enchantment> second, Operation<Boolean> original) {
         Optional<TagKey<Enchantment>> t;
         if (ConfigOption.LEGACY_PROTECTION_COMPATIBILITY.val() && first.value().exclusiveSet() == second.value()
                 .exclusiveSet() && (t = first.value().exclusiveSet().getTagKey()).isPresent() && t.get().id()
-                .equals(technicalToolbox$PROTECTION_ID)) {
+                .equals(PROTECTION_ID)) {
             return true;
         }
         return original.call(first, second);

@@ -19,7 +19,6 @@ import java.util.LinkedHashMap;
  */
 public class ConfigManager {
 
-    private MinecraftServer server = null;
     public final LinkedHashMap<String, ConfigOption<?>> configMap = new LinkedHashMap<>();
 
     public ConfigManager() {
@@ -35,7 +34,7 @@ public class ConfigManager {
     /**
      * @return path to config file
      */
-    private Path getFile() {
+    private Path getFile(MinecraftServer server) {
         return server.getSavePath(WorldSavePath.ROOT).resolve("toolbox.conf");
     }
 
@@ -44,22 +43,21 @@ public class ConfigManager {
      * @param server host server
      */
     public void onServerOpen(MinecraftServer server) {
-        this.server = server;
-        this.readConfigs();
+        this.readConfigs(server);
     }
 
     /**
      * Called on server close, writes configs back to storage.
      */
-    public void onServerClose() {
-        this.writeConfigs();
+    public void onServerClose(MinecraftServer server) {
+        this.writeConfigs(server);
     }
 
     /**
      * Loads configs from storage into memory.
      */
-    public void readConfigs() {
-        try (BufferedReader bufferedReader = Files.newBufferedReader(this.getFile())) {
+    public void readConfigs(MinecraftServer server) {
+        try (BufferedReader bufferedReader = Files.newBufferedReader(this.getFile(server))) {
             String line;
             int lineCount = 0;
             int options = 0;
@@ -82,7 +80,7 @@ public class ConfigManager {
                         TechnicalToolbox.log("Option '" + name + "' does not exist");
                         continue;
                     }
-                    Text out = configMap.get(name).setFromString(value, this.server);
+                    Text out = configMap.get(name).setFromString(value, server);
                     configOptions.remove(configMap.get(name));
                     if (out != null) {
                         TechnicalToolbox.log(out.getContent().toString());
@@ -97,14 +95,14 @@ public class ConfigManager {
                 TechnicalToolbox.log("" + (configMap.size() - options) + " configuration options were not " +
                         "specified, using defaults");
                 for (ConfigOption configOption : configOptions) {
-                    configOption.setFromString(configOption.getDefaultValue(), this.server);
+                    configOption.setFromString(configOption.getDefaultValue(), server);
                 }
             }
         }
         catch (IOException e) {
             TechnicalToolbox.warn("Configuration file 'toolbox.conf' was not found, using defaults");
             try {
-                BufferedWriter bufferedWriter = Files.newBufferedWriter(this.getFile());
+                BufferedWriter bufferedWriter = Files.newBufferedWriter(this.getFile(server));
                 bufferedWriter.write("");
             } catch (IOException ex) {
                 TechnicalToolbox.error("Failed to generate configuration file `toolbox.conf`");
@@ -115,8 +113,8 @@ public class ConfigManager {
     /**
      * Writes configs to storage.
      */
-    public void writeConfigs() {
-        try (BufferedWriter bufferedWriter = Files.newBufferedWriter(this.getFile())) {
+    public void writeConfigs(MinecraftServer server) {
+        try (BufferedWriter bufferedWriter = Files.newBufferedWriter(this.getFile(server))) {
             int options = 0;
             for (ConfigOption c : ConfigOption.OPTIONS) {
                 if (!ConfigOption.CONFIG_WRITE_ONLY_CHANGES.val() || !c.getWriteable().equals(c.getDefaultValue())) {
