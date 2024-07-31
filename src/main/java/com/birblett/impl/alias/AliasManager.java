@@ -42,7 +42,6 @@ public class AliasManager {
         for (Object key : AliasManager.ALIASES.keySet().toArray()) {
             AliasManager.ALIASES.get((String) key).deregister(server);
         }
-        AliasManager.ALIASES.clear();
     }
 
     /**

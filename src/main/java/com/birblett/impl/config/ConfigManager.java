@@ -51,6 +51,7 @@ public class ConfigManager {
      */
     public void onServerClose(MinecraftServer server) {
         this.writeConfigs(server);
+        this.configMap.clear();
     }
 
     /**

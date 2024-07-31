@@ -17,6 +17,8 @@ import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
+import java.util.Comparator;
+
 /**
  * Alias command for adding, modifying, and removing aliases.
  */
@@ -103,7 +105,8 @@ public class AliasCommand {
                 .then(CommandManager.literal("list")
                         .executes(context -> {
                             MutableText text = TextUtils.formattable("Aliases:");
-                            for (AliasedCommand cmd : AliasManager.ALIASES.values()) {
+                            for (AliasedCommand cmd : AliasManager.ALIASES.values().stream().sorted(Comparator
+                                    .comparing(AliasedCommand::getAlias)).toList()) {
                                 if (!context.getSource().isExecutedByPlayer() || context.getSource().getPlayer() != null
                                         && context.getSource().getPlayer().hasPermissionLevel(cmd.getPermission())) {
                                     text.append("\n  " + cmd.getAlias() + ": ").append(cmd.getSyntax());
