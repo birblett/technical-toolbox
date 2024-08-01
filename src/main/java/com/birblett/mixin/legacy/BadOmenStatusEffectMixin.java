@@ -2,11 +2,11 @@ package com.birblett.mixin.legacy;
 
 import com.birblett.impl.config.ConfigOption;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.effect.BadOmenStatusEffect;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.world.Difficulty;
 import org.spongepowered.asm.mixin.Mixin;
-import net.minecraft.entity.effect.BadOmenStatusEffect;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;

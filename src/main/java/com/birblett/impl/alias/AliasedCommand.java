@@ -96,7 +96,9 @@ public class AliasedCommand {
     }
 
     public void register(CommandDispatcher<ServerCommandSource> dispatcher) {
-        AliasManager.ALIASES.put(this.alias, this);
+        if (!AliasManager.ALIASES.containsKey(this.alias)) {
+            AliasManager.ALIASES.put(this.alias, this);
+        }
         dispatcher.register((CommandManager.literal(this.alias)
                 .requires(source -> source.hasPermissionLevel(this.getPermission())))
                 // Execution if args provided - no suggestion if no args required

@@ -1,7 +1,6 @@
 package com.birblett.mixin.legacy;
 
 import com.birblett.impl.config.ConfigOption;
-import com.llamalad7.mixinextras.injector.ModifyReceiver;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import net.minecraft.block.Blocks;

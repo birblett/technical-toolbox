@@ -1,6 +1,9 @@
 package com.birblett.mixin.command;
 
+import com.birblett.impl.alias.AliasManager;
+import com.birblett.impl.alias.AliasedCommand;
 import com.birblett.impl.command.AliasCommand;
+import com.birblett.impl.command.CameraCommand;
 import com.birblett.impl.command.ToolboxCommand;
 import com.mojang.brigadier.CommandDispatcher;
 import net.minecraft.command.CommandRegistryAccess;
@@ -14,7 +17,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Registers some custom commands. Aliases and camera command are registered on-demand instead of on initialization.
+ * Registers some custom commands. Aliases and camera command are registered on-demand as well.
  */
 @Mixin(CommandManager.class)
 public class CommandManagerMixin {
@@ -25,6 +28,10 @@ public class CommandManagerMixin {
     private void onRegister(CommandManager.RegistrationEnvironment environment, CommandRegistryAccess commandRegistryAccess, CallbackInfo ci) {
         ToolboxCommand.register(dispatcher);
         AliasCommand.register(dispatcher);
+        CameraCommand.register(dispatcher);
+        for (AliasedCommand aliasedCommand : AliasManager.ALIASES.values()) {
+            aliasedCommand.register(dispatcher);
+        }
     }
 
 }

@@ -92,7 +92,7 @@ public class ConfigManager {
             TechnicalToolbox.log("Loaded " + options + " valid configuration options from " +
                     "'toolbox.conf'");
             if (configMap.size() - options > 0) {
-                TechnicalToolbox.log("" + (configMap.size() - options) + " configuration options were not " +
+                TechnicalToolbox.log((configMap.size() - options) + " configuration options were not " +
                         "specified, using defaults");
                 for (ConfigOption configOption : configOptions) {
                     configOption.setFromString(configOption.getDefaultValue(), server);
