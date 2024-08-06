@@ -7,6 +7,9 @@ import com.birblett.util.ServerUtil;
 import com.birblett.util.TextUtils;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.builder.ArgumentBuilder;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.server.MinecraftServer;
@@ -99,48 +102,37 @@ public class AliasedCommand {
         if (!AliasManager.ALIASES.containsKey(this.alias)) {
             AliasManager.ALIASES.put(this.alias, this);
         }
-        dispatcher.register((CommandManager.literal(this.alias)
-                .requires(source -> source.hasPermissionLevel(this.getPermission())))
-                // Execution if args provided - no suggestion if no args required
-                .then(CommandManager.argument("arguments", StringArgumentType.greedyString())
-                        .requires(source -> this.argCount > 0)
-                        .executes(context -> {
-                            String[] args = context.getArgument("arguments", String.class).split(" *" +
-                                    this.separator + " *");
-                            boolean bl = args.length == this.args.size();
-                            if (bl) {
-                                this.execute(context, args);
-                            }
-                            else {
-                                MutableText text = TextUtils.formattable("Alias ").append(TextUtils.formattable(this.alias)
-                                        .formatted(Formatting.GREEN)).append(TextUtils.formattable(" requires " +
-                                        this.args.size() + " arguments: "));
-                                text.append(this.getCommaSeparateArgs());
-                                context.getSource().sendMessage(text);
-                            }
-                            return 1;
-                        }))
-                // Provides arguments if present
-                .then(CommandManager.literal("help")
-                        .requires(source -> this.argCount > 0)
-                        .executes(context -> {
-                            MutableText text = TextUtils.formattable("Syntax: ").append(this.getSyntax());
-                            context.getSource().sendFeedback(() -> text, false);
-                            return 1;
-                        }))
-                // Execution if no args provided
-                .executes(context -> {
-                    if (this.argCount > 0) {
-                        MutableText text = TextUtils.formattable("Alias ").append(TextUtils.formattable(this.alias)
-                                .formatted(Formatting.GREEN)).append(TextUtils.formattable(" requires " +
-                                this.args.size() + " arguments: "));
-                        text.append(this.getCommaSeparateArgs());
-                        context.getSource().sendFeedback(() -> text, false);
-                        return 0;
-                    }
-                    this.execute(context);
-                    return 1;
-                }));
+        ArgumentBuilder<ServerCommandSource, ?> tree = null;
+        // disgusting hack to build the command tree from the bottom up. thanks for the tip mojang
+        if (this.argCount > 0) {
+            String[] str = this.args.toArray(new String[0]);
+            for (int i = str.length - 1; i >= 0; i--) {
+                if (tree == null) {
+                    tree = CommandManager.argument(str[i], StringArgumentType.string()).executes(context -> {
+                        String[] args = new String[str.length];
+                        for (int j = 0; j < str.length; j++) {
+                            args[j] = context.getArgument(str[j], String.class);
+                        }
+                        return this.execute(context, args);
+                    });
+                }
+                else {
+                    tree = CommandManager.argument(str[i], StringArgumentType.string()).then(tree);
+                }
+            }
+        }
+        // Execution with required arguments
+        if (this.argCount > 0) {
+            dispatcher.register((CommandManager.literal(this.alias)
+                    .requires(source -> source.hasPermissionLevel(this.getPermission())))
+                    .then(tree));
+        }
+        // Execution if no args provided
+        else {
+            dispatcher.register((CommandManager.literal(this.alias)
+                    .requires(source -> source.hasPermissionLevel(this.getPermission())))
+                    .executes(this::execute));
+        }
     }
 
     /**
@@ -475,7 +467,7 @@ public class AliasedCommand {
      * @param context command context
      * @param args input args
      */
-    public void execute(CommandContext<ServerCommandSource> context, String[] args) {
+    public int execute(CommandContext<ServerCommandSource> context, String[] args) {
         for (String command : this.commands) {
             String validation = this.checkValidation(command);
             if (validation == null) {
@@ -485,25 +477,27 @@ public class AliasedCommand {
                     i++;
                 }
                 if (!this.executeCommand(context, command)) {
-                    break;
+                    return 1;
                 }
             }
             else if (!this.validate(context, validation, command, args)) {
-                break;
+                return 1;
             }
         }
+        return 0;
     }
 
     /**
      * Executes a command without any args.
      * @param context command context
      */
-    public void execute(CommandContext<ServerCommandSource> context) {
+    public int execute(CommandContext<ServerCommandSource> context) {
         for (String command : this.commands) {
             if (!this.executeCommand(context, command)) {
-                break;
+                return 1;
             }
         }
+        return 0;
     }
 
     /**

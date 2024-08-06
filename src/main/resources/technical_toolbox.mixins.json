@@ -20,7 +20,8 @@
     "legacy.EntityTypeMixin",
     "legacy.PortalForcerMixin",
     "legacy.RaiderEntityMixin",
-    "legacy.RedstoneWireBlockMixin"
+    "legacy.RedstoneWireBlockMixin",
+    "scheduler.ServerWorldMixin"
   ],
   "injectors": {
     "defaultRequire": 1

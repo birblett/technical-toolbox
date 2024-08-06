@@ -1,6 +1,7 @@
 package com.birblett.impl.config;
 
 import com.birblett.impl.command.CameraCommand;
+import com.birblett.impl.schedule.DelayCommand;
 import com.birblett.util.ServerUtil;
 import com.birblett.util.TextUtils;
 import net.minecraft.server.MinecraftServer;
@@ -110,6 +111,28 @@ public class ConfigOption<T> {
             "Permission level required to use the camera command.",
             0, 4, true,
             "0", "4");
+    public static final ConfigOption<String> DELAY_COMMAND = new ConfigOption<>(
+            "delayCommand", "delay",
+            "Command scheduling command string, usage /[cmd string] <delay> <command>.",
+            "delay", "sch") {
+        @Override
+        public Text setFromString(String value, MinecraftServer server) {
+            String oldValue = this.value;
+            Text s = this.setFromString(value);
+            if (s == null && server != null) {
+                ServerUtil.removeCommandByName(server, oldValue);
+                DelayCommand.register(server.getCommandManager().getDispatcher());
+            }
+            return s;
+        }
+
+        @Override
+        public Text setFromString(String value) {
+            Pair<String, Text> out = getStringOption(this.getName(), value, "delay");
+            this.value = out.getLeft();
+            return out.getRight();
+        }
+    };
     public static final ConfigOption<Integer> FEATURE_COPPER_BULB_DELAY = intConfig(
             "featureCopperBulbDelay", 0,
             "Gameticks of copper bulb delay when powered",
