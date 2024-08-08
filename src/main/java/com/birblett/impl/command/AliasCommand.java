@@ -1,8 +1,8 @@
 package com.birblett.impl.command;
 
 import com.birblett.TechnicalToolbox;
-import com.birblett.impl.alias.AliasManager;
-import com.birblett.impl.alias.AliasedCommand;
+import com.birblett.impl.command.alias.AliasManager;
+import com.birblett.impl.command.alias.AliasedCommand;
 import com.birblett.util.ServerUtil;
 import com.birblett.util.TextUtils;
 import com.mojang.brigadier.CommandDispatcher;

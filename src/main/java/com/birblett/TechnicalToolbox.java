@@ -1,6 +1,6 @@
 package com.birblett;
 
-import com.birblett.impl.alias.AliasManager;
+import com.birblett.impl.command.alias.AliasManager;
 import com.birblett.impl.config.ConfigManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

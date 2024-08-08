@@ -1,4 +1,4 @@
-package com.birblett.lib.delay;
+package com.birblett.lib.command.delay;
 
 public interface CommandOption {
 

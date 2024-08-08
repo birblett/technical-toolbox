@@ -1,4 +1,4 @@
-package com.birblett.lib.camera;
+package com.birblett.lib.command.camera;
 
 public interface CameraInterface {
 

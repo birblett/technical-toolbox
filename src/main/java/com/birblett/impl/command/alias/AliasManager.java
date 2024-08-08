@@ -1,4 +1,4 @@
-package com.birblett.impl.alias;
+package com.birblett.impl.command.alias;
 
 import com.birblett.TechnicalToolbox;
 import net.minecraft.server.MinecraftServer;

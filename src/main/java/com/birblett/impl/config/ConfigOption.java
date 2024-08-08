@@ -1,7 +1,7 @@
 package com.birblett.impl.config;
 
 import com.birblett.impl.command.CameraCommand;
-import com.birblett.impl.delay.DelayCommand;
+import com.birblett.impl.command.delay.DelayCommand;
 import com.birblett.util.ServerUtil;
 import com.birblett.util.TextUtils;
 import net.minecraft.server.MinecraftServer;

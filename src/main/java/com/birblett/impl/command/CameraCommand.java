@@ -1,7 +1,7 @@
 package com.birblett.impl.command;
 
 import com.birblett.impl.config.ConfigOption;
-import com.birblett.lib.camera.CameraInterface;
+import com.birblett.lib.command.camera.CameraInterface;
 import com.birblett.util.TextUtils;
 import com.mojang.brigadier.CommandDispatcher;
 import net.minecraft.server.command.CommandManager;

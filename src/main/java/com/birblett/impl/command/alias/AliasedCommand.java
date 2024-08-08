@@ -1,4 +1,4 @@
-package com.birblett.impl.alias;
+package com.birblett.impl.command.alias;
 
 import com.birblett.TechnicalToolbox;
 import com.birblett.impl.config.ConfigOption;
@@ -8,8 +8,6 @@ import com.birblett.util.TextUtils;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.ArgumentBuilder;
-import com.mojang.brigadier.builder.LiteralArgumentBuilder;
-import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.server.MinecraftServer;

@@ -25,9 +25,8 @@ public class AnvilScreenHandlerMixin {
     @WrapOperation(method = "updateResult", at = @At(value = "INVOKE", target = "Lnet/minecraft/enchantment/Enchantment;canBeCombined(Lnet/minecraft/registry/entry/RegistryEntry;Lnet/minecraft/registry/entry/RegistryEntry;)Z"))
     private boolean allowProtectionCombination(RegistryEntry<Enchantment> first, RegistryEntry<Enchantment> second, Operation<Boolean> original) {
         Optional<TagKey<Enchantment>> t;
-        if (ConfigOption.LEGACY_PROTECTION_COMPATIBILITY.val() && first.value().exclusiveSet() == second.value()
-                .exclusiveSet() && (t = first.value().exclusiveSet().getTagKey()).isPresent() && t.get().id()
-                .equals(PROTECTION_ID)) {
+        if (ConfigOption.LEGACY_PROTECTION_COMPATIBILITY.val() && first.value().exclusiveSet() == second.value().exclusiveSet() && (t =
+                first.value().exclusiveSet().getTagKey()).isPresent() && t.get().id().equals(PROTECTION_ID)) {
             return true;
         }
         return original.call(first, second);

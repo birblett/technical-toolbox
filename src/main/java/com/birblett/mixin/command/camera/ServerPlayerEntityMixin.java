@@ -1,7 +1,7 @@
-package com.birblett.mixin.camera;
+package com.birblett.mixin.command.camera;
 
 import com.birblett.impl.config.ConfigOption;
-import com.birblett.lib.camera.CameraInterface;
+import com.birblett.lib.command.camera.CameraInterface;
 import com.birblett.util.TextUtils;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.effect.StatusEffectInstance;

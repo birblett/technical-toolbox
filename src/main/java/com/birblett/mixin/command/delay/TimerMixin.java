@@ -1,7 +1,7 @@
-package com.birblett.mixin.delay;
+package com.birblett.mixin.command.delay;
 
-import com.birblett.impl.delay.CommandEvent;
-import com.birblett.lib.delay.CommandScheduler;
+import com.birblett.impl.command.delay.CommandEvent;
+import com.birblett.lib.command.delay.CommandScheduler;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.world.timer.Timer;
@@ -31,6 +31,20 @@ public class TimerMixin<T> implements CommandScheduler {
             return true;
         }
         return false;
+    }
+
+    @Override
+    public boolean removeCommandEvent(String id) {
+        if (this.scheduledCommandMap.containsKey(id)) {
+            this.scheduledCommands.remove(this.scheduledCommandMap.remove(id));
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public HashMap<String, CommandEvent> getCommandEventMap() {
+        return this.scheduledCommandMap;
     }
 
     @Inject(method = "processEvents", at = @At("TAIL"))

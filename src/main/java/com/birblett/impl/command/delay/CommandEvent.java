@@ -1,4 +1,4 @@
-package com.birblett.impl.delay;
+package com.birblett.impl.command.delay;
 
 import com.birblett.lib.command.CommandSourceModifier;
 import com.birblett.util.TextUtils;
