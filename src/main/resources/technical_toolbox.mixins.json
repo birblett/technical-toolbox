@@ -10,6 +10,8 @@
     "command.CommandNodeMixin",
     "command.ServerCommandSourceMixin",
     "config.MinecraftServerMixin",
+    "delay.ServerCommandSourceMixin",
+    "delay.TimerMixin",
     "feature.AnvilScreenHandlerMixin",
     "feature.BulbBlockMixin",
     "feature.CrafterBlockMixin",
@@ -20,8 +22,7 @@
     "legacy.EntityTypeMixin",
     "legacy.PortalForcerMixin",
     "legacy.RaiderEntityMixin",
-    "legacy.RedstoneWireBlockMixin",
-    "scheduler.ServerWorldMixin"
+    "legacy.RedstoneWireBlockMixin"
   ],
   "injectors": {
     "defaultRequire": 1

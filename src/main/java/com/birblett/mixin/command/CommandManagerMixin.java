@@ -5,7 +5,7 @@ import com.birblett.impl.alias.AliasedCommand;
 import com.birblett.impl.command.AliasCommand;
 import com.birblett.impl.command.CameraCommand;
 import com.birblett.impl.command.ToolboxCommand;
-import com.birblett.impl.schedule.DelayCommand;
+import com.birblett.impl.delay.DelayCommand;
 import com.mojang.brigadier.CommandDispatcher;
 import net.minecraft.command.CommandRegistryAccess;
 import net.minecraft.server.command.CommandManager;

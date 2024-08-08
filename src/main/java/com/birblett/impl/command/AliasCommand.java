@@ -17,6 +17,8 @@ import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 
 /**
@@ -171,13 +173,29 @@ public class AliasCommand {
                                 .then(CommandManager.literal("set")
                                         .then(CommandManager.argument("line number", IntegerArgumentType.integer(1))
                                                 .then(CommandManager.argument("line", StringArgumentType.greedyString())
-                                                        .executes(context -> {
+                                                        .suggests((context, builder) -> {
                                                             String alias = context.getArgument("alias", String.class);
                                                             int line = context.getArgument("line number", Integer.class);
                                                             AliasedCommand cmd = AliasManager.ALIASES.get(alias);
+                                                            Collection<String> c;
+                                                            if (cmd != null && line <= cmd.getCommands().size()) {
+                                                                c = Collections.singleton(cmd.getCommands().get(line - 1));
+                                                            }
+                                                            else {
+                                                                c = Collections.emptyList();
+                                                            }
+                                                            return CommandSource.suggestMatching(c, builder);
+                                                        })
+                                                        .executes(context -> {
+                                                            String alias = context.getArgument("alias",
+                                                                    String.class);
+                                                            int line = context.getArgument("line number",
+                                                                    Integer.class);
+                                                            AliasedCommand cmd = AliasManager.ALIASES.get(alias);
                                                             if (cmd != null) {
                                                                 MutableText err;
-                                                                String command = context.getArgument("line", String.class);
+                                                                String command = context.getArgument("line",
+                                                                        String.class);
                                                                 err = cmd.insertCommand(command, line);
                                                                 if (err != null) {
                                                                     context.getSource().sendError(err);
@@ -193,7 +211,8 @@ public class AliasCommand {
                                                                         .formattable(command).formatted(Formatting.YELLOW))
                                                                         .append(TextUtils.formattable("\"\n")).append(
                                                                         cmd.getCommandText());
-                                                                context.getSource().sendFeedback(() -> out, false);
+                                                                context.getSource().sendFeedback(() -> out,
+                                                                        false);
                                                                 return 1;
                                                             }
                                                             context.getSource().sendError(TextUtils.formattable("Couldn't " +
