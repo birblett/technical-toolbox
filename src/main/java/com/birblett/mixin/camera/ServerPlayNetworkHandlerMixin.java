@@ -43,15 +43,13 @@ public class ServerPlayNetworkHandlerMixin {
                     value = "INVOKE"), locals = LocalCapture.CAPTURE_FAILSOFT, cancellable = true)
     protected void disableCamTeleport(SpectatorTeleportC2SPacket packet, CallbackInfo ci, Iterator<ServerWorld> var2, ServerWorld serverWorld, Entity entity) {
         if (((CameraInterface) this.player).isCamera() && !ConfigOption.CAMERA_CAN_TELEPORT.val()) {
-            this.player.sendMessage(TextUtils.formattable("Teleportation is " +
-                    "disabled in camera mode"), true);
+            this.player.sendMessage(TextUtils.formattable("Teleportation is disabled in camera mode"), true);
             ci.cancel();
         }
-        else if (((CameraInterface) this.player).isCamera() && ConfigOption.CAMERA_CONSOLE_LOGGING.val()
-                .equals("spectate")
-                && this.player.getServer() != null) {
-            this.player.getServer().sendMessage(TextUtils.formattable("[Camera Mode] " + this.player
-                    .getNameForScoreboard() + " teleported to " + entity.getNameForScoreboard()));
+        else if (((CameraInterface) this.player).isCamera() && ConfigOption.CAMERA_CONSOLE_LOGGING.val().equals("spectate") && this.player
+                .getServer() != null) {
+            this.player.getServer().sendMessage(TextUtils.formattable("[Camera Mode] " + this.player.getNameForScoreboard() +
+                    " teleported to " + entity.getNameForScoreboard()));
         }
     }
 

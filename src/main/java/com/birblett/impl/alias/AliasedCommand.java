@@ -226,22 +226,6 @@ public class AliasedCommand {
     }
 
     /**
-     * Comma separated required arguments.
-     * @return MutableText with args (in yellow) separated by commas (in white)
-     */
-    private MutableText getCommaSeparateArgs() {
-        MutableText text = TextUtils.formattable("");
-        int i = 0;
-        for (String command : this.args) {
-            text.append(TextUtils.formattable(command).formatted(Formatting.YELLOW));
-            if (++i < this.args.size()) {
-                text.append(TextUtils.formattable(", "));
-            }
-        }
-        return text;
-    }
-
-    /**
      * Deregisters a command alias and resends the command tree.
      * @param server server to deregister commands from.
      */
@@ -510,9 +494,6 @@ public class AliasedCommand {
             bufferedWriter.write("Alias: " + this.alias + "\n");
             if (this.permission != ConfigOption.ALIAS_DEFAULT_PERMISSION.val()) {
                 bufferedWriter.write("Permission level: " + this.permission + "\n");
-            }
-            if (!this.separator.equals(ConfigOption.ALIAS_DEFAULT_SEPARATOR.getWriteable())) {
-                bufferedWriter.write("Argument separator: \"" + this.separator + "\"\n");
             }
             if (this.silent != (ConfigOption.ALIAS_DEFAULT_SILENT.val())) {
                 bufferedWriter.write("Silent: \"" + this.silent + "\"\n");

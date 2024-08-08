@@ -192,14 +192,13 @@ public class ServerPlayerEntityMixin implements CameraInterface {
     protected void cameraSpectating(Entity target, CallbackInfo ci) {
         ServerPlayerEntity player = (ServerPlayerEntity) (Object) this;
         if (this.isCamera && ! ConfigOption.CAMERA_CAN_SPECTATE.val()) {
-            player.sendMessage(TextUtils.formattable("Entity spectating is currently disabled in camera mode"),
-                    true);
+            player.sendMessage(TextUtils.formattable("Entity spectating is currently disabled in camera mode"), true);
             ci.cancel();
         }
         else if (this.isCamera && ConfigOption.CAMERA_CONSOLE_LOGGING.val().equals("spectate") && player.getServer()
                 != null) {
-            player.getServer().sendMessage(TextUtils.formattable("[Camera Mode] " + player.getNameForScoreboard() +
-                    " is spectating " + target.getNameForScoreboard()));
+            player.getServer().sendMessage(TextUtils.formattable("[Camera Mode] " + player.getNameForScoreboard() + " is spectating " +
+                    target.getNameForScoreboard()));
         }
     }
 
@@ -210,8 +209,8 @@ public class ServerPlayerEntityMixin implements CameraInterface {
     @Inject(method = "changeGameMode", at = @At("HEAD"))
     protected void disableCameraMode(GameMode gameMode, CallbackInfoReturnable<Boolean> cir){
         if (this.isCamera && gameMode != GameMode.SPECTATOR) {
-            ((ServerPlayerEntity) (Object) this).sendMessage(TextUtils.formattable("Swapped gamemodes directly, " +
-                    "disabling camera mode"), true);
+            ((ServerPlayerEntity) (Object) this).sendMessage(TextUtils.formattable("Swapped gamemodes directly, disabling camera mode"),
+                    true);
             this.storedNbt = null;
             this.isCamera = false;
         }

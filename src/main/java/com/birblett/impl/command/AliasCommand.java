@@ -41,22 +41,19 @@ public class AliasCommand {
                                                 new AliasedCommand(alias, command, dispatcher);
                                                 Text out = TextUtils.formattable("Registered new command alias ")
                                                         .append(TextUtils.formattable(alias).formatted(Formatting.GREEN))
-                                                        .append(" for command string ").append(TextUtils.formattable(
-                                                                "\"" + command + "\"").formatted(Formatting.YELLOW));
+                                                        .append(" for command string ").append(TextUtils.formattable("\"" + command +
+                                                        "\"").formatted(Formatting.YELLOW));
+                                                context.getSource().sendFeedback(() -> out, false);
                                                 if (player != null) {
-                                                    context.getSource().sendFeedback(() -> out, false);
                                                     context.getSource().getServer().sendMessage(TextUtils.formattable(player
                                                             .getNameForScoreboard() + ": ").append(out));
-                                                } else {
-                                                    context.getSource().sendFeedback(() -> out, false);
                                                 }
                                                 ServerUtil.refreshCommandTree(context.getSource().getServer());
                                                 return 1;
                                             }
                                             if (player != null) {
-                                                context.getSource().sendFeedback(() -> TextUtils.formattable("Couldn't " +
-                                                        "register alias \"" + alias + "\" as such a command or alias " +
-                                                        "already exists "), false);
+                                                context.getSource().sendFeedback(() -> TextUtils.formattable("Couldn't register alias \""
+                                                        + alias + "\" as such a command or alias already exists "), false);
                                             }
                                             return 0;
                                         }))))
@@ -70,8 +67,8 @@ public class AliasCommand {
                                     ServerPlayerEntity player = context.getSource().getPlayer();
                                     AliasedCommand cmd = AliasManager.ALIASES.get(alias);
                                     if (cmd != null) {
-                                        MutableText out = TextUtils.formattable("Removed command alias ").append(TextUtils
-                                                .formattable(alias).formatted(Formatting.GREEN));
+                                        MutableText out = TextUtils.formattable("Removed command alias ").append(TextUtils.formattable(
+                                                alias).formatted(Formatting.GREEN));
                                         cmd.deregister(context.getSource().getServer());
                                         context.getSource().sendFeedback(() -> out, false);
                                         if (player != null) {
@@ -80,8 +77,7 @@ public class AliasCommand {
                                         }
                                         return 1;
                                     }
-                                    context.getSource().sendError(TextUtils.formattable("Couldn't find alias \"" +
-                                            alias));
+                                    context.getSource().sendError(TextUtils.formattable("Couldn't find alias \"" + alias));
                                     return 0;
                                 })))
                 // reads all alias from file
@@ -89,8 +85,7 @@ public class AliasCommand {
                         .requires(source -> source.hasPermissionLevel(4))
                         .executes(context -> {
                             TechnicalToolbox.ALIAS_MANAGER.readAliases(context.getSource().getServer());
-                            context.getSource().sendFeedback(() -> TextUtils.formattable("Reloaded aliases from " +
-                                    "disk"), false);
+                            context.getSource().sendFeedback(() -> TextUtils.formattable("Reloaded aliases from disk"), false);
                             ServerUtil.refreshCommandTree(context.getSource().getServer());
                             return 1;
                         }))
@@ -99,19 +94,18 @@ public class AliasCommand {
                         .requires(source -> source.hasPermissionLevel(4))
                         .executes(context -> {
                             TechnicalToolbox.ALIAS_MANAGER.writeAliases(context.getSource().getServer());
-                            context.getSource().sendFeedback(() -> TextUtils.formattable("Wrote aliases to " +
-                                    "disk"), false);
+                            context.getSource().sendFeedback(() -> TextUtils.formattable("Wrote aliases to disk"), false);
                             return 1;
                         }))
                 // lists all aliases the executing player can use
                 .then(CommandManager.literal("list")
                         .executes(context -> {
                             MutableText text = TextUtils.formattable("Aliases:");
-                            for (AliasedCommand cmd : AliasManager.ALIASES.values().stream().sorted(Comparator
-                                    .comparing(AliasedCommand::getAlias)).toList()) {
-                                if (!context.getSource().isExecutedByPlayer() || context.getSource().getPlayer() != null
-                                        && context.getSource().getPlayer().hasPermissionLevel(cmd.getPermission())) {
-                                    text.append("\n  " + cmd.getAlias() + ": ").append(cmd.getSyntax());
+                            for (AliasedCommand cmd : AliasManager.ALIASES.values().stream().sorted(Comparator.comparing(AliasedCommand::
+                                    getAlias)).toList()) {
+                                if (!context.getSource().isExecutedByPlayer() || context.getSource().getPlayer() != null && context
+                                        .getSource().getPlayer().hasPermissionLevel(cmd.getPermission())) {text.append("\n  " + cmd
+                                        .getAlias() + ": ").append(cmd.getSyntax());
                                 }
                             }
                             context.getSource().sendFeedback(() -> text, false);
@@ -157,11 +151,10 @@ public class AliasCommand {
                                                                     context.getSource().sendError(err);
                                                                     return 0;
                                                                 }
-                                                                MutableText out = TextUtils.formattable("Inserted " +
-                                                                                "command at line " + line + ": \"").append(TextUtils
-                                                                                .formattable(command).formatted(Formatting.YELLOW))
-                                                                        .append(TextUtils.formattable("\"\n")).append(
-                                                                                cmd.getCommandText());
+                                                                MutableText out = TextUtils.formattable("Inserted command at line " +
+                                                                        line + ": \"").append(TextUtils.formattable(command).formatted(
+                                                                        Formatting.YELLOW)).append(TextUtils.formattable("\"\n")).append(
+                                                                        cmd.getCommandText());
                                                                 context.getSource().sendFeedback(() -> out, false);
                                                                 return 1;
                                                             }
@@ -187,10 +180,8 @@ public class AliasCommand {
                                                             return CommandSource.suggestMatching(c, builder);
                                                         })
                                                         .executes(context -> {
-                                                            String alias = context.getArgument("alias",
-                                                                    String.class);
-                                                            int line = context.getArgument("line number",
-                                                                    Integer.class);
+                                                            String alias = context.getArgument("alias", String.class);
+                                                            int line = context.getArgument("line number", Integer.class);
                                                             AliasedCommand cmd = AliasManager.ALIASES.get(alias);
                                                             if (cmd != null) {
                                                                 MutableText err;
@@ -206,13 +197,11 @@ public class AliasCommand {
                                                                     context.getSource().sendError(err);
                                                                     return 0;
                                                                 }
-                                                                MutableText out = TextUtils.formattable("Set " +
-                                                                        "command at line " + line + ": \"").append(TextUtils
-                                                                        .formattable(command).formatted(Formatting.YELLOW))
-                                                                        .append(TextUtils.formattable("\"\n")).append(
-                                                                        cmd.getCommandText());
-                                                                context.getSource().sendFeedback(() -> out,
-                                                                        false);
+                                                                MutableText out = TextUtils.formattable("Set command at line " + line +
+                                                                        ": \"").append(TextUtils.formattable(command).formatted(Formatting
+                                                                        .YELLOW)).append(TextUtils.formattable("\"\n")).append(cmd
+                                                                        .getCommandText());
+                                                                context.getSource().sendFeedback(() -> out, false);
                                                                 return 1;
                                                             }
                                                             context.getSource().sendError(TextUtils.formattable("Couldn't " +
@@ -253,10 +242,9 @@ public class AliasCommand {
                                                     if (cmd != null) {
                                                         cmd.setPermission(permissionLevel);
                                                         context.getSource().sendFeedback(() -> TextUtils
-                                                                .formattable("Permission level for alias ").append(TextUtils
-                                                                .formattable(alias).formatted(Formatting.GREEN)).append(
-                                                                TextUtils.formattable(" set to ").append(TextUtils
-                                                                .formattable(String.valueOf(permissionLevel))
+                                                                .formattable("Permission level for alias ").append(TextUtils.formattable(
+                                                                alias).formatted(Formatting.GREEN)).append(TextUtils.formattable(" set" +
+                                                                " to ").append(TextUtils.formattable(String.valueOf(permissionLevel))
                                                                 .formatted(Formatting.YELLOW))), false);
                                                         return 1;
                                                     }
@@ -275,10 +263,9 @@ public class AliasCommand {
                                                         cmd.setSeparator(separator);
                                                         context.getSource().sendFeedback(() -> TextUtils
                                                                 .formattable("Argument separator for alias ").append(TextUtils
-                                                                        .formattable(alias).formatted(Formatting.GREEN)).append(
-                                                                        TextUtils.formattable(" set to \"").append(TextUtils
-                                                                                .formattable(separator).formatted(Formatting.
-                                                                                        YELLOW)).append("\"")), false);
+                                                                .formattable(alias).formatted(Formatting.GREEN)).append(TextUtils
+                                                                .formattable(" set to \"").append(TextUtils.formattable(separator)
+                                                                .formatted(Formatting.YELLOW)).append("\"")), false);
                                                         return 1;
                                                     }
                                                     context.getSource().sendError(TextUtils.formattable("Couldn't " +
@@ -294,12 +281,10 @@ public class AliasCommand {
                                                     AliasedCommand cmd = AliasManager.ALIASES.get(alias);
                                                     if (cmd != null) {
                                                         cmd.setSilent(silent);
-                                                        context.getSource().sendFeedback(() -> TextUtils
-                                                                .formattable("Alias ").append(TextUtils
-                                                                        .formattable(alias).formatted(Formatting.GREEN))
-                                                                .append(TextUtils.formattable(" set to " + (silent ?
-                                                                        "silent " : "verbose ") + "execution mode")),
-                                                                false);
+                                                        context.getSource().sendFeedback(() -> TextUtils.formattable("Alias ").append(
+                                                                TextUtils.formattable(alias).formatted(Formatting.GREEN)).append(TextUtils
+                                                                .formattable(" set to " + (silent ? "silent " : "verbose ") +
+                                                                "execution mode")), false);
                                                         return 1;
                                                     }
                                                     context.getSource().sendError(TextUtils.formattable("Couldn't " +
@@ -312,20 +297,17 @@ public class AliasCommand {
                                     AliasedCommand cmd = AliasManager.ALIASES.get(alias);
                                     if (cmd != null) {
                                         MutableText out = cmd.getCommandText();
-                                        out.append(TextUtils.formattable("\nPermission level: ").append(TextUtils
-                                                .formattable(String.valueOf(cmd.getPermission())).formatted(Formatting
-                                                        .GREEN)));
+                                        out.append(TextUtils.formattable("\nPermission level: ").append(TextUtils.formattable(String
+                                        .valueOf(cmd.getPermission())).formatted(Formatting.GREEN)));
                                         if (cmd.getArgCount() > 0) {
-                                            out.append(TextUtils.formattable("\nArgument separator: \"").append(TextUtils
-                                                    .formattable(String.valueOf(cmd.getSeparator())).formatted(Formatting
-                                                            .GREEN)).append("\""));
+                                            out.append(TextUtils.formattable("\nArgument separator: \"").append(TextUtils.formattable(
+                                                    String.valueOf(cmd.getSeparator())).formatted(Formatting.GREEN)).append("\""));
                                             out.append("\nSyntax: ").append(cmd.getSyntax());
                                         }
                                         context.getSource().sendFeedback(() -> out, false);
                                         return 1;
                                     }
-                                    context.getSource().sendError(TextUtils.formattable("Couldn't find alias \"" +
-                                            alias));
+                                    context.getSource().sendError(TextUtils.formattable("Couldn't find alias \"" + alias));
                                     return 0;
                                 })))));
     }

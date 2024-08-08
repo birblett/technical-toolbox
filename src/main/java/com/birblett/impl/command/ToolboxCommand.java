@@ -53,20 +53,18 @@ public class ToolboxCommand {
                                                 }
                                                 else {
                                                     context.getSource().sendFeedback(() -> TextUtils
-                                                            .formattable("Successfully set value ").append(TextUtils
-                                                            .formattable(value).setStyle(Style.EMPTY.withColor(Formatting
-                                                            .GREEN))).append(TextUtils.formattable(" for option " + option)),
-                                                            true);
+                                                            .formattable("Successfully set value ").append(TextUtils.formattable(value)
+                                                            .setStyle(Style.EMPTY.withColor(Formatting.GREEN))).append(TextUtils
+                                                            .formattable(" for option " + option)), true);
                                                     if (ConfigOption.CONFIG_WRITE_ON_CHANGE.val()) {
-                                                        TechnicalToolbox.CONFIG_MANAGER.writeConfigs(context.getSource()
-                                                                .getServer());
+                                                        TechnicalToolbox.CONFIG_MANAGER.writeConfigs(context.getSource().getServer());
                                                     }
                                                     return 1;
                                                 }
                                             }
                                             else {
-                                                context.getSource().sendError(TextUtils.formattable("No config option with " +
-                                                        "name \"" + option + "\""));
+                                                context.getSource().sendError(TextUtils.formattable("No config option with name \"" +
+                                                        option + "\""));
                                                 return 0;
                                             }
                                         })))
@@ -77,8 +75,8 @@ public class ToolboxCommand {
                                         context.getSource().sendFeedback(c::getText, true);
                                     }
                                     else {
-                                        context.getSource().sendError(TextUtils.formattable("No config option with " +
-                                                "name \"" + option + "\""));
+                                        context.getSource().sendError(TextUtils.formattable("No config option with name \"" + option +
+                                                "\""));
                                     }
                                     return 1;
                                 })))

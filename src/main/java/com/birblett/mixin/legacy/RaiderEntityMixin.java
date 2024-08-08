@@ -65,8 +65,8 @@ public class RaiderEntityMixin {
                     --i;
                 }
                 i = MathHelper.clamp(i, 0, 4);
-                StatusEffectInstance statusEffectInstance2 = new StatusEffectInstance(StatusEffects.BAD_OMEN,
-                        120000, i, false, false, true);
+                StatusEffectInstance statusEffectInstance2 = new StatusEffectInstance(StatusEffects.BAD_OMEN, 120000, i,
+                        false, false, true);
                 if (!self.getWorld().getGameRules().getBoolean(GameRules.DISABLE_RAIDS)) {
                     playerEntity.addStatusEffect(statusEffectInstance2);
                 }

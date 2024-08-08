@@ -71,16 +71,15 @@ public class DelayCommand {
                                                     long delay = context.getArgument("delay", Long.class);
                                                     String command = context.getArgument("command", String.class);
                                                     ((CommandOption) context.getSource()).resetOpt();
-                                                    MutableText out = ((CommandScheduler) context.getSource().getServer().getSaveProperties()
-                                                            .getMainWorldProperties().getScheduledEvents()).addCommandEvent(command,
-                                                            context.getSource().getWorld().getTime() + delay, id, priority, silent,
-                                                            Objects.equals(source, "server") ? context.getSource().getServer()
-                                                                    .getCommandSource() : context.getSource()) ? TextUtils.formattable(
-                                                                            "Scheduled command \"" + command + "\" with identifier ")
-                                                                    .append(TextUtils.formattable(id).setStyle(Style.EMPTY.withColor(
-                                                                            Formatting.GREEN))) : TextUtils.formattable("Command with " +
-                                                                            "identifier " + id + " already scheduled").setStyle(Style.EMPTY
-                                                                            .withColor(Formatting.RED));
+                                                    MutableText out = ((CommandScheduler) context.getSource().getServer()
+                                                            .getSaveProperties().getMainWorldProperties().getScheduledEvents())
+                                                            .addCommandEvent(command, context.getSource().getWorld().getTime() + delay,
+                                                            id, priority, silent, Objects.equals(source, "server") ? context.getSource()
+                                                            .getServer().getCommandSource() : context.getSource()) ? TextUtils.formattable(
+                                                            "Scheduled command \"" + command + "\" with identifier ").append(TextUtils
+                                                            .formattable(id).setStyle(Style.EMPTY.withColor(Formatting.GREEN))) : TextUtils
+                                                            .formattable("Command with identifier " + id + " already scheduled")
+                                                            .setStyle(Style.EMPTY.withColor(Formatting.RED));
                                                     context.getSource().sendFeedback(() -> out, false);
                                                     return 0;
                                                 }))))));

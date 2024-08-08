@@ -25,15 +25,15 @@ public class CameraCommand {
                             player.sendMessage(TextUtils.formattable(feedback), true);
                             Object logLevel = ConfigOption.CAMERA_CONSOLE_LOGGING.val();
                             if (logLevel.equals("command") || logLevel.equals("spectate")) {
-                                context.getSource().getServer().sendMessage(TextUtils.formattable("[Camera Mode] " +
-                                        player.getNameForScoreboard() + ": " + feedback));
+                                context.getSource().getServer().sendMessage(TextUtils.formattable("[Camera Mode] " + player
+                                        .getNameForScoreboard() + ": " + feedback));
                             }
                         }
                         return 1;
                     }
                     else {
-                        context.getSource().sendFeedback(() -> TextUtils.formattable("/" + (CommandManager.literal(
-                                ConfigOption.CAMERA_COMMAND.val())) + " can only be executed by a player"),
+                        context.getSource().sendFeedback(() -> TextUtils.formattable("/" + (CommandManager.literal(ConfigOption
+                                        .CAMERA_COMMAND.val())) + " can only be executed by a player"),
                                 false);
                         return 0;
                     }
