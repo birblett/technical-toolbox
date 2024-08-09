@@ -162,7 +162,7 @@ public class AliasCommand {
         AliasedCommand cmd = AliasManager.ALIASES.get(alias);
         String command = context.getArgument("line", String.class);
         if (cmd != null) {
-            cmd.addCommand(command);
+            cmd.addCommand(command, context.getSource().getServer());
             MutableText out = TextUtils.formattable("Added line: \"").append(TextUtils.formattable(command).formatted(Formatting.YELLOW))
                     .append(TextUtils.formattable("\"\n")).append(cmd.getCommandText());
             context.getSource().sendFeedback(() -> out, false);
@@ -178,7 +178,7 @@ public class AliasCommand {
         AliasedCommand cmd = AliasManager.ALIASES.get(alias);
         String command = context.getArgument("line", String.class);
         if (cmd != null) {
-            MutableText err = cmd.insert(command, line);
+            MutableText err = cmd.insert(command, line, context.getSource().getServer());
             if (err != null) {
                 context.getSource().sendError(err);
                 return 0;
@@ -216,12 +216,12 @@ public class AliasCommand {
         if (cmd != null) {
             MutableText err;
             String command = context.getArgument("line", String.class);
-            err = cmd.insert(command, line);
+            err = cmd.insert(command, line, context.getSource().getServer());
             if (err != null) {
                 context.getSource().sendError(err);
                 return 0;
             }
-            err = cmd.removeCommand(line + 1);
+            err = cmd.removeCommand(line + 1, context.getSource().getServer());
             if (err != null) {
                 context.getSource().sendError(err);
                 return 0;
@@ -241,7 +241,7 @@ public class AliasCommand {
         AliasedCommand cmd = AliasManager.ALIASES.get(alias);
         if (cmd != null) {
             MutableText err;
-            err = cmd.removeCommand(line);
+            err = cmd.removeCommand(line, context.getSource().getServer());
             if (err != null) {
                 context.getSource().sendError(err);
                 return 0;

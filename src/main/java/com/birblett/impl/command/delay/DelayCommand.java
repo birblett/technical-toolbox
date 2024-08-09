@@ -10,6 +10,8 @@ import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.LongArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
+import com.mojang.brigadier.suggestion.Suggestions;
+import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import com.mojang.brigadier.tree.LiteralCommandNode;
 import net.minecraft.command.CommandSource;
 import net.minecraft.server.command.CommandManager;
@@ -22,6 +24,7 @@ import net.minecraft.util.Formatting;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Simple non-serialized command scheduler.
@@ -56,6 +59,7 @@ public class DelayCommand {
                         .executes(DelayCommand::list))
                 .then(CommandManager.literal("remove")
                         .then(CommandManager.argument("id", StringArgumentType.word())
+                                .suggests(DelayCommand::getIdSuggestions)
                                 .executes(DelayCommand::remove))));
     }
 
@@ -108,6 +112,11 @@ public class DelayCommand {
             context.getSource().sendFeedback(() -> cmd, false);
         }
         return 0;
+    }
+
+    private static CompletableFuture<Suggestions> getIdSuggestions(CommandContext<ServerCommandSource> context, SuggestionsBuilder builder) {
+        return CommandSource.suggestMatching(((CommandScheduler) context.getSource().getServer().getSaveProperties()
+                .getMainWorldProperties().getScheduledEvents()).getCommandEventMap().keySet(), builder);
     }
 
     private static int remove(CommandContext<ServerCommandSource> context) {

@@ -8,8 +8,10 @@ import com.birblett.util.TextUtils;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.*;
 import com.mojang.brigadier.builder.ArgumentBuilder;
+import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import net.minecraft.command.CommandSource;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
@@ -22,6 +24,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -31,96 +34,27 @@ import java.util.regex.Pattern;
  */
 public class AliasedCommand {
 
-    private record Entry<T>(Function<String, ArgumentType<T>> argumentTypeProvider, Class<T> clazz) {}
+    private record Entry<T>(int args, Function<String, ArgumentType<T>> argumentTypeProvider, Class<T> clazz) {}
 
     private static final HashMap<String, Entry<?>> VALIDATION_MAP = new HashMap<>();
     static {
-        VALIDATION_MAP.put("int", new Entry<>(opt -> IntegerArgumentType.integer(), Integer.class));
-        VALIDATION_MAP.put("int_range", new Entry<>(opt -> {
-            int min, max;
-            try {
-                String[] arg = opt.split(",");
-                if (arg.length != 2) {
-                    throw new Exception();
-                }
-                min = Integer.parseInt(arg[0]);
-                max = Integer.parseInt(arg[1]);
-                if (min > max) {
-                    throw new Exception();
-                }
-            }
-            catch (Exception e) {
-                min = Integer.MIN_VALUE;
-                max = Integer.MAX_VALUE;
-            }
-            return IntegerArgumentType.integer(min, max);
-        }, Integer.class));
-        VALIDATION_MAP.put("long", new Entry<>(opt -> LongArgumentType.longArg(), Long.class));
-        VALIDATION_MAP.put("long_range", new Entry<>(opt -> {
-            long min, max;
-            try {
-                String[] arg = opt.split(",");
-                if (arg.length != 2) {
-                    throw new Exception();
-                }
-                min = Long.parseLong(arg[0]);
-                max = Long.parseLong(arg[1]);
-                if (min > max) {
-                    throw new Exception();
-                }
-            }
-            catch (Exception e) {
-                min = Long.MIN_VALUE;
-                max = Long.MAX_VALUE;
-            }
-            return LongArgumentType.longArg(min, max);
-        }, Long.class));
-        VALIDATION_MAP.put("float", new Entry<>(opt -> FloatArgumentType.floatArg(), Float.class));
-        VALIDATION_MAP.put("float_range", new Entry<>(opt -> {
-            float min, max;
-            try {
-                String[] arg = opt.split(",");
-                if (arg.length != 2) {
-                    throw new Exception();
-                }
-                min = Float.parseFloat(arg[0]);
-                max = Float.parseFloat(arg[1]);
-                if (min > max) {
-                    throw new Exception();
-                }
-            }
-            catch (Exception e) {
-                min = Float.MIN_VALUE;
-                max = Float.MAX_VALUE;
-            }
-            return FloatArgumentType.floatArg(min, max);
-        }, Float.class));
-        VALIDATION_MAP.put("double", new Entry<>(opt -> DoubleArgumentType.doubleArg(), Double.class));
-        VALIDATION_MAP.put("double_range", new Entry<>(opt -> {
-            double min, max;
-            try {
-                String[] arg = opt.split(",");
-                if (arg.length != 2) {
-                    throw new Exception();
-                }
-                min = Double.parseDouble(arg[0]);
-                max = Double.parseDouble(arg[1]);
-                if (min > max) {
-                    throw new Exception();
-                }
-            }
-            catch (Exception e) {
-                min = Double.MIN_VALUE;
-                max = Double.MAX_VALUE;
-            }
-            return DoubleArgumentType.doubleArg(min, max);
-        }, Double.class));
-        VALIDATION_MAP.put("boolean", new Entry<>(opt -> BoolArgumentType.bool(), Boolean.class));
-        VALIDATION_MAP.put("word", new Entry<>(opt -> StringArgumentType.word(), String.class));
-        //noinspection DuplicateExpressions
-        VALIDATION_MAP.put("string", new Entry<>(opt -> StringArgumentType.string(), String.class));
-        //noinspection DuplicateExpressions
-        VALIDATION_MAP.put("regex", new Entry<>(opt -> StringArgumentType.string(), String.class));
+        VALIDATION_MAP.put("int", new Entry<>(0, opt -> IntegerArgumentType.integer(), Integer.class));
+        VALIDATION_MAP.put("int_range", new Entry<>(2, opt -> AliasedCommand.rangeArgumentType(opt, Integer.class, Integer::parseInt,
+                IntegerArgumentType::integer), Integer.class));
+        VALIDATION_MAP.put("long", new Entry<>(0, opt -> LongArgumentType.longArg(), Long.class));
+        VALIDATION_MAP.put("long_range", new Entry<>(2, opt -> AliasedCommand.rangeArgumentType(opt, Long.class, Long::parseLong,
+                LongArgumentType::longArg), Long.class));
+        VALIDATION_MAP.put("float", new Entry<>(0, opt -> FloatArgumentType.floatArg(), Float.class));
+        VALIDATION_MAP.put("float_range", new Entry<>(2, opt -> AliasedCommand.rangeArgumentType(opt, Float.class, Float::parseFloat,
+                FloatArgumentType::floatArg), Float.class));
+        VALIDATION_MAP.put("double", new Entry<>(0, opt -> DoubleArgumentType.doubleArg(), Double.class));
+        VALIDATION_MAP.put("double_range", new Entry<>(2, opt -> AliasedCommand.rangeArgumentType(opt, Double.class,
+                Double::parseDouble, DoubleArgumentType::doubleArg), Double.class));
+        VALIDATION_MAP.put("boolean", new Entry<>(0, opt -> BoolArgumentType.bool(), Boolean.class));
+        VALIDATION_MAP.put("word", new Entry<>(0, opt -> StringArgumentType.word(), String.class));
+        VALIDATION_MAP.put("string", new Entry<>(0, opt -> StringArgumentType.string(), String.class));
+        VALIDATION_MAP.put("regex", new Entry<>(1, opt -> StringArgumentType.string(), String.class));
+        VALIDATION_MAP.put("selection", new Entry<>(-1, opt -> StringArgumentType.string(), String.class));
     }
 
     private final String alias;
@@ -129,7 +63,7 @@ public class AliasedCommand {
     private int argCount;
     private int permission;
     private boolean silent;
-    private static final Pattern ARG = Pattern.compile("\\{\\$.+(:.+\\[.+])?}");
+    private static final Pattern ARG = Pattern.compile("\\{\\$[^:]+(:[^}]+)?}");
 
     public AliasedCommand(String alias, String command, CommandDispatcher<ServerCommandSource> dispatcher) {
         this.alias = alias;
@@ -185,10 +119,11 @@ public class AliasedCommand {
             for (int i = str.length - 1; i >= 0; i--) {
                 // arguments processed here
                 String[] arg = str[i].split(":", 2);
+                TechnicalToolbox.log("{}", arg);
                 if (tree == null) {
                     String validation, opts;
                     if (arg.length == 2) {
-                        String[] optargs = arg[1].split("\\|", 2);
+                        String[] optargs = arg[1].split(" *\\| *", 2);
                         validation = optargs[0];
                         if (optargs.length == 2) {
                             opts = optargs[1];
@@ -202,9 +137,19 @@ public class AliasedCommand {
                         opts = "";
                     }
                     Entry<?> val = VALIDATION_MAP.getOrDefault(validation, VALIDATION_MAP.get("word"));
-                    tree = CommandManager.argument(arg[0], val.argumentTypeProvider().apply(opts)).executes(context -> {
+                    RequiredArgumentBuilder<ServerCommandSource, ?> base = CommandManager.argument(arg[0], val.argumentTypeProvider().apply(opts));
+
+                    if ("selection".equals(validation)) {
+                        base = base.suggests(((context, builder) -> CommandSource.suggestMatching(opts.split(","), builder)));
+                    }
+                    tree = base.executes(context -> {
                         String[] args = new String[str.length];
                         for (int j = 0; j < str.length; j++) {
+                            if (val.args > 0 && val.args != opts.split(",").length) {
+                                context.getSource().sendError(TextUtils.formattable("Mismatched args for " + validation + ": expected " +
+                                        val.args + ", got " + opts.split(",").length));
+                                return 1;
+                            }
                             args[j] = context.getArgument(arg[0], val.clazz()).toString();
                         }
                         return this.execute(context, args, validation, opts);
@@ -231,9 +176,11 @@ public class AliasedCommand {
      * Adds a command to the end of the current alias script and automatically updates argument count.
      * @param command full command to add.
      */
-    public void addCommand(String command) {
+    public void addCommand(String command, MinecraftServer server) {
         this.commands.add(command);
         this.updateArgCount();
+        this.deregister(server);
+        this.register(server.getCommandManager().getDispatcher());
     }
 
     /**
@@ -257,7 +204,7 @@ public class AliasedCommand {
      * @param line line number
      * @return Fail message if removal failed, otherwise null.
      */
-    public MutableText removeCommand(int line) {
+    public MutableText removeCommand(int line, MinecraftServer server) {
         if (this.commands.size() <= 1) {
             return TextUtils.formattable("Can't remove the last line in an alias");
         }
@@ -266,6 +213,8 @@ public class AliasedCommand {
         }
         this.commands.remove(line - 1);
         this.updateArgCount();
+        this.deregister(server);
+        this.register(server.getCommandManager().getDispatcher());
         return null;
     }
 
@@ -275,12 +224,14 @@ public class AliasedCommand {
      * @param num line number to insert at (or before)
      * @return an error message if unsuccessful
      */
-    public MutableText insert(String line, int num) {
+    public MutableText insert(String line, int num, MinecraftServer server) {
         if (num < 1 || num - 1 > this.commands.size()) {
             return TextUtils.formattable("Line index " + num + " out of bounds");
         }
         this.commands.add(num - 1, line);
         this.updateArgCount();
+        this.deregister(server);
+        this.register(server.getCommandManager().getDispatcher());
         return null;
     }
 
@@ -346,7 +297,14 @@ public class AliasedCommand {
                             + "\""));
                     return 1;
                 }
-                command = command.replaceAll("\\{\\$" + type + "(:.+)?}", args[i]);
+                else if ("selection".equals(validation)) {
+                    List<String> valid = List.of(arg.split(":")[1].split("\\|")[1]);
+                    if (!valid.contains(args[i])) {
+                        context.getSource().sendError(TextUtils.formattable("Argument \"" + type + "\" must be one of " + valid));
+                        return 1;
+                    }
+                }
+                command = command.replaceAll("\\{\\$" + type + "(:[^}]+)?}", args[i]);
                 i++;
             }
             if (!this.executeCommand(context, command)) {
@@ -385,9 +343,43 @@ public class AliasedCommand {
         }
     }
 
+    /**
+     * Generic number range argument type
+     */
+    @SuppressWarnings("unchecked")
+    private static <T extends Number> ArgumentType<T> rangeArgumentType(String opt, Class<T> clazz, Function<String, T> parse, BiFunction<T, T, ArgumentType<T>> argumentType) {
+        T min, max;
+        try {
+            String[] arg = opt.split(",");
+            if (arg.length != 2) {
+                throw new Exception();
+            }
+            min = parse.apply(arg[0]);
+            max = parse.apply(arg[1]);
+            if (((Comparable<T>) min).compareTo(max) > 0) {
+                throw new Exception();
+            }
+        }
+        catch (Exception e) {
+            try {
+                min = (T) clazz.getDeclaredField("MIN_VALUE").get(null);
+                max = (T) clazz.getDeclaredField("MAX_VALUE").get(null);
+            }
+            catch (Exception e2) {
+                min = (T) Integer.valueOf(0);
+                max = (T) Integer.valueOf(0);
+            }
+        }
+        return argumentType.apply(min, max);
+    }
+
+    /**
+     * Display command syntax to the executor
+     * @param context contains the executor to send feedback to
+     */
     private int getCommandInfo(CommandContext<ServerCommandSource> context) {
         context.getSource().sendFeedback(this::getSyntax, false);
-        return 1;
+        return 0;
     }
 
     /**
