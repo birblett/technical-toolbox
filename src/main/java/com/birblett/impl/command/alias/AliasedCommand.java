@@ -39,7 +39,6 @@ public class AliasedCommand {
     private int argCount;
     private int permission;
     private boolean silent;
-    private String separator;
     private static final Pattern ARG = Pattern.compile("\\{\\$[^{$}]+}");
     private static final String[] VALID = new String[]{"int", "float", "double", "boolean", "word", "letters",
             "alphanumeric", "equals", "ci_equals", "regex"};
@@ -48,17 +47,15 @@ public class AliasedCommand {
         this.alias = alias;
         this.commands.add(command);
         this.permission = ConfigOption.ALIAS_DEFAULT_PERMISSION.val();
-        this.separator = ConfigOption.ALIAS_DEFAULT_SEPARATOR.val();
         this.silent = ConfigOption.ALIAS_DEFAULT_SILENT.val();
         this.updateArgCount();
         this.register(dispatcher);
     }
 
-    private AliasedCommand(String alias, int permission, String separator, boolean silent, CommandDispatcher<ServerCommandSource> dispatcher, Collection<String> commands) {
+    private AliasedCommand(String alias, int permission, boolean silent, CommandDispatcher<ServerCommandSource> dispatcher, Collection<String> commands) {
         this.alias = alias;
         this.commands.addAll(commands);
         this.permission = permission;
-        this.separator = separator;
         this.silent = silent;
         this.updateArgCount();
         this.register(dispatcher);
@@ -80,16 +77,8 @@ public class AliasedCommand {
         return this.permission;
     }
 
-    public void setSeparator(String separator) {
-        this.separator = separator;
-    }
-
     public void setSilent(boolean silent) {
         this.silent = silent;
-    }
-
-    public String getSeparator() {
-        return this.separator;
     }
 
     public List<String> getCommands() {
@@ -212,13 +201,8 @@ public class AliasedCommand {
     public MutableText getSyntax() {
         MutableText out = TextUtils.formattable("/").formatted(Formatting.YELLOW);
         out.append(TextUtils.formattable(this.alias).formatted(Formatting.YELLOW)).append(" ");
-        int i = 0;
         for (String arg : this.args) {
-            out.append(TextUtils.formattable(arg).formatted(Formatting.GREEN));
-            ++i;
-            if (i < this.args.size()) {
-                out.append(TextUtils.formattable(separator).formatted(Formatting.YELLOW));
-            }
+            out.append(TextUtils.formattable("<" + arg + "> ").formatted(Formatting.GREEN));
         }
         return out;
     }
@@ -298,7 +282,7 @@ public class AliasedCommand {
 
     /**
      * Performs validation on a specific command argument, with various types of validators accepted<br/>
-     * dude this is unreadable oh my god this needs a refactor
+     * yeah i dont know what i was doing i'll refactor it later
      * @param context command context
      * @param type see {@link AliasedCommand#VALID} for accepted validation types
      * @param command alias command string
@@ -307,7 +291,7 @@ public class AliasedCommand {
      */
     private boolean validate(CommandContext<ServerCommandSource> context, @NotNull String type, String command, String[] args) {
         String arg = command.substring(0, command.length() - 1).replace(type + "(", "");
-        String[] argList = arg.split(" *" + this.separator + " *");
+        String[] argList = arg.split(" *");
         if (!this.args.contains(argList[0])) {
             context.getSource().sendError(TextUtils.formattable("No argument \"" + arg + "\" for alias " + this.alias));
             return false;
@@ -563,7 +547,7 @@ public class AliasedCommand {
                 TechnicalToolbox.log(path + ": Missing script body");
                 return false;
             }
-            new AliasedCommand(alias, permission, separator, silent, server.getCommandManager().getDispatcher(), commands);
+            new AliasedCommand(alias, permission, silent, server.getCommandManager().getDispatcher(), commands);
         }
         catch (IOException e) {
             TechnicalToolbox.warn("Something went wrong reading from file " + path);

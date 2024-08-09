@@ -4,6 +4,7 @@ import com.birblett.impl.config.ConfigOption;
 import com.birblett.lib.command.camera.CameraInterface;
 import com.birblett.util.TextUtils;
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.context.CommandContext;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -17,27 +18,29 @@ public class CameraCommand {
     public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
         dispatcher.register((CommandManager.literal(ConfigOption.CAMERA_COMMAND.getWriteable())
                 .requires(source -> source.hasPermissionLevel(ConfigOption.CAMERA_PERMISSION_LEVEL.val())))
-                .executes(context -> {
-                    ServerPlayerEntity player = context.getSource().getPlayer();
-                    if (player != null) {
-                        String feedback = ((CameraInterface) player).swapCameraMode(true);
-                        if (feedback != null) {
-                            player.sendMessage(TextUtils.formattable(feedback), true);
-                            Object logLevel = ConfigOption.CAMERA_CONSOLE_LOGGING.val();
-                            if (logLevel.equals("command") || logLevel.equals("spectate")) {
-                                context.getSource().getServer().sendMessage(TextUtils.formattable("[Camera Mode] " + player
-                                        .getNameForScoreboard() + ": " + feedback));
-                            }
-                        }
-                        return 1;
-                    }
-                    else {
-                        context.getSource().sendFeedback(() -> TextUtils.formattable("/" + (CommandManager.literal(ConfigOption
-                                        .CAMERA_COMMAND.val())) + " can only be executed by a player"),
-                                false);
-                        return 0;
-                    }
-                }));
+                .executes(CameraCommand::setCameraMode));
+    }
+
+    private static int setCameraMode(CommandContext<ServerCommandSource> context) {
+        ServerPlayerEntity player = context.getSource().getPlayer();
+        if (player != null) {
+            String feedback = ((CameraInterface) player).swapCameraMode(true);
+            if (feedback != null) {
+                player.sendMessage(TextUtils.formattable(feedback), true);
+                Object logLevel = ConfigOption.CAMERA_CONSOLE_LOGGING.val();
+                if (logLevel.equals("command") || logLevel.equals("spectate")) {
+                    context.getSource().getServer().sendMessage(TextUtils.formattable("[Camera Mode] " + player
+                            .getNameForScoreboard() + ": " + feedback));
+                }
+            }
+            return 1;
+        }
+        else {
+            context.getSource().sendFeedback(() -> TextUtils.formattable("/" + (CommandManager.literal(ConfigOption
+                            .CAMERA_COMMAND.val())) + " can only be executed by a player"),
+                    false);
+            return 0;
+        }
     }
 
 }

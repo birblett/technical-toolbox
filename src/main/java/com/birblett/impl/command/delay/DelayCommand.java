@@ -53,7 +53,10 @@ public class DelayCommand {
                                         .then(CommandManager.argument("command", StringArgumentType.greedyString())
                                                 .executes(DelayCommand::set)))))
                 .then(CommandManager.literal("list")
-                        .executes(DelayCommand::list)));
+                        .executes(DelayCommand::list))
+                .then(CommandManager.literal("remove")
+                        .then(CommandManager.argument("id", StringArgumentType.word())
+                                .executes(DelayCommand::remove))));
     }
 
     private static <T> T getOpt(CommandContext<ServerCommandSource> context, String arg, T def, Class<T> clazz) {
@@ -104,6 +107,23 @@ public class DelayCommand {
         for (Text cmd : commandList.reversed()) {
             context.getSource().sendFeedback(() -> cmd, false);
         }
+        return 0;
+    }
+
+    private static int remove(CommandContext<ServerCommandSource> context) {
+        CommandScheduler c = (CommandScheduler) context.getSource().getServer().getSaveProperties().getMainWorldProperties()
+                .getScheduledEvents();
+        MutableText out;
+        String id = context.getArgument("id", String.class);
+        if (c.removeCommandEvent(id)) {
+            out = TextUtils.formattable("Removed scheduled command with identifier ").append(TextUtils.formattable(id)
+                    .setStyle(Style.EMPTY.withColor(Formatting.GREEN)));
+        }
+        else {
+            out = TextUtils.formattable("No scheduled command with identifier \"" + id + "\"").setStyle(Style.EMPTY
+                    .withColor(Formatting.RED));
+        }
+        context.getSource().sendFeedback(() -> out, false);
         return 0;
     }
 
