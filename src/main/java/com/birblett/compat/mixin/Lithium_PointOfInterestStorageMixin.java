@@ -1,7 +1,7 @@
 package com.birblett.compat.mixin;
 
 import com.bawnorton.mixinsquared.TargetHandler;
-import com.birblett.compat.MixinPlugin;
+import com.birblett.compat.RequiresMod;
 import com.birblett.impl.config.ConfigOption;
 import net.minecraft.world.poi.PointOfInterest;
 import net.minecraft.world.poi.PointOfInterestStorage;
@@ -14,7 +14,7 @@ import java.util.function.Predicate;
 /**
  * Handles Lithium compatibility when skipping POI state check. See {@link ConfigOption#LEGACY_POI_PROPERTY_CHECK}
  */
-@MixinPlugin.Requires("lithium")
+@RequiresMod("lithium")
 @Mixin(value = PointOfInterestStorage.class, priority = 2000)
 public class Lithium_PointOfInterestStorageMixin {
 

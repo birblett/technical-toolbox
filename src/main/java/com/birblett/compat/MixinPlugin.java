@@ -1,6 +1,5 @@
 package com.birblett.compat;
 
-import com.birblett.TechnicalToolbox;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
 import org.objectweb.asm.tree.AnnotationNode;
@@ -28,7 +27,7 @@ public class MixinPlugin implements IMixinConfigPlugin {
     public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
         try {
             AnnotationNode annotationNode = Annotations.getVisible(MixinService.getService().getBytecodeProvider()
-                    .getClassNode(mixinClassName), Requires.class);
+                    .getClassNode(mixinClassName), RequiresMod.class);
             //noinspection unchecked
             List<String> args = (List<String>) annotationNode.values.get(1);
             if (!args.isEmpty() &&  !FabricLoader.getInstance().isModLoaded(args.getFirst())) {
@@ -68,13 +67,5 @@ public class MixinPlugin implements IMixinConfigPlugin {
 
     @Override
     public void postApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {}
-
-    @Retention(RetentionPolicy.RUNTIME)
-    @Target(ElementType.TYPE)
-    public @interface Requires {
-
-        String[] value() default {};
-
-    }
 
 }
