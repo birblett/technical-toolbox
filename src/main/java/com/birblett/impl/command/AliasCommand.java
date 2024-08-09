@@ -168,8 +168,7 @@ public class AliasCommand {
             context.getSource().sendFeedback(() -> out, false);
             return 1;
         }
-        context.getSource().sendError(TextUtils.formattable("Couldn't " +
-                "find alias \"" + alias));
+        context.getSource().sendError(TextUtils.formattable("Couldn't find alias \"" + alias));
         return 0;
     }
 
@@ -179,7 +178,7 @@ public class AliasCommand {
         AliasedCommand cmd = AliasManager.ALIASES.get(alias);
         String command = context.getArgument("line", String.class);
         if (cmd != null) {
-            MutableText err = cmd.insertCommand(command, line);
+            MutableText err = cmd.insert(command, line);
             if (err != null) {
                 context.getSource().sendError(err);
                 return 0;
@@ -216,9 +215,8 @@ public class AliasCommand {
         AliasedCommand cmd = AliasManager.ALIASES.get(alias);
         if (cmd != null) {
             MutableText err;
-            String command = context.getArgument("line",
-                    String.class);
-            err = cmd.insertCommand(command, line);
+            String command = context.getArgument("line", String.class);
+            err = cmd.insert(command, line);
             if (err != null) {
                 context.getSource().sendError(err);
                 return 0;
@@ -260,8 +258,7 @@ public class AliasCommand {
 
     private static int modifyPermission(CommandContext<ServerCommandSource> context) {
         String alias = context.getArgument("alias", String.class);
-        int permissionLevel = context.getArgument("permission level",
-                Integer.class);
+        int permissionLevel = context.getArgument("permission level", Integer.class);
         AliasedCommand cmd = AliasManager.ALIASES.get(alias);
         if (cmd != null) {
             cmd.setPermission(permissionLevel);
