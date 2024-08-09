@@ -31,7 +31,7 @@ public class ToolboxCommand {
                         .then(CommandManager.argument("config_option", StringArgumentType.string())
                                 .suggests((context, builder) -> CommandSource.suggestMatching(TechnicalToolbox.CONFIG_MANAGER
                                         .getAllConfigOptions(), builder))
-                                // branch for modifying configs; requires admin perms
+                                // modifying configs; requires admin perms
                                 .then(CommandManager.argument("config_value", StringArgumentType.string())
                                         .requires(source -> source.hasPermissionLevel(4))
                                         .suggests(ToolboxCommand::configSuggestions)
@@ -81,8 +81,7 @@ public class ToolboxCommand {
             }
         }
         else {
-            context.getSource().sendError(TextUtils.formattable("No config option with name \"" +
-                    option + "\""));
+            context.getSource().sendError(TextUtils.formattable("No config option with name \"" + option + "\""));
             return 0;
         }
     }
@@ -94,22 +93,19 @@ public class ToolboxCommand {
             context.getSource().sendFeedback(c::getText, true);
         }
         else {
-            context.getSource().sendError(TextUtils.formattable("No config option with name \"" + option +
-                    "\""));
+            context.getSource().sendError(TextUtils.formattable("No config option with name \"" + option + "\""));
         }
         return 1;
     }
 
     private static int reload(CommandContext<ServerCommandSource> context) {
-        context.getSource().sendFeedback(() -> TextUtils.formattable("Reloading configs from storage"),
-                true);
+        context.getSource().sendFeedback(() -> TextUtils.formattable("Reloading configs..."), true);
         TechnicalToolbox.CONFIG_MANAGER.readConfigs(context.getSource().getServer());
         return 1;
     }
 
     private static int save(CommandContext<ServerCommandSource> context) {
-        context.getSource().sendFeedback(() -> TextUtils.formattable("Saving configs to storage"),
-                true);
+        context.getSource().sendFeedback(() -> TextUtils.formattable("Saving configs..."), true);
         TechnicalToolbox.CONFIG_MANAGER.writeConfigs(context.getSource().getServer());
         return 1;
     }

@@ -1,6 +1,8 @@
 package com.birblett.compat;
 
+import com.birblett.TechnicalToolbox;
 import net.fabricmc.loader.api.FabricLoader;
+import net.fabricmc.loader.api.ModContainer;
 import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
@@ -14,6 +16,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -27,8 +30,13 @@ public class MixinPlugin implements IMixinConfigPlugin {
             AnnotationNode annotationNode = Annotations.getVisible(MixinService.getService().getBytecodeProvider()
                     .getClassNode(mixinClassName), Requires.class);
             //noinspection unchecked
-            for (String s : (List<String>) annotationNode.values.get(1)) {
-                if (!FabricLoader.getInstance().isModLoaded(s)) {
+            List<String> args = (List<String>) annotationNode.values.get(1);
+            if (!args.isEmpty() &&  !FabricLoader.getInstance().isModLoaded(args.getFirst())) {
+                return false;
+            }
+            else if (args.size() > 1) {
+                Optional<ModContainer> c = FabricLoader.getInstance().getModContainer(args.getFirst());
+                if (!(c.isPresent() && c.get().getMetadata().getVersion().toString().equals(args.get(1)))) {
                     return false;
                 }
             }
