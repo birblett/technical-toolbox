@@ -296,7 +296,7 @@ public class AliasCommand {
             MutableText out = cmd.getCommandText();
             out.append(TextUtils.formattable("\nPermission level: ").append(TextUtils.formattable(String.valueOf(cmd.getPermission()))
                     .formatted(Formatting.GREEN)));
-            if (cmd.getArgCount() > 0) {
+            if (!cmd.argumentDefinitions.isEmpty()) {
                 out.append("\nSyntax: ").append(cmd.getSyntax());
             }
             context.getSource().sendFeedback(() -> out, false);

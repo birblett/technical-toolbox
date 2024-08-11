@@ -34,61 +34,80 @@ import java.util.regex.Pattern;
  */
 public class AliasedCommand {
 
-    private record Entry<T>(int args, Function<String, ArgumentType<T>> argumentTypeProvider, Class<T> clazz) {}
+    public record Entry<T>(int argc, Function<String[], ArgumentType<T>> argumentTypeProvider, Class<T> clazz) {}
 
-    private static final HashMap<String, Entry<?>> VALIDATION_MAP = new HashMap<>();
-    static {
-        VALIDATION_MAP.put("int", new Entry<>(0, opt -> IntegerArgumentType.integer(), Integer.class));
-        VALIDATION_MAP.put("int_range", new Entry<>(2, opt -> AliasedCommand.rangeArgumentType(opt, Integer.class, Integer::parseInt,
-                IntegerArgumentType::integer), Integer.class));
-        VALIDATION_MAP.put("long", new Entry<>(0, opt -> LongArgumentType.longArg(), Long.class));
-        VALIDATION_MAP.put("long_range", new Entry<>(2, opt -> AliasedCommand.rangeArgumentType(opt, Long.class, Long::parseLong,
-                LongArgumentType::longArg), Long.class));
-        VALIDATION_MAP.put("float", new Entry<>(0, opt -> FloatArgumentType.floatArg(), Float.class));
-        VALIDATION_MAP.put("float_range", new Entry<>(2, opt -> AliasedCommand.rangeArgumentType(opt, Float.class, Float::parseFloat,
-                FloatArgumentType::floatArg), Float.class));
-        VALIDATION_MAP.put("double", new Entry<>(0, opt -> DoubleArgumentType.doubleArg(), Double.class));
-        VALIDATION_MAP.put("double_range", new Entry<>(2, opt -> AliasedCommand.rangeArgumentType(opt, Double.class,
-                Double::parseDouble, DoubleArgumentType::doubleArg), Double.class));
-        VALIDATION_MAP.put("boolean", new Entry<>(0, opt -> BoolArgumentType.bool(), Boolean.class));
-        VALIDATION_MAP.put("word", new Entry<>(0, opt -> StringArgumentType.word(), String.class));
-        VALIDATION_MAP.put("string", new Entry<>(0, opt -> StringArgumentType.string(), String.class));
-        VALIDATION_MAP.put("regex", new Entry<>(1, opt -> StringArgumentType.string(), String.class));
-        VALIDATION_MAP.put("selection", new Entry<>(-1, opt -> StringArgumentType.string(), String.class));
+    public static class VariableDefinition {
+
+        public final String name;
+        public final String typeName;
+        public final Entry<?> type;
+        public final String[] args;
+
+        public VariableDefinition(String name, String type, String[] args) {
+            this.name = name;
+            this.typeName = type;
+            this.type = ARGUMENT_TYPES.getOrDefault(type, ARGUMENT_TYPES.get("string"));
+            this.args = args;
+        }
+
+        public ArgumentType<?> getArgumentType() {
+            return this.type.argumentTypeProvider().apply(this.args);
+        }
+
     }
+
+    private static final HashMap<String, Entry<?>> ARGUMENT_TYPES = new HashMap<>();
+    static {
+        ARGUMENT_TYPES.put("int", new Entry<>(0, opt -> IntegerArgumentType.integer(), Integer.class));
+        ARGUMENT_TYPES.put("int_range", new Entry<>(2, opt -> AliasedCommand.rangeArgumentType(opt, Integer.class, Integer::parseInt,
+                IntegerArgumentType::integer), Integer.class));
+        ARGUMENT_TYPES.put("long", new Entry<>(0, opt -> LongArgumentType.longArg(), Long.class));
+        ARGUMENT_TYPES.put("long_range", new Entry<>(2, opt -> AliasedCommand.rangeArgumentType(opt, Long.class, Long::parseLong,
+                LongArgumentType::longArg), Long.class));
+        ARGUMENT_TYPES.put("float", new Entry<>(0, opt -> FloatArgumentType.floatArg(), Float.class));
+        ARGUMENT_TYPES.put("float_range", new Entry<>(2, opt -> AliasedCommand.rangeArgumentType(opt, Float.class, Float::parseFloat,
+                FloatArgumentType::floatArg), Float.class));
+        ARGUMENT_TYPES.put("double", new Entry<>(0, opt -> DoubleArgumentType.doubleArg(), Double.class));
+        ARGUMENT_TYPES.put("double_range", new Entry<>(2, opt -> AliasedCommand.rangeArgumentType(opt, Double.class,
+                Double::parseDouble, DoubleArgumentType::doubleArg), Double.class));
+        ARGUMENT_TYPES.put("boolean", new Entry<>(0, opt -> BoolArgumentType.bool(), Boolean.class));
+        ARGUMENT_TYPES.put("word", new Entry<>(0, opt -> StringArgumentType.word(), String.class));
+        ARGUMENT_TYPES.put("string", new Entry<>(0, opt -> StringArgumentType.string(), String.class));
+        ARGUMENT_TYPES.put("regex", new Entry<>(1, opt -> StringArgumentType.string(), String.class));
+        ARGUMENT_TYPES.put("selection", new Entry<>(-1, opt -> StringArgumentType.string(), String.class));
+    }
+
+
 
     private final String alias;
     private final List<String> commands = new ArrayList<>();
-    private final Set<String> args = new LinkedHashSet<>();
-    private int argCount;
+    private final LinkedHashMap<Integer, String> instructions = new LinkedHashMap<>();
+    public final Set<VariableDefinition> argumentDefinitions = new LinkedHashSet<>();
+    private final HashMap<String, String> arguments = new HashMap<>();
     private int permission;
     private boolean silent;
-    private static final Pattern ARG = Pattern.compile("\\{\\$[^:]+(:[^}]+)?}");
+    private static final Pattern SAVED_ARGS = Pattern.compile("\\{\\$[^:]+(:[^}]+)?}");
+    private static final Pattern VAR_ACCESS_REGEX = Pattern.compile("\\{\\$[^}]+}");
 
     public AliasedCommand(String alias, String command, CommandDispatcher<ServerCommandSource> dispatcher) {
         this.alias = alias;
         this.commands.add(command);
         this.permission = ConfigOption.ALIAS_DEFAULT_PERMISSION.val();
         this.silent = ConfigOption.ALIAS_DEFAULT_SILENT.val();
-        this.updateArgCount();
         this.register(dispatcher);
     }
 
-    private AliasedCommand(String alias, int permission, boolean silent, CommandDispatcher<ServerCommandSource> dispatcher, Collection<String> commands) {
+    private AliasedCommand(String alias, int permission, boolean silent, CommandDispatcher<ServerCommandSource> dispatcher, Collection<String> commands, Collection<VariableDefinition> arguments) {
         this.alias = alias;
         this.commands.addAll(commands);
+        this.argumentDefinitions.addAll(arguments);
         this.permission = permission;
         this.silent = silent;
-        this.updateArgCount();
         this.register(dispatcher);
     }
 
     public String getAlias() {
         return this.alias;
-    }
-
-    public int getArgCount() {
-        return this.argCount;
     }
 
     public void setPermission(int permission) {
@@ -107,56 +126,49 @@ public class AliasedCommand {
         return this.commands;
     }
 
-    public void register(CommandDispatcher<ServerCommandSource> dispatcher) {
-        if (!AliasManager.ALIASES.containsKey(this.alias)) {
-            AliasManager.ALIASES.put(this.alias, this);
+    private boolean compile() {
+        this.instructions.clear();
+        for (String s : this.commands) {
+            if (!s.isEmpty()) {
+                int instructionType = 0;
+                String cmd = s.strip();
+                this.instructions.put(instructionType, cmd);
+                Matcher m = VAR_ACCESS_REGEX.matcher(cmd);
+                while (m.find()) {
+                    String b = m.group();
+                }
+            }
         }
+        return true;
+    }
+
+    public boolean register(CommandDispatcher<ServerCommandSource> dispatcher) {
         ArgumentBuilder<ServerCommandSource, ?> tree = null;
         // Execution with required arguments
-        if (this.argCount > 0) {
+        if (!this.argumentDefinitions.isEmpty()) {
+            if (!this.compile()) {
+                return false;
+            }
             // disgusting hack to build the command tree from the bottom up. thanks for the tip mojang
-            String[] str = this.args.toArray(new String[0]);
-            for (int i = str.length - 1; i >= 0; i--) {
+            VariableDefinition[] vars = this.argumentDefinitions.toArray(new VariableDefinition[0]);
+            for (int i = vars.length - 1; i >= 0; i--) {
+                VariableDefinition def = vars[i];
                 // arguments processed here
-                String[] arg = str[i].split(":", 2);
-                TechnicalToolbox.log("{}", arg);
                 if (tree == null) {
-                    String validation, opts;
-                    if (arg.length == 2) {
-                        String[] optargs = arg[1].split(" *\\| *", 2);
-                        validation = optargs[0];
-                        if (optargs.length == 2) {
-                            opts = optargs[1];
-                        }
-                        else {
-                            opts = "";
-                        }
-                    }
-                    else {
-                        validation = "word";
-                        opts = "";
-                    }
-                    Entry<?> val = VALIDATION_MAP.getOrDefault(validation, VALIDATION_MAP.get("word"));
-                    RequiredArgumentBuilder<ServerCommandSource, ?> base = CommandManager.argument(arg[0], val.argumentTypeProvider().apply(opts));
-
-                    if ("selection".equals(validation)) {
-                        base = base.suggests(((context, builder) -> CommandSource.suggestMatching(opts.split(","), builder)));
+                    RequiredArgumentBuilder<ServerCommandSource, ?> base = CommandManager.argument(def.name, def.getArgumentType());
+                    if ("selection".equals(def.typeName)) {
+                        base = base.suggests(((context, builder) -> CommandSource.suggestMatching(def.args, builder)));
                     }
                     tree = base.executes(context -> {
-                        String[] args = new String[str.length];
-                        for (int j = 0; j < str.length; j++) {
-                            if (val.args > 0 && val.args != opts.split(",").length) {
-                                context.getSource().sendError(TextUtils.formattable("Mismatched args for " + validation + ": expected " +
-                                        val.args + ", got " + opts.split(",").length));
-                                return 1;
-                            }
-                            args[j] = context.getArgument(arg[0], val.clazz()).toString();
+                        this.arguments.clear();
+                        for (VariableDefinition var : this.argumentDefinitions) {
+                            this.arguments.put(var.typeName, context.getArgument(var.name, var.type.clazz()).toString());
                         }
-                        return this.execute(context, args, validation, opts);
+                        return this.execute(context);
                     });
                 }
                 else {
-                    tree = CommandManager.argument(str[i], StringArgumentType.string()).then(tree);
+                    tree = CommandManager.argument(def.name, def.getArgumentType()).then(tree);
                 }
             }
             dispatcher.register((CommandManager.literal(this.alias)
@@ -164,12 +176,16 @@ public class AliasedCommand {
                     .then(tree)
                     .executes(this::getCommandInfo));
         }
-        // Execution if no args provided
+        // Execution if no argc provided
         else {
             dispatcher.register((CommandManager.literal(this.alias)
                     .requires(source -> source.hasPermissionLevel(this.getPermission())))
                     .executes(this::execute));
         }
+        if (!AliasManager.ALIASES.containsKey(this.alias)) {
+            AliasManager.ALIASES.put(this.alias, this);
+        }
+        return true;
     }
 
     /**
@@ -178,7 +194,6 @@ public class AliasedCommand {
      */
     public void addCommand(String command, MinecraftServer server) {
         this.commands.add(command);
-        this.updateArgCount();
         this.deregister(server);
         this.register(server.getCommandManager().getDispatcher());
     }
@@ -212,7 +227,6 @@ public class AliasedCommand {
             return TextUtils.formattable("Line index " + line + " out of bounds");
         }
         this.commands.remove(line - 1);
-        this.updateArgCount();
         this.deregister(server);
         this.register(server.getCommandManager().getDispatcher());
         return null;
@@ -229,7 +243,6 @@ public class AliasedCommand {
             return TextUtils.formattable("Line index " + num + " out of bounds");
         }
         this.commands.add(num - 1, line);
-        this.updateArgCount();
         this.deregister(server);
         this.register(server.getCommandManager().getDispatcher());
         return null;
@@ -241,8 +254,8 @@ public class AliasedCommand {
     public MutableText getSyntax() {
         MutableText out = TextUtils.formattable("/").formatted(Formatting.YELLOW);
         out.append(TextUtils.formattable(this.alias).formatted(Formatting.YELLOW)).append(" ");
-        for (String arg : this.args) {
-            out.append(TextUtils.formattable("<" + arg + "> ").formatted(Formatting.GREEN));
+        for (VariableDefinition arg : this.argumentDefinitions) {
+            out.append(TextUtils.formattable("<" + arg.name + "> ").formatted(Formatting.GREEN));
         }
         return out;
     }
@@ -283,79 +296,30 @@ public class AliasedCommand {
     }
 
     /**
-     * Execute commands with args.
-     * @param context command context
-     * @param args input args
-     */
-    public int execute(CommandContext<ServerCommandSource> context, String[] args, String validation, String validationArgs) {
-        for (String command : this.commands) {
-            int i = 0;
-            for (String arg : this.args) {
-                String type = arg.split(":")[0];
-                if ("regex".equals(validation) && !Pattern.compile(validationArgs).matcher(args[i]).matches()) {
-                    context.getSource().sendError(TextUtils.formattable("Argument \"" + type + "\" must match regex \"" + validationArgs
-                            + "\""));
-                    return 1;
-                }
-                else if ("selection".equals(validation)) {
-                    List<String> valid = List.of(arg.split(":")[1].split("\\|")[1]);
-                    if (!valid.contains(args[i])) {
-                        context.getSource().sendError(TextUtils.formattable("Argument \"" + type + "\" must be one of " + valid));
-                        return 1;
-                    }
-                }
-                command = command.replaceAll("\\{\\$" + type + "(:[^}]+)?}", args[i]);
-                i++;
-            }
-            if (!this.executeCommand(context, command)) {
-                return 1;
-            }
-        }
-        return 0;
-    }
-
-    /**
-     * Executes a command without any args.
+     * Executes a command.
      * @param context command context
      */
     private int execute(CommandContext<ServerCommandSource> context) {
-        for (String command : this.commands) {
+        for (String command : this.instructions.values()) {
+            for (VariableDefinition var : this.argumentDefinitions) {
+                command = command.replaceAll("\\{\\$" + var.name + "}", this.arguments.get(var.name));
+            }
             if (!this.executeCommand(context, command)) {
                 return 1;
             }
         }
         return 0;
-    }
-
-    /**
-     * Updates the current argument count based on all commands in the alias.
-     */
-    private void updateArgCount() {
-        this.args.clear();
-        this.argCount = 0;
-        for (String command : this.commands) {
-            Matcher m = ARG.matcher(command);
-            while (m.find()) {
-                String s = m.group();
-                this.argCount++;
-                this.args.add(s.substring(2, s.length() - 1));
-            }
-        }
     }
 
     /**
      * Generic number range argument type
      */
     @SuppressWarnings("unchecked")
-    private static <T extends Number> ArgumentType<T> rangeArgumentType(String opt, Class<T> clazz, Function<String, T> parse, BiFunction<T, T, ArgumentType<T>> argumentType) {
+    private static <T extends Number> ArgumentType<T> rangeArgumentType(String[] opt, Class<T> clazz, Function<String, T> parse, BiFunction<T, T, ArgumentType<T>> argumentType) {
         T min, max;
         try {
-            String[] arg = opt.split(",");
-            if (arg.length != 2) {
-                throw new Exception();
-            }
-            min = parse.apply(arg[0]);
-            max = parse.apply(arg[1]);
+            min = parse.apply(opt[0]);
+            max = parse.apply(opt[1]);
             if (((Comparable<T>) min).compareTo(max) > 0) {
                 throw new Exception();
             }
@@ -396,6 +360,20 @@ public class AliasedCommand {
             if (this.silent != (ConfigOption.ALIAS_DEFAULT_SILENT.val())) {
                 bufferedWriter.write("Silent: \"" + this.silent + "\"\n");
             }
+            if (!this.argumentDefinitions.isEmpty()) {
+                bufferedWriter.write("Arguments:");
+                for (VariableDefinition var : this.argumentDefinitions) {
+                    bufferedWriter.write(" {$" + var.name + ":" + var.typeName);
+                    if (var.args.length > 0) {
+                        bufferedWriter.write("|");
+                        for (int i = 0; i < var.args.length; i++) {
+                            bufferedWriter.write(var.args[i] + ((i < var.args.length - 1) ? "," : ""));
+                        }
+                    }
+                    bufferedWriter.write("}");
+                }
+                bufferedWriter.write("\n");
+            }
             bufferedWriter.write("Command list:\n");
             for (String command : this.commands) {
                 bufferedWriter.write(command + "\n");
@@ -420,14 +398,15 @@ public class AliasedCommand {
             String line, alias = null;
             int permission = ConfigOption.ALIAS_DEFAULT_PERMISSION.val();
             List<String> commands = new ArrayList<>();
+            List<VariableDefinition> arguments = new ArrayList<>();
             while ((line = bufferedReader.readLine()) != null) {
                 if (!readingCommandState) {
                     String[] split = line.split(":");
                     if (split.length >= 2) {
                         switch (split[0].toLowerCase()) {
-                            case "alias" -> alias = line.replaceFirst("(?i)Alias: *", "");
+                            case "alias" -> alias = line.replaceFirst("(?i)Alias: *", "").strip();
                             case "permission level" -> {
-                                String tmp = line.replaceFirst("(?i)Permission level: *", "");
+                                String tmp = line.replaceFirst("(?i)Permission level: *", "").strip();
                                 try {
                                     permission = Integer.parseInt(tmp);
                                 } catch (NumberFormatException e) {
@@ -436,8 +415,26 @@ public class AliasedCommand {
                                 }
                             }
                             case "silent" -> {
-                                String tmp = line.replaceFirst("(?i)Silent: *", "");
+                                String tmp = line.replaceFirst("(?i)Silent: *", "").strip();
                                 silent = Boolean.parseBoolean(tmp);
+                            }
+                            case "arguments" -> {
+                                String tmp = line.replaceFirst("(?i)Arguments: *", "").strip();
+                                Matcher m = SAVED_ARGS.matcher(tmp);
+                                while (m.find()) {
+                                    String arg = m.group().replaceFirst("\\{\\$", "");
+                                    arg = arg.substring(0, arg.length() - 1);
+                                    String[] temp = arg.split(":");
+                                    String name = temp[0];
+                                    if (temp.length == 1) {
+                                        arguments.add(new VariableDefinition(name, "string", new String[0]));
+                                    }
+                                    else {
+                                        temp = temp[1].split("\\|");
+                                        arguments.add(new VariableDefinition(name, temp[0], temp.length > 1 ? temp[1].split(",") :
+                                                new String[0]));
+                                    }
+                                }
                             }
                         }
                     }
@@ -459,7 +456,7 @@ public class AliasedCommand {
                 TechnicalToolbox.log(path + ": Missing script body");
                 return false;
             }
-            new AliasedCommand(alias, permission, silent, server.getCommandManager().getDispatcher(), commands);
+            new AliasedCommand(alias, permission, silent, server.getCommandManager().getDispatcher(), commands, arguments);
         }
         catch (IOException e) {
             TechnicalToolbox.warn("Something went wrong reading from file " + path);

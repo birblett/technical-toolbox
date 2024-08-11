@@ -43,13 +43,13 @@ public class DelayCommand {
                         .then(CommandManager.argument("source", StringArgumentType.string())
                                 .suggests((context, builder) -> CommandSource.suggestMatching(List.of("self", "server"),
                                         builder))
-                                .redirect(node, context -> DelayCommand.optionalArgument(context, "source"))))
+                                .redirect(node, context -> DelayCommand.optionalArgument(context, "source", String.class))))
                 .then(CommandManager.literal("priority")
                         .then(CommandManager.argument("priority", IntegerArgumentType.integer())
-                                .redirect(node, context -> DelayCommand.optionalArgument(context, "priority"))))
+                                .redirect(node, context -> DelayCommand.optionalArgument(context, "priority", Integer.class))))
                 .then(CommandManager.literal("silent")
                         .then(CommandManager.argument("silent", BoolArgumentType.bool())
-                                .redirect(node, context -> DelayCommand.optionalArgument(context, "silent"))))
+                                .redirect(node, context -> DelayCommand.optionalArgument(context, "silent", Boolean.class))))
                 .then(CommandManager.literal("set")
                         .then(CommandManager.argument("id", StringArgumentType.word())
                                 .then(CommandManager.argument("delay", LongArgumentType.longArg(1))
@@ -74,9 +74,9 @@ public class DelayCommand {
         }
     }
 
-    private static ServerCommandSource optionalArgument(CommandContext<ServerCommandSource> context, String opt) {
+    private static ServerCommandSource optionalArgument(CommandContext<ServerCommandSource> context, String opt, Class<?> clazz) {
         CommandOption s = (CommandOption) context.getSource();
-        s.setOpt(opt, context.getArgument(opt, Boolean.class));
+        s.setOpt(opt, context.getArgument(opt, clazz));
         return context.getSource();
     }
 
