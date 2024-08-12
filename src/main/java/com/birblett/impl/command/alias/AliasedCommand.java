@@ -54,9 +54,14 @@ public class AliasedCommand {
             return this.type.argumentTypeProvider().apply(this.args);
         }
 
+        @Override
+        public int hashCode() {
+            return name.hashCode();
+        }
+
     }
 
-    private static final HashMap<String, Entry<?>> ARGUMENT_TYPES = new HashMap<>();
+    public static final HashMap<String, Entry<?>> ARGUMENT_TYPES = new HashMap<>();
     static {
         ARGUMENT_TYPES.put("int", new Entry<>(0, opt -> IntegerArgumentType.integer(), Integer.class));
         ARGUMENT_TYPES.put("int_range", new Entry<>(2, opt -> AliasedCommand.rangeArgumentType(opt, Integer.class, Integer::parseInt,
@@ -82,7 +87,7 @@ public class AliasedCommand {
     private final String alias;
     private final List<String> commands = new ArrayList<>();
     private final LinkedHashMap<Integer, String> instructions = new LinkedHashMap<>();
-    public final Set<VariableDefinition> argumentDefinitions = new LinkedHashSet<>();
+    private final LinkedHashMap<String, VariableDefinition> argumentDefinitions = new LinkedHashMap<>();
     private final HashMap<String, String> arguments = new HashMap<>();
     private int permission;
     private boolean silent;
@@ -100,7 +105,9 @@ public class AliasedCommand {
     private AliasedCommand(String alias, int permission, boolean silent, CommandDispatcher<ServerCommandSource> dispatcher, Collection<String> commands, Collection<VariableDefinition> arguments) {
         this.alias = alias;
         this.commands.addAll(commands);
-        this.argumentDefinitions.addAll(arguments);
+        for (VariableDefinition var : arguments) {
+            this.argumentDefinitions.put(var.name, var);
+        }
         this.permission = permission;
         this.silent = silent;
         this.register(dispatcher);
@@ -150,7 +157,7 @@ public class AliasedCommand {
                 return false;
             }
             // disgusting hack to build the command tree from the bottom up. thanks for the tip mojang
-            VariableDefinition[] vars = this.argumentDefinitions.toArray(new VariableDefinition[0]);
+            VariableDefinition[] vars = this.argumentDefinitions.values().toArray(new VariableDefinition[0]);
             for (int i = vars.length - 1; i >= 0; i--) {
                 VariableDefinition def = vars[i];
                 // arguments processed here
@@ -161,7 +168,7 @@ public class AliasedCommand {
                     }
                     tree = base.executes(context -> {
                         this.arguments.clear();
-                        for (VariableDefinition var : this.argumentDefinitions) {
+                        for (VariableDefinition var : this.argumentDefinitions.values()) {
                             this.arguments.put(var.typeName, context.getArgument(var.name, var.type.clazz()).toString());
                         }
                         return this.execute(context);
@@ -254,7 +261,7 @@ public class AliasedCommand {
     public MutableText getSyntax() {
         MutableText out = TextUtils.formattable("/").formatted(Formatting.YELLOW);
         out.append(TextUtils.formattable(this.alias).formatted(Formatting.YELLOW)).append(" ");
-        for (VariableDefinition arg : this.argumentDefinitions) {
+        for (VariableDefinition arg : this.argumentDefinitions.values()) {
             out.append(TextUtils.formattable("<" + arg.name + "> ").formatted(Formatting.GREEN));
         }
         return out;
@@ -301,7 +308,7 @@ public class AliasedCommand {
      */
     private int execute(CommandContext<ServerCommandSource> context) {
         for (String command : this.instructions.values()) {
-            for (VariableDefinition var : this.argumentDefinitions) {
+            for (VariableDefinition var : this.argumentDefinitions.values()) {
                 command = command.replaceAll("\\{\\$" + var.name + "}", this.arguments.get(var.name));
             }
             if (!this.executeCommand(context, command)) {
@@ -338,6 +345,71 @@ public class AliasedCommand {
     }
 
     /**
+     * Adds an argument, failing if it already exists.
+     * @param source command source to send feedback to
+     * @param replace whether the argument should replace the old one
+     * @param name name of the argument
+     * @param argType argument type
+     * @param args optional args
+     * @return false if failed to add argument, true otherwise
+     */
+    public boolean addArgument(ServerCommandSource source, boolean replace, String name, String argType, String[] args) {
+        if (this.argumentDefinitions.containsKey(name)) {
+            if (!replace) {
+                source.sendError(TextUtils.formattable("Argument \"" + name + "\"already exists"));
+                return false;
+            }
+        }
+        if (!ARGUMENT_TYPES.containsKey(argType)) {
+            source.sendError(TextUtils.formattable("Not a valid argument type: " + argType));
+            return false;
+        }
+        this.argumentDefinitions.put(name, new VariableDefinition(name, argType, args));
+        source.sendFeedback(() -> {
+            MutableText out = TextUtils.formattable((replace ? "Set" : "Added") + " argument ").append(TextUtils.formattable(name)
+                    .formatted(Formatting.GREEN)).append(TextUtils.formattable(" of type ").formatted(Formatting.WHITE))
+                    .append(TextUtils.formattable(argType).formatted(Formatting.GREEN));
+            if (args.length > 0) {
+                out.append(TextUtils.formattable(" with args [").formatted(Formatting.WHITE));
+                for (int i = 0; i < args.length; i++) {
+                    out.append(TextUtils.formattable(args[i]).formatted(Formatting.YELLOW));
+                    if (i < args.length - 1) {
+                        out.append(TextUtils.formattable(",").formatted(Formatting.WHITE));
+                    }
+                }
+                out.append(TextUtils.formattable("]").formatted(Formatting.WHITE));
+            }
+            return out;
+        }, false);
+        return true;
+    }
+
+    /**
+     * Removes an argument with the specified name
+     * @param source source to send feedback to
+     * @param name name of argument
+     * @return true if successful, false if not
+     */
+    public boolean removeArgument(ServerCommandSource source, String name) {
+        if (this.argumentDefinitions.containsKey(name)) {
+            this.argumentDefinitions.remove(name);
+            source.sendFeedback(() -> TextUtils.formattable("Removed argument ").append(TextUtils.formattable(name)
+                    .formatted(Formatting.GREEN)), false);
+            return true;
+        }
+        source.sendError(TextUtils.formattable("Argument \"" + name + "\" not found"));
+        return false;
+    }
+
+    public Collection<VariableDefinition> getArguments() {
+        return this.argumentDefinitions.values();
+    }
+
+    public boolean hasArguments() {
+        return !this.argumentDefinitions.isEmpty();
+    }
+
+    /**
      * Display command syntax to the executor
      * @param context contains the executor to send feedback to
      */
@@ -362,7 +434,7 @@ public class AliasedCommand {
             }
             if (!this.argumentDefinitions.isEmpty()) {
                 bufferedWriter.write("Arguments:");
-                for (VariableDefinition var : this.argumentDefinitions) {
+                for (VariableDefinition var : this.argumentDefinitions.values()) {
                     bufferedWriter.write(" {$" + var.name + ":" + var.typeName);
                     if (var.args.length > 0) {
                         bufferedWriter.write("|");

@@ -6,9 +6,8 @@ import com.birblett.impl.command.alias.AliasedCommand;
 import com.birblett.util.ServerUtil;
 import com.birblett.util.TextUtils;
 import com.mojang.brigadier.CommandDispatcher;
-import com.mojang.brigadier.arguments.BoolArgumentType;
-import com.mojang.brigadier.arguments.IntegerArgumentType;
-import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.arguments.*;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
@@ -20,9 +19,7 @@ import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -87,6 +84,17 @@ public class AliasCommand {
                                 .then(CommandManager.literal("silent")
                                         .then(CommandManager.argument("silent execution", BoolArgumentType.bool())
                                                 .executes(AliasCommand::modifySilent)))
+                                // edit arguments of the alias
+                                .then(CommandManager.literal("argument")
+                                        // add an argument without replacing it
+                                        .then(AliasCommand.addOrSetArguments("add", false))
+                                        // set an argument, replacing any existing one
+                                        .then(AliasCommand.addOrSetArguments("set", true))
+                                        // remove an argument
+                                        .then(CommandManager.literal("remove")
+                                                .then(CommandManager.argument("argument", StringArgumentType.string())
+                                                        .suggests(AliasCommand::modifyListArguments)
+                                                        .executes(AliasCommand::modifyArgumentRemove))))
                                 // if called without subcommands will instead output alias information
                                 .executes(AliasCommand::modifyInfo)))));
     }
@@ -128,7 +136,7 @@ public class AliasCommand {
             }
             return 1;
         }
-        context.getSource().sendError(TextUtils.formattable("Couldn't find alias \"" + alias));
+        context.getSource().sendError(TextUtils.formattable("Couldn't find alias \"" + alias + "\""));
         return 0;
     }
 
@@ -168,7 +176,7 @@ public class AliasCommand {
             context.getSource().sendFeedback(() -> out, false);
             return 1;
         }
-        context.getSource().sendError(TextUtils.formattable("Couldn't find alias \"" + alias));
+        context.getSource().sendError(TextUtils.formattable("Couldn't find alias \"" + alias + "\""));
         return 0;
     }
 
@@ -183,15 +191,12 @@ public class AliasCommand {
                 context.getSource().sendError(err);
                 return 0;
             }
-            MutableText out = TextUtils.formattable("Inserted command at line " +
-                    line + ": \"").append(TextUtils.formattable(command).formatted(
-                    Formatting.YELLOW)).append(TextUtils.formattable("\"\n")).append(
-                    cmd.getCommandText());
+            MutableText out = TextUtils.formattable("Inserted command at line " + line + ": \"").append(TextUtils.formattable(command)
+                    .formatted(Formatting.YELLOW)).append(TextUtils.formattable("\"\n")).append(cmd.getCommandText());
             context.getSource().sendFeedback(() -> out, false);
             return 1;
         }
-        context.getSource().sendError(TextUtils.formattable("Couldn't " +
-                "find alias \"" + alias));
+        context.getSource().sendError(TextUtils.formattable("Couldn't find alias \"" + alias + "\""));
         return 0;
     }
 
@@ -231,7 +236,7 @@ public class AliasCommand {
             context.getSource().sendFeedback(() -> out, false);
             return 1;
         }
-        context.getSource().sendError(TextUtils.formattable("Couldn't find alias \"" + alias));
+        context.getSource().sendError(TextUtils.formattable("Couldn't find alias \"" + alias + "\""));
         return 0;
     }
 
@@ -251,8 +256,7 @@ public class AliasCommand {
             context.getSource().sendFeedback(() -> out, false);
             return 1;
         }
-        context.getSource().sendError(TextUtils.formattable("Couldn't " +
-                "find alias \"" + alias));
+        context.getSource().sendError(TextUtils.formattable("Couldn't find alias \"" + alias));
         return 0;
     }
 
@@ -262,14 +266,12 @@ public class AliasCommand {
         AliasedCommand cmd = AliasManager.ALIASES.get(alias);
         if (cmd != null) {
             cmd.setPermission(permissionLevel);
-            context.getSource().sendFeedback(() -> TextUtils
-                    .formattable("Permission level for alias ").append(TextUtils.formattable(alias).formatted(Formatting.GREEN))
-                    .append(TextUtils.formattable(" set" + " to ").append(TextUtils.formattable(String.valueOf(permissionLevel))
-                            .formatted(Formatting.YELLOW))), false);
+            context.getSource().sendFeedback(() -> TextUtils.formattable("Permission level for alias ").append(TextUtils
+                            .formattable(alias).formatted(Formatting.GREEN)).append(TextUtils.formattable(" set" + " to ")
+                    .append(TextUtils.formattable(String.valueOf(permissionLevel)).formatted(Formatting.YELLOW))), false);
             return 1;
         }
-        context.getSource().sendError(TextUtils.formattable("Couldn't " +
-                "find alias \"" + alias));
+        context.getSource().sendError(TextUtils.formattable("Couldn't find alias \"" + alias + "\""));
         return 0;
     }
 
@@ -296,14 +298,99 @@ public class AliasCommand {
             MutableText out = cmd.getCommandText();
             out.append(TextUtils.formattable("\nPermission level: ").append(TextUtils.formattable(String.valueOf(cmd.getPermission()))
                     .formatted(Formatting.GREEN)));
-            if (!cmd.argumentDefinitions.isEmpty()) {
+            if (cmd.hasArguments()) {
                 out.append("\nSyntax: ").append(cmd.getSyntax());
             }
             context.getSource().sendFeedback(() -> out, false);
             return 1;
         }
-        context.getSource().sendError(TextUtils.formattable("Couldn't find alias \"" + alias));
+        context.getSource().sendError(TextUtils.formattable("Couldn't find alias \"" + alias + "\""));
         return 0;
+    }
+
+    private static int modifyArgumentSet(CommandContext<ServerCommandSource> context, String argType, boolean replace, Class<?> clazz, String... args) {
+        String alias = context.getArgument("alias", String.class);
+        AliasedCommand cmd = AliasManager.ALIASES.get(alias);
+        if (cmd != null) {
+            String name = context.getArgument("argument", String.class);
+            String[] stringArgs = new String[args.length];
+            for (int i = 0; i < args.length; i++) {
+                stringArgs[i] = context.getArgument(args[i], clazz).toString();
+            }
+            return cmd.addArgument(context.getSource(), replace, name, argType, stringArgs) ? 1 : 0;
+        }
+        context.getSource().sendError(TextUtils.formattable("Couldn't find alias \"" + alias + "\""));
+        return 0;
+    }
+
+    private static CompletableFuture<Suggestions> modifyListArguments(CommandContext<ServerCommandSource> context, SuggestionsBuilder builder) {
+        String alias = context.getArgument("alias", String.class);
+        AliasedCommand cmd = AliasManager.ALIASES.get(alias);
+        List<String> argString = new ArrayList<>();
+        if (cmd != null) {
+            Collection<AliasedCommand.VariableDefinition> args = cmd.getArguments();
+            args.forEach(var -> argString.add(var.name));
+        }
+        return CommandSource.suggestMatching(argString, builder);
+    }
+
+    private static int modifyArgumentRemove(CommandContext<ServerCommandSource> context) {
+        String alias = context.getArgument("alias", String.class);
+        AliasedCommand cmd = AliasManager.ALIASES.get(alias);
+        if (cmd != null) {
+            String name = context.getArgument("argument", String.class);
+            return cmd.removeArgument(context.getSource(), name) ? 0 : 1;
+        }
+        context.getSource().sendError(TextUtils.formattable("Couldn't find alias \"" + alias + "\""));
+        return 0;
+    }
+
+    private static LiteralArgumentBuilder<ServerCommandSource> addOrSetArguments(String literalName, boolean replace) {
+        return CommandManager.literal(literalName)
+                .then(CommandManager.argument("argument", StringArgumentType.string())
+                        .suggests((context, builder) -> replace ? AliasCommand.modifyListArguments(context, builder) : Suggestions.empty())
+                        .then(CommandManager.literal("int")
+                                .executes(context -> modifyArgumentSet(context, "int", replace, Integer.class)))
+                        .then(CommandManager.literal("int_range")
+                                .then(CommandManager.argument("min", IntegerArgumentType.integer())
+                                        .then(CommandManager.argument("max", IntegerArgumentType.integer())
+                                                .executes(context -> modifyArgumentSet(context, "int_range", replace, Integer.class,
+                                                        "min", "max")))))
+                        .then(CommandManager.literal("long")
+                                .executes(context -> modifyArgumentSet(context, "long", replace, Long.class)))
+                        .then(CommandManager.literal("long_range")
+                                .then(CommandManager.argument("min", LongArgumentType.longArg())
+                                        .then(CommandManager.argument("max", LongArgumentType.longArg())
+                                                .executes(context -> modifyArgumentSet(context, "long_range", replace, Long.class,
+                                                        "min", "max")))))
+                        .then(CommandManager.literal("float")
+                                .executes(context -> modifyArgumentSet(context, "float", replace, Float.class)))
+                        .then(CommandManager.literal("float_range")
+                                .then(CommandManager.argument("min", FloatArgumentType.floatArg())
+                                        .then(CommandManager.argument("max", FloatArgumentType.floatArg())
+                                                .executes(context -> modifyArgumentSet(context, "float_range", replace, Float.class,
+                                                        "min", "max")))))
+                        .then(CommandManager.literal("double")
+                                .executes(context -> modifyArgumentSet(context, "double", replace, Double.class)))
+                        .then(CommandManager.literal("double_range")
+                                .then(CommandManager.argument("min", DoubleArgumentType.doubleArg())
+                                        .then(CommandManager.argument("max", DoubleArgumentType.doubleArg())
+                                                .executes(context -> modifyArgumentSet(context, "double_range", replace,
+                                                        Double.class, "min", "max")))))
+                        .then(CommandManager.literal("boolean")
+                                .executes(context -> modifyArgumentSet(context, "boolean", replace, Boolean.class)))
+                        .then(CommandManager.literal("word")
+                                .executes(context -> modifyArgumentSet(context, "word", replace, String.class)))
+                        .then(CommandManager.literal("string")
+                                .executes(context -> modifyArgumentSet(context, "string", replace, String.class)))
+                        .then(CommandManager.literal("regex")
+                                .then(CommandManager.argument("regex", StringArgumentType.string())
+                                        .executes(context -> modifyArgumentSet(context, "regex", replace, String.class,
+                                                "regex"))))
+                        .then(CommandManager.literal("selection")
+                                .then(CommandManager.argument("comma_separated_selection", StringArgumentType.string())
+                                        .executes(context -> modifyArgumentSet(context, "selection", replace, String.class,
+                                                "comma_separated_selection")))));
     }
 
 }
