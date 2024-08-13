@@ -129,7 +129,7 @@ public class AliasCommand {
         if (cmd != null) {
             MutableText out = TextUtils.formattable("Removed command alias ").append(TextUtils.formattable(alias)
                     .formatted(Formatting.GREEN));
-            cmd.deregister(context.getSource().getServer());
+            cmd.deregister(context.getSource().getServer(), true);
             context.getSource().sendFeedback(() -> out, false);
             if (player != null) {
                 context.getSource().getServer().sendMessage(TextUtils.formattable(player.getNameForScoreboard() + ": ").append(out));
@@ -170,7 +170,7 @@ public class AliasCommand {
         AliasedCommand cmd = AliasManager.ALIASES.get(alias);
         String command = context.getArgument("line", String.class);
         if (cmd != null) {
-            cmd.addCommand(command, context.getSource().getServer());
+            cmd.addCommand(context.getSource(), command);
             MutableText out = TextUtils.formattable("Added line: \"").append(TextUtils.formattable(command).formatted(Formatting.YELLOW))
                     .append(TextUtils.formattable("\"\n")).append(cmd.getCommandText());
             context.getSource().sendFeedback(() -> out, false);
@@ -186,7 +186,7 @@ public class AliasCommand {
         AliasedCommand cmd = AliasManager.ALIASES.get(alias);
         String command = context.getArgument("line", String.class);
         if (cmd != null) {
-            MutableText err = cmd.insert(command, line, context.getSource().getServer());
+            MutableText err = cmd.insert(context.getSource(), command, line);
             if (err != null) {
                 context.getSource().sendError(err);
                 return 0;
@@ -221,12 +221,12 @@ public class AliasCommand {
         if (cmd != null) {
             MutableText err;
             String command = context.getArgument("line", String.class);
-            err = cmd.insert(command, line, context.getSource().getServer());
+            err = cmd.insert(context.getSource(), command, line);
             if (err != null) {
                 context.getSource().sendError(err);
                 return 0;
             }
-            err = cmd.removeCommand(line + 1, context.getSource().getServer());
+            err = cmd.removeCommand(context.getSource(), line + 1);
             if (err != null) {
                 context.getSource().sendError(err);
                 return 0;
@@ -246,7 +246,7 @@ public class AliasCommand {
         AliasedCommand cmd = AliasManager.ALIASES.get(alias);
         if (cmd != null) {
             MutableText err;
-            err = cmd.removeCommand(line, context.getSource().getServer());
+            err = cmd.removeCommand(context.getSource(), line);
             if (err != null) {
                 context.getSource().sendError(err);
                 return 0;
@@ -314,8 +314,19 @@ public class AliasCommand {
         if (cmd != null) {
             String name = context.getArgument("argument", String.class);
             String[] stringArgs = new String[args.length];
-            for (int i = 0; i < args.length; i++) {
-                stringArgs[i] = context.getArgument(args[i], clazz).toString();
+            if ("selection".equals(argType)) {
+                String selectionArgs = context.getArgument("comma_separated_selection", String.class);
+                TechnicalToolbox.log("{}", selectionArgs);
+                if (selectionArgs.isEmpty()) {
+                    context.getSource().sendError(TextUtils.formattable("Can't accept empty selection"));
+                    return 0;
+                }
+                stringArgs = selectionArgs.split(" *, *");
+            }
+            else {
+                for (int i = 0; i < args.length; i++) {
+                    stringArgs[i] = context.getArgument(args[i], clazz).toString();
+                }
             }
             return cmd.addArgument(context.getSource(), replace, name, argType, stringArgs) ? 1 : 0;
         }
@@ -388,9 +399,8 @@ public class AliasCommand {
                                         .executes(context -> modifyArgumentSet(context, "regex", replace, String.class,
                                                 "regex"))))
                         .then(CommandManager.literal("selection")
-                                .then(CommandManager.argument("comma_separated_selection", StringArgumentType.string())
-                                        .executes(context -> modifyArgumentSet(context, "selection", replace, String.class,
-                                                "comma_separated_selection")))));
+                                .then(CommandManager.argument("comma_separated_selection", StringArgumentType.greedyString())
+                                        .executes(context -> modifyArgumentSet(context, "selection", replace, String.class)))));
     }
 
 }
