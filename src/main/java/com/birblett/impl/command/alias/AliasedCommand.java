@@ -172,7 +172,6 @@ public class AliasedCommand {
                                 this.err = "no declaration/forward reference of variable \"" + var + "\"";
                                 break;
                             }
-                            TechnicalToolbox.log("{}", var, vars.get(var).type.clazz);
                             if (!cmp.equals("=") && !Number.class.isAssignableFrom(vars.get(var).type.clazz)) {
                                 this.valid = false;
                                 this.err = "string types only support comparing equality";
@@ -221,6 +220,17 @@ public class AliasedCommand {
 
         public ElseInstruction(int jumpTo) {
             super(jumpTo);
+        }
+
+    }
+
+    private static class IfJumpInstruction extends JumpInstruction {
+
+        protected final int depth;
+
+        public IfJumpInstruction(int jumpTo, int depth) {
+            super(jumpTo);
+            this.depth = depth;
         }
 
     }
@@ -321,7 +331,7 @@ public class AliasedCommand {
     private boolean compile() {
         this.instructions.clear();
         Stack<Instruction> controlFlowStack = new Stack<>();
-        int address = 0;
+        int address = 0, depth = 0;
         for (int i = 0; i < this.commands.size(); i++) {
             String s = this.commands.get(i);
             if (!s.isEmpty()) {
@@ -333,6 +343,7 @@ public class AliasedCommand {
                         String ctrl = m.group().replaceFirst("\\[\\[", "");
                         switch (ctrl) {
                             case "if" -> {
+                                depth++;
                                 String instr = c.replace("[[if", "").replace("]]", "").strip();
                                 IfInstruction instruction = new IfInstruction(instr, this.argumentDefinitions);
                                 if (!instruction.valid) {
@@ -344,16 +355,19 @@ public class AliasedCommand {
                             }
                             case "elif" -> {
                                 if (controlFlowStack.peek() instanceof IfInstruction instruction) {
-                                    instruction.jumpTo = address;
+                                    instruction.jumpTo = ++address;
                                     controlFlowStack.pop();
+                                    Instruction jumpInstruction = new IfJumpInstruction(-1, depth);
+                                    this.instructions.add(jumpInstruction);
+                                    controlFlowStack.add(jumpInstruction);
                                     String instr = c.replace("[[elif", "").replace("]]", "").strip();
-                                    IfInstruction instruction2 = new IfInstruction(instr, this.argumentDefinitions);
-                                    if (!instruction2.valid) {
-                                        TechnicalToolbox.log("{} - line {}: {}", this.alias, i, instruction2.err);
+                                    IfInstruction newInstruction = new IfInstruction(instr, this.argumentDefinitions);
+                                    if (!newInstruction.valid) {
+                                        TechnicalToolbox.log("{} - line {}: {}", this.alias, i, newInstruction.err);
                                         return false;
                                     }
-                                    this.instructions.add(instruction2);
-                                    controlFlowStack.add(instruction2);
+                                    this.instructions.add(newInstruction);
+                                    controlFlowStack.add(newInstruction);
                                 }
                                 else {
                                     TechnicalToolbox.log("{} - line {}: [[elif]] must follow an [[if/elif]]", this.alias, i);
@@ -362,12 +376,11 @@ public class AliasedCommand {
                             }
                             case "else" -> {
                                 if (controlFlowStack.peek() instanceof IfInstruction instruction) {
-                                    TechnicalToolbox.log("{} {}", instruction, address);
-                                    instruction.jumpTo = address + 1;
+                                    instruction.jumpTo = address;
                                     controlFlowStack.pop();
-                                    ElseInstruction elseInstruction = new ElseInstruction(address);
-                                    this.instructions.add(elseInstruction);
-                                    controlFlowStack.add(elseInstruction);
+                                    Instruction newInstruction = new ElseInstruction(address);
+                                    this.instructions.add(newInstruction);
+                                    controlFlowStack.add(newInstruction);
                                 }
                                 else {
                                     TechnicalToolbox.log("{} - line {}: [[else]] must follow an [[if/elif]]", this.alias, i);
@@ -378,6 +391,10 @@ public class AliasedCommand {
                                 if (controlFlowStack.peek() instanceof JumpInstruction instruction) {
                                     instruction.jumpTo = address--;
                                     controlFlowStack.pop();
+                                    while (!controlFlowStack.isEmpty() && controlFlowStack.peek() instanceof IfJumpInstruction instruction1) {
+                                        instruction1.jumpTo = address + 1;
+                                        controlFlowStack.pop();
+                                    }
                                 }
                                 else {
                                     return false;
@@ -415,15 +432,15 @@ public class AliasedCommand {
             for (int i = vars.length - 1; i >= 0; i--) {
                 VariableDefinition def = vars[i];
                 // arguments processed here
+                RequiredArgumentBuilder<ServerCommandSource, ?> base = CommandManager.argument(def.name, def.getArgumentType());
+                if ("selection".equals(def.typeName)) {
+                    base = base.suggests(((context, builder) -> CommandSource.suggestMatching(def.args, builder)));
+                }
                 if (tree == null) {
-                    RequiredArgumentBuilder<ServerCommandSource, ?> base = CommandManager.argument(def.name, def.getArgumentType());
-                    if ("selection".equals(def.typeName)) {
-                        base = base.suggests(((context, builder) -> CommandSource.suggestMatching(def.args, builder)));
-                    }
                     tree = base.executes(this::execute);
                 }
                 else {
-                    tree = CommandManager.argument(def.name, def.getArgumentType()).then(tree);
+                    tree = base.then(tree);
                 }
             }
             dispatcher.register((CommandManager.literal(this.alias)
@@ -507,7 +524,21 @@ public class AliasedCommand {
         MutableText out = TextUtils.formattable("/").formatted(Formatting.YELLOW);
         out.append(TextUtils.formattable(this.alias).formatted(Formatting.YELLOW)).append(" ");
         for (VariableDefinition arg : this.argumentDefinitions.values()) {
-            out.append(TextUtils.formattable("<" + arg.name + "> ").formatted(Formatting.GREEN));
+            out.append(TextUtils.formattable("<").formatted(Formatting.GREEN));
+            out.append(TextUtils.formattable(arg.name).formatted(Formatting.YELLOW));
+            out.append(TextUtils.formattable(":").formatted(Formatting.GREEN));
+            out.append(TextUtils.formattable(arg.typeName).formatted(Formatting.AQUA));
+            if (arg.type.argc != 0) {
+                out.append(TextUtils.formattable("[").formatted(Formatting.GREEN));
+                for (int i = 0; i < arg.args.length; i++) {
+                    out.append(TextUtils.formattable(arg.args[i]).formatted(Formatting.WHITE));
+                    if (i != arg.args.length - 1) {
+                        out.append(TextUtils.formattable(",").formatted(Formatting.GREEN));
+                    }
+                }
+                out.append(TextUtils.formattable("]").formatted(Formatting.GREEN));
+            }
+            out.append(TextUtils.formattable("> ").formatted(Formatting.GREEN));
         }
         return out;
     }
