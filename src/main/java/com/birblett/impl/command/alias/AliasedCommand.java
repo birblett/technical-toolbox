@@ -61,6 +61,63 @@ public class AliasedCommand {
 
     }
 
+    private static class NumberOperator {
+
+        private boolean isLong = true;
+        private long longVal;
+        private double doubleVal;
+
+        public NumberOperator(Number value) {
+            if (value instanceof Integer || value instanceof Long) {
+                this.longVal = (long) value;
+            }
+            else {
+                this.isLong = false;
+                this.doubleVal = (double) value;
+            }
+        }
+
+        public static NumberOperator fromString(String s) {
+            try {
+                return new NumberOperator(Long.parseLong(s));
+            }
+            catch (NumberFormatException e) {
+                try {
+                    return new NumberOperator(Double.parseDouble(s));
+                }
+                catch (NumberFormatException f) {
+                    return null;
+                }
+            }
+        }
+
+        public double getDoubleValue() {
+            return this.isLong ? (double) this.longVal : this.doubleVal;
+        }
+
+        public boolean compare(String comparator, NumberOperator other) {
+            switch (comparator) {
+                case "=" -> {
+                    return (this.isLong && other.isLong) ? this.longVal == other.longVal : this.getDoubleValue() == other.getDoubleValue();
+                }
+                case ">" -> {
+                    return (this.isLong && other.isLong) ? this.longVal > other.longVal : this.getDoubleValue() > other.getDoubleValue();
+                }
+                case "<" -> {
+                    return (this.isLong && other.isLong) ? this.longVal < other.longVal : this.getDoubleValue() < other.getDoubleValue();
+                }
+                case ">=" -> {
+                    return (this.isLong && other.isLong) ? this.longVal >= other.longVal : this.getDoubleValue() >= other.getDoubleValue();
+                }
+                case "<=" -> {
+                    return (this.isLong && other.isLong) ? this.longVal <= other.longVal : this.getDoubleValue() <= other.getDoubleValue();
+                }
+            }
+            return false;
+        }
+
+    }
+
     private interface Instruction {
 
         int execute(AliasedCommand aliasedCommand, CommandContext<ServerCommandSource> context, LinkedHashMap<String, VariableDefinition> variables);
@@ -71,51 +128,120 @@ public class AliasedCommand {
 
         @Override
         public int execute(AliasedCommand aliasedCommand, CommandContext<ServerCommandSource> context, LinkedHashMap<String, VariableDefinition> variables) {
-            String cmd = command;
+            String cmd = this.command;
             for (VariableDefinition var : variables.values()) {
                 String arg = context.getArgument(var.name, var.type.clazz).toString();
-                if ("selection".equals(var.typeName) && Arrays.stream(var.args).noneMatch(s -> s.equals(arg))) {
-                    context.getSource().sendError(TextUtils.formattable("Unsupported argument \"" + arg + "\": must be one of " +
-                            Arrays.toString(var.args)));
-                    return -2;
-                }
                 cmd = cmd.replaceAll("\\{\\$" + var.name + "}", arg);
             }
             return aliasedCommand.executeCommand(context, cmd) ? -1 : -2;
         }
 
+        @Override
+        public String toString() {
+            return this.command;
+        }
+
     }
 
-    private static class IfInstruction implements Instruction {
+    private static class IfInstruction extends JumpInstruction {
 
-        private int jumpTo;
-        private char op;
+        private String cmp;
         private String left;
         private String right;
         public boolean valid = true;
+        public String err = null;
 
-        public IfInstruction(String expression) {
-            this.jumpTo = -1;
+        public IfInstruction(String expression, LinkedHashMap<String, VariableDefinition> vars) {
+            super(-1);
             String[] comparators = expression.split(" *[<=>] *");
             if (comparators.length != 2) {
+                this.err = "must be be of format [[if operator1 (>|>=|<|<=|==) operator2]]";
                 this.valid = false;
             }
             else {
-                String cmp = expression.replaceFirst(comparators[0], "").replaceFirst(comparators[1], "").strip();
-                if (cmp.length() != 1 || !"<=>".contains(cmp)) {
-                    this.valid = false;
-                }
-                else {
-                    this.op = cmp.charAt(0);
+                String cmp = expression.replace(comparators[0], "").replace(comparators[1], "").strip();
+                if (cmp.length() == 1 && "<=>".contains(cmp) || cmp.length() == 2 && cmp.matches("(<=|>=)")) {
+                    this.cmp = cmp;
                     this.left = comparators[0];
                     this.right = comparators[1];
+                    for (String s : new String[]{this.left, this.right}) {
+                        if (s.startsWith("$")) {
+                            String var = s.substring(1);
+                            if (!vars.containsKey(var)) {
+                                this.valid = false;
+                                this.err = "no declaration/forward reference of variable \"" + var + "\"";
+                                break;
+                            }
+                            TechnicalToolbox.log("{}", var, vars.get(var).type.clazz);
+                            if (!cmp.equals("=") && !Number.class.isAssignableFrom(vars.get(var).type.clazz)) {
+                                this.valid = false;
+                                this.err = "string types only support comparing equality";
+                                break;
+                            }
+                        }
+                    }
+                }
+                else {
+                    this.err = "invalid comparator \"" + cmp + "\"";
+                    this.valid = false;
                 }
             }
         }
 
         @Override
         public int execute(AliasedCommand aliasedCommand, CommandContext<ServerCommandSource> context, LinkedHashMap<String, VariableDefinition> variables) {
+            String l = left;
+            String r = right;
+            if (left.startsWith("$")) {
+                VariableDefinition def = variables.get(left.substring(1));
+                l = context.getArgument(def.name, def.type.clazz).toString();
+            }
+            if (right.startsWith("$")) {
+                VariableDefinition def = variables.get(right.substring(1));
+                r = context.getArgument(def.name, def.type.clazz).toString();
+            }
+            NumberOperator leftOp = NumberOperator.fromString(l);
+            if (leftOp != null) {
+                NumberOperator rightOp = NumberOperator.fromString(r);
+                if (rightOp != null) {
+                    return leftOp.compare(this.cmp, rightOp) ? -1 : this.jumpTo;
+                }
+            }
+            return l.equals(r) ? -1 : this.jumpTo;
+        }
+
+        @Override
+        public String toString() {
+            return "if [" + this.left + this.cmp + this.right + "] else jmp " + this.jumpTo;
+        }
+
+    }
+
+    private static class ElseInstruction extends JumpInstruction {
+
+        public ElseInstruction(int jumpTo) {
+            super(jumpTo);
+        }
+
+    }
+
+    private static class JumpInstruction implements Instruction {
+
+        protected int jumpTo;
+
+        public JumpInstruction(int jumpTo) {
+            this.jumpTo = jumpTo;
+        }
+
+        @Override
+        public int execute(AliasedCommand aliasedCommand, CommandContext<ServerCommandSource> context, LinkedHashMap<String, VariableDefinition> variables) {
             return this.jumpTo;
+        }
+
+
+        @Override
+        public String toString() {
+            return "jmp " + this.jumpTo;
         }
 
     }
@@ -148,7 +274,6 @@ public class AliasedCommand {
     private int permission;
     private boolean silent;
     private static final Pattern SAVED_ARGS = Pattern.compile("\\{\\$[^:]+(:[^}]+)?}");
-    private static final Pattern VAR_ACCESS_REGEX = Pattern.compile("\\{\\$[^}]+}");
     private static final Pattern STATEMENT = Pattern.compile("\\[\\[[^]]+]]");
     private static final Pattern STATEMENT_BEGIN = Pattern.compile("\\[\\[[^ \\]]*");
 
@@ -158,6 +283,7 @@ public class AliasedCommand {
         this.permission = ConfigOption.ALIAS_DEFAULT_PERMISSION.val();
         this.silent = ConfigOption.ALIAS_DEFAULT_SILENT.val();
         this.register(dispatcher);
+        AliasManager.ALIASES.put(this.alias, this);
     }
 
     private AliasedCommand(String alias, int permission, boolean silent, CommandDispatcher<ServerCommandSource> dispatcher, Collection<String> commands, Collection<VariableDefinition> arguments) {
@@ -169,6 +295,7 @@ public class AliasedCommand {
         this.permission = permission;
         this.silent = silent;
         this.register(dispatcher);
+        AliasManager.ALIASES.put(this.alias, this);
     }
 
     public String getAlias() {
@@ -203,25 +330,62 @@ public class AliasedCommand {
                 if (m.find() && (c = m.group()).equals(s.strip())) {
                     m = STATEMENT_BEGIN.matcher(c);
                     if (m.find()) {
-                        switch (m.group().replaceFirst("\\[\\[", "")) {
+                        String ctrl = m.group().replaceFirst("\\[\\[", "");
+                        switch (ctrl) {
                             case "if" -> {
                                 String instr = c.replace("[[if", "").replace("]]", "").strip();
-                                IfInstruction instruction = new IfInstruction(instr);
+                                IfInstruction instruction = new IfInstruction(instr, this.argumentDefinitions);
                                 if (!instruction.valid) {
-                                    TechnicalToolbox.log("Line {}: invalid if statement \"{}\"", i, cmd);
+                                    TechnicalToolbox.log("{} - line {}: {}", this.alias, i, instruction.err);
                                     return false;
                                 }
                                 this.instructions.add(instruction);
                                 controlFlowStack.add(instruction);
                             }
-                            case "fi" -> {
-                                if (controlFlowStack.isEmpty()) {
-                                    return false;
-                                } else if (controlFlowStack.peek() instanceof IfInstruction instruction) {
+                            case "elif" -> {
+                                if (controlFlowStack.peek() instanceof IfInstruction instruction) {
                                     instruction.jumpTo = address;
                                     controlFlowStack.pop();
-                                    address--;
+                                    String instr = c.replace("[[elif", "").replace("]]", "").strip();
+                                    IfInstruction instruction2 = new IfInstruction(instr, this.argumentDefinitions);
+                                    if (!instruction2.valid) {
+                                        TechnicalToolbox.log("{} - line {}: {}", this.alias, i, instruction2.err);
+                                        return false;
+                                    }
+                                    this.instructions.add(instruction2);
+                                    controlFlowStack.add(instruction2);
                                 }
+                                else {
+                                    TechnicalToolbox.log("{} - line {}: [[elif]] must follow an [[if/elif]]", this.alias, i);
+                                    return false;
+                                }
+                            }
+                            case "else" -> {
+                                if (controlFlowStack.peek() instanceof IfInstruction instruction) {
+                                    TechnicalToolbox.log("{} {}", instruction, address);
+                                    instruction.jumpTo = address + 1;
+                                    controlFlowStack.pop();
+                                    ElseInstruction elseInstruction = new ElseInstruction(address);
+                                    this.instructions.add(elseInstruction);
+                                    controlFlowStack.add(elseInstruction);
+                                }
+                                else {
+                                    TechnicalToolbox.log("{} - line {}: [[else]] must follow an [[if/elif]]", this.alias, i);
+                                    return false;
+                                }
+                            }
+                            case "end" -> {
+                                if (controlFlowStack.peek() instanceof JumpInstruction instruction) {
+                                    instruction.jumpTo = address--;
+                                    controlFlowStack.pop();
+                                }
+                                else {
+                                    return false;
+                                }
+                            }
+                            default -> {
+                                TechnicalToolbox.log("{} - line {}: invalid statement [[{}]]", this.alias, i, ctrl);
+                                return false;
                             }
                         }
                     }
@@ -231,6 +395,10 @@ public class AliasedCommand {
                 }
                 address++;
             }
+        }
+        TechnicalToolbox.log("/{} compiled", this.alias);
+        for (int i = 0; i < this.instructions.size(); i++) {
+            TechnicalToolbox.log("{}: {}", i, this.instructions.get(i));
         }
         return true;
     }
@@ -387,6 +555,14 @@ public class AliasedCommand {
      */
     private int execute(CommandContext<ServerCommandSource> context) {
         LinkedHashMap<String, VariableDefinition> variableDefinitions = new LinkedHashMap<>(this.argumentDefinitions);
+        for (VariableDefinition var : variableDefinitions.values()) {
+            String arg = context.getArgument(var.name, var.type.clazz).toString();
+            if ("selection".equals(var.typeName) && Arrays.stream(var.args).noneMatch(s -> s.equals(arg))) {
+                context.getSource().sendError(TextUtils.formattable("Unsupported argument \"" + arg + "\": must be one of " +
+                        Arrays.toString(var.args)));
+                return 0;
+            }
+        }
         for (int i = 0; i < this.instructions.size(); i++) {
             int out = this.instructions.get(i).execute(this, context, variableDefinitions);
             if (out == -2) {
