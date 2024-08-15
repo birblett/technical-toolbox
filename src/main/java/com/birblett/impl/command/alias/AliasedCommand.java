@@ -109,8 +109,17 @@ public class AliasedCommand {
         return this.commands;
     }
 
+    /**
+     * Defines variable type, primarily for use with arguments.
+     * @param argc number of arguments required
+     * @param argumentTypeProvider provides an argument type to be passed to an argument builder
+     * @param clazz class used to retrieve arguments
+     */
     public record Entry<T>(int argc, Function<String[], ArgumentType<T>> argumentTypeProvider, Class<T> clazz) {}
 
+    /**
+     * Defines various traits related to variables, such as its name, type, and expected arguments.
+     */
     public static class VariableDefinition {
 
         public final String name;
@@ -136,8 +145,18 @@ public class AliasedCommand {
 
     }
 
+    /**
+     * The basic variable for use during program execution. Holds a definition and a value.
+     * @param type
+     * @param value
+     */
     private record Variable(VariableDefinition type, Object value) {}
 
+    /**
+     * The basic interface for operators in expressions - essentially a data container.
+     * getValue returns raw data, operation specifies how it interfaces with other
+     * Operators.
+     */
     public interface Operator {
 
         Object getValue();
@@ -145,6 +164,10 @@ public class AliasedCommand {
 
     }
 
+    /**
+     * Supports operations between two numbers, or a number and a string. Internal calculations
+     * handled via long and double values where necessary.
+     */
     private static class NumberOperator implements Operator {
 
         private boolean isLong = true;
@@ -255,12 +278,20 @@ public class AliasedCommand {
 
     }
 
+    /**
+     * The basic instructio interface; only requires an execute method; everything else is
+     * instruction-specific.
+     */
     private interface Instruction {
 
         int execute(AliasedCommand aliasedCommand, CommandContext<ServerCommandSource> context, LinkedHashMap<String, Variable> variables);
 
     }
 
+    /**
+     * Holds a single command; does text replacement for variables on execution.
+     * @param command
+     */
     private record CommandInstruction(String command) implements Instruction {
 
         @Override
@@ -279,7 +310,12 @@ public class AliasedCommand {
 
     }
 
-    private static class EvaluateExpressionInstruction implements Instruction {
+    /**
+     * Is capable of assigning to variables and evaluating the value of expressions. Handles
+     * order of operations and parentheses by converting to postfix and doing some preprocessing
+     * during the compilation step, and interprets the postfix instructions via a stack.
+     */
+    private static class AssignmentInstruction implements Instruction {
 
         private record Operator(String op, int precedence) {}
         private static final HashMap<String, Integer> PRECEDENCE = new HashMap<>();
@@ -312,7 +348,7 @@ public class AliasedCommand {
         private final Queue<Object> post = new LinkedList<>();
         public String err = null;
 
-        public EvaluateExpressionInstruction(String assignVar, String expr, List<LinkedHashMap<String, VariableDefinition>> vars) {
+        public AssignmentInstruction(String assignVar, String expr, List<LinkedHashMap<String, VariableDefinition>> vars) {
             String[] assn = assignVar.split(" ");
             if (assn.length == 2) {
                 this.assignVar = assn[1];
@@ -520,6 +556,9 @@ public class AliasedCommand {
 
     }
 
+    /**
+     * The basic jump instruction; tells the interpreter to jump to a specific index.
+     */
     private static class JumpInstruction implements Instruction {
 
         protected int jumpTo;
@@ -541,12 +580,16 @@ public class AliasedCommand {
 
     }
 
+    /**
+     * Tests a condition; if it fails, it jumps to after the if statement ends. Jumping past
+     * [[elif/else/end]] when successful is handled via {@link AliasedCommand.IfJumpInstruction}.
+     */
     private static class IfInstruction extends JumpInstruction {
 
         protected String name = "if";
         protected String cmp;
         protected String left;
-        private boolean[] ref = {false, false};
+        private final boolean[] ref = {false, false};
         protected String right;
         public boolean valid = true;
         public String err = null;
@@ -628,6 +671,9 @@ public class AliasedCommand {
 
     }
 
+    /**
+     * A JumpInstruction with an extra depth field to tell the compiler not to overwrite other instructions when out of scope.
+     */
     private static class IfJumpInstruction extends JumpInstruction {
 
         protected final int depth;
@@ -639,14 +685,9 @@ public class AliasedCommand {
 
     }
 
-    private static class ElseInstruction extends JumpInstruction {
-
-        public ElseInstruction(int jumpTo) {
-            super(jumpTo);
-        }
-
-    }
-
+    /**
+     * For all intents and purposes, an IfInstruction, but [[elif/else/end]] make some exceptions for this
+     */
     private static class WhileInstruction extends IfInstruction {
 
         protected int startAddress;
@@ -659,12 +700,23 @@ public class AliasedCommand {
 
     }
 
+    /**
+     * Logs an error and stores an error message.
+     * @param line line number
+     * @param err specific error mesasge
+     * @return always false, inlined when compiler fails
+     */
     private boolean compileError(int line, String err) {
         TechnicalToolbox.log("Failed to compile /{} - line {}: {}", this.alias, line + 1, err);
         this.status = "Line " + line + ": " + err;
         return false;
     }
 
+    /**
+     * Attempts to compile the currently stored alias; control flow/assignment are formatted as
+     * [[statement]], everything else that does not match the regex will be interpreted as a command
+     * @return false if it fails to compile
+     */
     private boolean compile() {
         this.instructions.clear();
         Stack<Instruction> controlFlowStack = new Stack<>();
@@ -689,13 +741,13 @@ public class AliasedCommand {
                                 if (instr.length != 2 || instr[1].contains("=")) {
                                     return this.compileError(i, "assignment must be of form [[assign var = (expression)]]");
                                 }
-                                EvaluateExpressionInstruction e = new EvaluateExpressionInstruction(instr[0].strip(), instr[1], scope);
+                                AssignmentInstruction e = new AssignmentInstruction(instr[0].strip(), instr[1], scope);
                                 if (!e.valid) {
                                     return this.compileError(i, e.err);
                                 }
                                 this.instructions.add(e);
                             }
-                            // basically tests a condition and if it fails it does a jump to the next elif/else
+                            // tests a condition; if it fails jump to the next elif/else
                             case "if" -> {
                                 depth++;
                                 scope.add(new LinkedHashMap<>());
@@ -710,7 +762,8 @@ public class AliasedCommand {
                             // sets previous if/elif conditional jump to the current address and creates an IfJump instruction, which will
                             // point to the next [[end]] block when that gets compiled
                             case "elif" -> {
-                                if (controlFlowStack.peek() instanceof IfInstruction instruction) {
+                                if (controlFlowStack.peek() instanceof IfInstruction instruction &&
+                                        !(instruction instanceof WhileInstruction)) {
                                     instruction.jumpTo = ++address;
                                     controlFlowStack.pop();
                                     Instruction jumpInstruction = new IfJumpInstruction(-1, depth);
@@ -733,10 +786,11 @@ public class AliasedCommand {
                             // strictly speaking this does not need an explicit instruction but i was lazy and didn't want to do extra
                             // validation for [[end]]
                             case "else" -> {
-                                if (controlFlowStack.peek() instanceof IfInstruction instruction) {
+                                if (controlFlowStack.peek() instanceof IfInstruction instruction &&
+                                        !(instruction instanceof WhileInstruction)) {
                                     instruction.jumpTo = address + 1;
                                     controlFlowStack.pop();
-                                    Instruction newInstruction = new ElseInstruction(address);
+                                    Instruction newInstruction = new JumpInstruction(address);
                                     this.instructions.add(newInstruction);
                                     controlFlowStack.add(newInstruction);
                                     scope.removeLast();
@@ -746,7 +800,7 @@ public class AliasedCommand {
                                     return this.compileError(i, "{} - line {}: [[else]] must follow an [[if/elif]]");
                                 }
                             }
-                            // basically identical to if
+                            // basically identical to if i actually haven't tested this and have no idea if it works or not
                             case "while" -> {
                                 depth++;
                                 scope.add(new LinkedHashMap<>());
@@ -825,7 +879,7 @@ public class AliasedCommand {
             for (int i = vars.length - 1; i >= 0; i--) {
                 VariableDefinition def = vars[i];
                 List<ArgumentBuilder<ServerCommandSource, ?>> baseNodes = new ArrayList<>();
-                // arguments processed here
+                // selection adds each option as its own literal, needs to modify command source to preserve arguments
                 if ("selection".equals(def.typeName)) {
                     for (String s : def.args) {
                         baseNodes.add(CommandManager.literal(s).requires(source -> {
@@ -837,6 +891,7 @@ public class AliasedCommand {
                 else {
                     baseNodes.add(CommandManager.argument(def.name, def.getArgumentType()));
                 }
+                // build command tree by layer, from the bottom up
                 if (tree.isEmpty()) {
                     for (ArgumentBuilder<ServerCommandSource, ?> base : baseNodes) {
                         tree.add(base.executes(this::execute));
@@ -876,6 +931,8 @@ public class AliasedCommand {
      */
     private int execute(CommandContext<ServerCommandSource> context) {
         LinkedHashMap<String, Variable> variableDefinitions = new LinkedHashMap<>();
+        List<AliasedCommand.Instruction> instructions = List.copyOf(this.instructions);
+        // load arguments locally
         for (VariableDefinition var : this.argumentDefinitions.values()) {
             if ("selection".equals(var.typeName)) {
                 String arg = ((CommandSourceModifier) context.getSource()).technicalToolbox$getSelectorArgument(var.name);
@@ -887,7 +944,6 @@ public class AliasedCommand {
             }
         }
         int i, c;
-        List<AliasedCommand.Instruction> instructions = List.copyOf(this.instructions);
         // main loop for running instructions; opcode of -2 is error, -1 is donothing, >=0 is an instruction index to jump to
         for (i = c = 0; i < instructions.size() && c < 10000; i++, c++) {
             int out = instructions.get(i).execute(this, context, variableDefinitions);
