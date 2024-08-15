@@ -20,7 +20,7 @@ public class ServerUtil {
      */
     public static void removeCommandByName(MinecraftServer server, String name) {
         RootCommandNode<ServerCommandSource> r = server.getCommandManager().getDispatcher().getRoot();
-        ((CommandNodeModifier) r).removeStringInstance(name);
+        ((CommandNodeModifier) r).technicalToolbox$RemoveStringInstance(name);
         refreshCommandTree(server);
     }
 

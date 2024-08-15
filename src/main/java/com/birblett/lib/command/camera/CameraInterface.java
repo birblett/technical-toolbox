@@ -2,7 +2,7 @@ package com.birblett.lib.command.camera;
 
 public interface CameraInterface {
 
-    boolean isCamera();
-    String swapCameraMode(boolean sendMessage);
+    boolean technicalToolbox$IsCamera();
+    String technicalToolbox$SwapCameraMode(boolean sendMessage);
 
 }

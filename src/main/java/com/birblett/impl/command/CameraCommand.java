@@ -24,7 +24,7 @@ public class CameraCommand {
     private static int setCameraMode(CommandContext<ServerCommandSource> context) {
         ServerPlayerEntity player = context.getSource().getPlayer();
         if (player != null) {
-            String feedback = ((CameraInterface) player).swapCameraMode(true);
+            String feedback = ((CameraInterface) player).technicalToolbox$SwapCameraMode(true);
             if (feedback != null) {
                 player.sendMessage(TextUtils.formattable(feedback), true);
                 Object logLevel = ConfigOption.CAMERA_CONSOLE_LOGGING.val();

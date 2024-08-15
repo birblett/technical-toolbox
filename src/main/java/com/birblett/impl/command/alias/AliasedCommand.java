@@ -8,11 +8,10 @@ import com.birblett.util.TextUtils;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.*;
 import com.mojang.brigadier.builder.ArgumentBuilder;
-import com.mojang.brigadier.builder.RequiredArgumentBuilder;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
-import net.minecraft.command.CommandSource;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
@@ -139,7 +138,7 @@ public class AliasedCommand {
 
     private record Variable(VariableDefinition type, Object value) {}
 
-    private interface Operator {
+    public interface Operator {
 
         Object getValue();
         Operator operation(String operator, Operator second);
@@ -287,7 +286,7 @@ public class AliasedCommand {
         public static final HashMap<Class<?>, Integer> TYPE_MAP = new HashMap<>();
         public static final HashMap<Integer, String> INVERSE_TYPE_MAP = new HashMap<>();
         public static final Pattern EXPRESSION_TOKENIZER =
-                Pattern.compile("((?<!\\\\)\".*?(?<!\\\\)\"|[0-9]+[.][0-9]+|[0-9]+|[()+\\-*\\/^]|[a-zA-Z]+)");
+                Pattern.compile("((?<!\\\\)\".*?(?<!\\\\)\"|[0-9]+[.][0-9]+|[0-9]+|[()+\\-*/^]|[a-zA-Z]+)");
 
         static {
             PRECEDENCE.put("+", 0);
@@ -600,7 +599,6 @@ public class AliasedCommand {
         public int execute(AliasedCommand aliasedCommand, CommandContext<ServerCommandSource> context, LinkedHashMap<String, Variable> variables) {
             String l = this.left;
             String r = this.right;
-            TechnicalToolbox.log("{} {}", l, r);
             if (ref[0]) {
                 l = variables.get(this.left).value.toString();
             }
@@ -613,7 +611,6 @@ public class AliasedCommand {
             else if (this.right.startsWith("\"") && this.right.endsWith("\"")) {
                 r = r.substring(1, r.length() - 1);
             }
-            TechnicalToolbox.log("{} {}", l, r);
             NumberOperator leftOp = NumberOperator.fromString(l);
             if (leftOp != null) {
                 NumberOperator rightOp = NumberOperator.fromString(r);
@@ -621,7 +618,6 @@ public class AliasedCommand {
                     return leftOp.compare(this.cmp, rightOp) ? -1 : this.jumpTo;
                 }
             }
-            TechnicalToolbox.log("{} {} {}", l, r, l.equals(r));
             return l.equals(r) ? -1 : this.jumpTo;
         }
 
@@ -801,42 +797,66 @@ public class AliasedCommand {
                 address++;
             }
         }
+        /*
         TechnicalToolbox.log("/{} compiled", this.alias);
         for (int i = 0; i < this.instructions.size(); i++) {
             TechnicalToolbox.log("{}: {}", i, this.instructions.get(i));
         }
+         */
         return true;
     }
 
+    /**
+     * Compiles the alias and if successful registers it as an executable command.
+     * @param dispatcher dispatcher to register to
+     * @return true if successful, false if compilation failed
+     */
     public boolean register(CommandDispatcher<ServerCommandSource> dispatcher) {
-        ArgumentBuilder<ServerCommandSource, ?> tree = null;
         // Compile first, if compilation fails then it does nothing
         if (!this.compile()) {
             return false;
         }
         this.status = "Compiled successfully";
+        List<ArgumentBuilder<ServerCommandSource, ?>> tree = new ArrayList<>();
         // Execution with required arguments
         if (!this.argumentDefinitions.isEmpty()) {
             // the horror
             VariableDefinition[] vars = this.argumentDefinitions.values().toArray(new VariableDefinition[0]);
             for (int i = vars.length - 1; i >= 0; i--) {
                 VariableDefinition def = vars[i];
+                List<ArgumentBuilder<ServerCommandSource, ?>> baseNodes = new ArrayList<>();
                 // arguments processed here
-                RequiredArgumentBuilder<ServerCommandSource, ?> base = CommandManager.argument(def.name, def.getArgumentType());
                 if ("selection".equals(def.typeName)) {
-                    base = base.suggests(((context, builder) -> CommandSource.suggestMatching(def.args, builder)));
-                }
-                if (tree == null) {
-                    tree = base.executes(this::execute);
+                    for (String s : def.args) {
+                        baseNodes.add(CommandManager.literal(s).requires(source -> {
+                            ((CommandSourceModifier) source).technicalToolbox$addSelector(def.name, s);
+                            return true;
+                        }));
+                    }
                 }
                 else {
-                    tree = base.then(tree);
+                    baseNodes.add(CommandManager.argument(def.name, def.getArgumentType()));
+                }
+                if (tree.isEmpty()) {
+                    for (ArgumentBuilder<ServerCommandSource, ?> base : baseNodes) {
+                        tree.add(base.executes(this::execute));
+                    }
+                }
+                else {
+                    for (ArgumentBuilder<ServerCommandSource, ?> base : baseNodes) {
+                        for (ArgumentBuilder<ServerCommandSource, ?> treeNode : tree) {
+                            base = base.then(treeNode);
+                        }
+                    }
+                    tree = baseNodes;
                 }
             }
-            dispatcher.register((CommandManager.literal(this.alias)
-                    .requires(source -> source.hasPermissionLevel(this.getPermission())))
-                    .then(tree)
-                    .executes(this::getCommandInfo));
+            LiteralArgumentBuilder<ServerCommandSource> root = CommandManager.literal(this.alias)
+                            .requires(source -> source.hasPermissionLevel(this.getPermission()));
+            for (ArgumentBuilder<ServerCommandSource, ?> base : tree) {
+                root = root.then(base);
+            }
+            dispatcher.register(root.executes(this::getCommandInfo));
         }
         // Execution if no arg provided
         else {
@@ -847,6 +867,67 @@ public class AliasedCommand {
         if (!AliasManager.ALIASES.containsKey(this.alias)) {
             AliasManager.ALIASES.put(this.alias, this);
         }
+        return true;
+    }
+
+    /**
+     * Executes an alias from start to finish. Configured to interpret {@link AliasedCommand.Instruction}.
+     * @param context command context
+     */
+    private int execute(CommandContext<ServerCommandSource> context) {
+        LinkedHashMap<String, Variable> variableDefinitions = new LinkedHashMap<>();
+        for (VariableDefinition var : this.argumentDefinitions.values()) {
+            if ("selection".equals(var.typeName)) {
+                String arg = ((CommandSourceModifier) context.getSource()).technicalToolbox$getSelectorArgument(var.name);
+                variableDefinitions.put(var.name, new Variable(var, arg));
+            }
+            else {
+                Object arg = context.getArgument(var.name, var.type.clazz);
+                variableDefinitions.put(var.name, new Variable(var, arg));
+            }
+        }
+        int i, c;
+        List<AliasedCommand.Instruction> instructions = List.copyOf(this.instructions);
+        // main loop for running instructions; opcode of -2 is error, -1 is donothing, >=0 is an instruction index to jump to
+        for (i = c = 0; i < instructions.size() && c < 10000; i++, c++) {
+            int out = instructions.get(i).execute(this, context, variableDefinitions);
+            if (out == -2) {
+                return 0;
+            }
+            else if (out >= 0) {
+                i = out - 1;
+            }
+        }
+        if (i < instructions.size()) {
+            context.getSource().sendError(TextUtils.formattable("Exceeded the instruction limit of " + 10000));
+            return 0;
+        }
+        return 1;
+    }
+
+    /**
+     * Executes command on server with command permission level override enabled
+     * @param context command context
+     * @param command command to execute
+     */
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
+    protected boolean executeCommand(CommandContext<ServerCommandSource> context, String command) {
+        ServerCommandSource source = context.getSource();
+        CommandDispatcher<ServerCommandSource> dispatcher = source.getServer().getCommandManager().getDispatcher();
+        ((CommandSourceModifier) source).technicalToolbox$setPermissionOverride(true);
+        if (this.silent) {
+            ((CommandSourceModifier) source).technicalToolbox$shutUp(true);
+        }
+        try {
+            dispatcher.execute(dispatcher.parse(command, source));
+            ((CommandSourceModifier) source).technicalToolbox$shutUp(false);
+        }
+        catch (CommandSyntaxException e) {
+            context.getSource().sendError(TextUtils.formattable(e.getMessage()));
+            ((CommandSourceModifier) source).technicalToolbox$shutUp(false);
+            return false;
+        }
+        ((CommandSourceModifier) source).technicalToolbox$setPermissionOverride(false);
         return true;
     }
 
@@ -942,66 +1023,6 @@ public class AliasedCommand {
     }
 
     /**
-     * Executes command on server with command permission level override enabled
-     * @param context command context
-     * @param command command to execute
-     */
-    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
-    protected boolean executeCommand(CommandContext<ServerCommandSource> context, String command) {
-        ServerCommandSource source = context.getSource();
-        CommandDispatcher<ServerCommandSource> dispatcher = source.getServer().getCommandManager().getDispatcher();
-        ((CommandSourceModifier) source).technicalToolbox$setPermissionOverride(true);
-        if (this.silent) {
-            ((CommandSourceModifier) source).technicalToolbox$shutUp(true);
-        }
-        try {
-            dispatcher.execute(dispatcher.parse(command, source));
-            ((CommandSourceModifier) source).technicalToolbox$shutUp(false);
-        }
-        catch (CommandSyntaxException e) {
-            context.getSource().sendError(TextUtils.formattable(e.getMessage()));
-            ((CommandSourceModifier) source).technicalToolbox$shutUp(false);
-            return false;
-        }
-        ((CommandSourceModifier) source).technicalToolbox$setPermissionOverride(false);
-        return true;
-    }
-
-    /**
-     * Executes an alias from start to finish. Configured to interpret {@link AliasedCommand.Instruction}.
-     * @param context command context
-     */
-    private int execute(CommandContext<ServerCommandSource> context) {
-        LinkedHashMap<String, Variable> variableDefinitions = new LinkedHashMap<>();
-        for (VariableDefinition var : this.argumentDefinitions.values()) {
-            Object arg = context.getArgument(var.name, var.type.clazz);
-             variableDefinitions.put(var.name, new Variable(var, arg));
-            if ("selection".equals(var.typeName) && Arrays.stream(var.args).noneMatch(s -> s.equals(arg))) {
-                context.getSource().sendError(TextUtils.formattable("Unsupported argument \"" + arg + "\": must be one of " +
-                        Arrays.toString(var.args)));
-                return 0;
-            }
-        }
-        int i, c;
-        List<AliasedCommand.Instruction> instructions = List.copyOf(this.instructions);
-        // main loop for running instructions; opcode of -2 is error, -1 is donothing, >=0 is an instruction index to jump to
-        for (i = c = 0; i < instructions.size() && c < 10000; i++, c++) {
-            int out = instructions.get(i).execute(this, context, variableDefinitions);
-            if (out == -2) {
-                return 0;
-            }
-            else if (out >= 0) {
-                i = out - 1;
-            }
-        }
-        if (i < instructions.size()) {
-            context.getSource().sendError(TextUtils.formattable("Exceeded the instruction limit of " + 10000));
-            return 0;
-        }
-        return 1;
-    }
-
-    /**
      * Generic range argument type for {@link AliasedCommand#ARGUMENT_TYPES}
      * @param opt should be a 2-element array of string inputs, parseable as T
      * @param clazz argument type; generic T is inferred from this
@@ -1080,6 +1101,29 @@ public class AliasedCommand {
      * @return true if successful, false if not
      */
     public boolean removeArgument(ServerCommandSource source, String name) {
+        if (this.argumentDefinitions.containsKey(name)) {
+            this.argumentDefinitions.remove(name);
+            source.sendFeedback(() -> TextUtils.formattable("Removed argument ").append(TextUtils.formattable(name)
+                    .formatted(Formatting.GREEN)), false);
+            this.refresh(source);
+            return true;
+        }
+        source.sendError(TextUtils.formattable("Argument \"" + name + "\" not found"));
+        return false;
+    }
+
+    /**
+     * Renames an argument
+     * @param source command source to send feedback to
+     * @param name target argument
+     * @param newName name to rename to
+     * @return true if successful, false otherwise
+     */
+    public boolean renameArgument(ServerCommandSource source, String name, String newName) {
+        if (this.argumentDefinitions.containsKey(newName)) {
+            source.sendError(TextUtils.formattable("Argument \"" + newName + "\" already exists"));
+            return false;
+        }
         if (this.argumentDefinitions.containsKey(name)) {
             this.argumentDefinitions.remove(name);
             source.sendFeedback(() -> TextUtils.formattable("Removed argument ").append(TextUtils.formattable(name)

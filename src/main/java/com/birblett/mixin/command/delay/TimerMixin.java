@@ -23,7 +23,7 @@ public class TimerMixin<T> implements CommandScheduler {
     @Unique private final HashMap<String, CommandEvent> scheduledCommandMap = new HashMap<>();
 
     @Override
-    public boolean addCommandEvent(String command, long delay, String id, int priority, boolean silent, ServerCommandSource source) {
+    public boolean technicalToolbox$AddCommandEvent(String command, long delay, String id, int priority, boolean silent, ServerCommandSource source) {
         if (!this.scheduledCommandMap.containsKey(id)) {
             CommandEvent e = new CommandEvent(id, command, delay, priority, silent, source);
             this.scheduledCommands.add(e);
@@ -34,7 +34,7 @@ public class TimerMixin<T> implements CommandScheduler {
     }
 
     @Override
-    public boolean removeCommandEvent(String id) {
+    public boolean technicalToolbox$RemoveCommandEvent(String id) {
         if (this.scheduledCommandMap.containsKey(id)) {
             this.scheduledCommands.remove(this.scheduledCommandMap.remove(id));
             return true;
@@ -43,7 +43,7 @@ public class TimerMixin<T> implements CommandScheduler {
     }
 
     @Override
-    public HashMap<String, CommandEvent> getCommandEventMap() {
+    public HashMap<String, CommandEvent> technicalToolbox$GetCommandEventMap() {
         return this.scheduledCommandMap;
     }
 

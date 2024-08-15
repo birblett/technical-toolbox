@@ -18,7 +18,7 @@ public class ServerChunkLoadingManagerMixin {
 
     @Inject(method = "doesNotGenerateChunks", at = @At("RETURN"), cancellable = true)
     protected void cameraGeneratesChunks(ServerPlayerEntity player, CallbackInfoReturnable<Boolean> cir) {
-        if (((CameraInterface) player).isCamera() && !ConfigOption.CAMERA_GENERATES_CHUNKS.val()) {
+        if (((CameraInterface) player).technicalToolbox$IsCamera() && !ConfigOption.CAMERA_GENERATES_CHUNKS.val()) {
             cir.setReturnValue(true);
         }
     }

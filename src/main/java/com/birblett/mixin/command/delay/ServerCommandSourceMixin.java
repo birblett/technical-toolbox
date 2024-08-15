@@ -13,17 +13,17 @@ public class ServerCommandSourceMixin implements CommandOption {
     @Unique private final HashMap<String, Object> commandOptions = new HashMap<>();
 
     @Override
-    public void setOpt(String s, Object value) {
+    public void technicalToolbox$SetOpt(String s, Object value) {
         this.commandOptions.put(s, value);
     }
 
     @Override
-    public Object getOpt(String s) {
+    public Object technicalToolbox$GetOpt(String s) {
         return this.commandOptions.get(s);
     }
 
     @Override
-    public void resetOpt() {
+    public void technicalToolbox$ResetOpt() {
         this.commandOptions.clear();
     }
 

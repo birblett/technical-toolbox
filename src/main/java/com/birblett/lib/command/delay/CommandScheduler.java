@@ -7,8 +7,8 @@ import java.util.HashMap;
 
 public interface CommandScheduler {
 
-    boolean addCommandEvent(String command, long delay, String id, int priority, boolean silent, ServerCommandSource source);
-    boolean removeCommandEvent(String id);
-    HashMap<String, CommandEvent> getCommandEventMap();
+    boolean technicalToolbox$AddCommandEvent(String command, long delay, String id, int priority, boolean silent, ServerCommandSource source);
+    boolean technicalToolbox$RemoveCommandEvent(String id);
+    HashMap<String, CommandEvent> technicalToolbox$GetCommandEventMap();
 
 }

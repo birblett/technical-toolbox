@@ -49,7 +49,7 @@ public class ServerPlayerEntityMixin implements CameraInterface {
     }
 
     @Override
-    public boolean isCamera() {
+    public boolean technicalToolbox$IsCamera() {
         return this.isCamera;
     }
 
@@ -60,7 +60,7 @@ public class ServerPlayerEntityMixin implements CameraInterface {
      * @return a status message to send to the player and server (if option enabled)
      */
     @Override
-    public String swapCameraMode(boolean sendMessage) {
+    public String technicalToolbox$SwapCameraMode(boolean sendMessage) {
         ServerPlayerEntity player = (ServerPlayerEntity) (Object) this;
         if (player.getVehicle() != null && !this.isCamera) {
             return "Exit vehicles before entering camera mode";

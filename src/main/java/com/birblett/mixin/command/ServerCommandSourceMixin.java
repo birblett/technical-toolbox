@@ -11,6 +11,8 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 
+import java.util.HashMap;
+
 /**
  * Allows for command aliases to override permission level checks on use and also enable/disable feedback
  */
@@ -19,20 +21,31 @@ public class ServerCommandSourceMixin implements CommandSourceModifier {
 
     @Unique private boolean overridePermissions = false;
     @Unique private boolean shutUp = false;
+    @Unique private HashMap<String, String> selectorMap = new HashMap<>();
 
     @Override
     public void technicalToolbox$setPermissionOverride(boolean override) {
         this.overridePermissions = override;
     }
 
-    @ModifyReturnValue(method = "hasPermissionLevel", at = @At("RETURN"))
-    private boolean overridePermissionLevelCheck(boolean b) {
-        return b || this.overridePermissions;
-    }
-
     @Override
     public void technicalToolbox$shutUp(boolean shutUp) {
         this.shutUp = shutUp;
+    }
+
+    @Override
+    public void technicalToolbox$addSelector(String name, String value) {
+        this.selectorMap.put(name, value);
+    }
+
+    @Override
+    public String technicalToolbox$getSelectorArgument(String name) {
+        return this.selectorMap.get(name);
+    }
+
+    @ModifyReturnValue(method = "hasPermissionLevel", at = @At("RETURN"))
+    private boolean overridePermissionLevelCheck(boolean b) {
+        return b || this.overridePermissions;
     }
 
     @WrapOperation(method = "sendFeedback", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/command/CommandOutput;sendMessage(Lnet/minecraft/text/Text;)V"))

@@ -66,7 +66,7 @@ public class DelayCommand {
     private static <T> T getOpt(CommandContext<ServerCommandSource> context, String arg, T def, Class<T> clazz) {
         CommandOption c = (CommandOption) context.getSource();
         try {
-            Object o = c.getOpt(arg);
+            Object o = c.technicalToolbox$GetOpt(arg);
             return o == null ? def : clazz.cast(o);
         }
         catch (ClassCastException e) {
@@ -76,7 +76,7 @@ public class DelayCommand {
 
     private static ServerCommandSource optionalArgument(CommandContext<ServerCommandSource> context, String opt, Class<?> clazz) {
         CommandOption s = (CommandOption) context.getSource();
-        s.setOpt(opt, context.getArgument(opt, clazz));
+        s.technicalToolbox$SetOpt(opt, context.getArgument(opt, clazz));
         return context.getSource();
     }
 
@@ -87,9 +87,9 @@ public class DelayCommand {
         boolean silent = DelayCommand.getOpt(context, "silent", false, Boolean.class);
         long delay = context.getArgument("delay", Long.class);
         String command = context.getArgument("command", String.class);
-        ((CommandOption) context.getSource()).resetOpt();
+        ((CommandOption) context.getSource()).technicalToolbox$ResetOpt();
         MutableText out = ((CommandScheduler) context.getSource().getServer().getSaveProperties().getMainWorldProperties()
-                .getScheduledEvents()).addCommandEvent(command, context.getSource().getWorld().getTime() + delay,
+                .getScheduledEvents()).technicalToolbox$AddCommandEvent(command, context.getSource().getWorld().getTime() + delay,
                         id, priority, silent, Objects.equals(source, "server") ? context.getSource().getServer().getCommandSource() :
                         context.getSource()) ? TextUtils.formattable("Scheduled command \"" + command + "\" with identifier ")
                 .append(TextUtils.formattable(id).setStyle(Style.EMPTY.withColor(Formatting.GREEN))) : TextUtils.formattable("Command" +
@@ -102,8 +102,8 @@ public class DelayCommand {
         CommandScheduler c = (CommandScheduler) context.getSource().getServer().getSaveProperties().getMainWorldProperties()
                 .getScheduledEvents();
         List<Text> commandList = new ArrayList<>();
-        for (String key : c.getCommandEventMap().keySet()) {
-            CommandEvent event =  c.getCommandEventMap().get(key);
+        for (String key : c.technicalToolbox$GetCommandEventMap().keySet()) {
+            CommandEvent event =  c.technicalToolbox$GetCommandEventMap().get(key);
             long timeLeft = event.tick() - context.getSource().getServer().getSaveProperties().getMainWorldProperties().getTime();
             commandList.add(TextUtils.formattable(key).setStyle(Style.EMPTY.withColor(Formatting.GREEN)).append(TextUtils
                     .formattable(" | " + timeLeft + " | " + event.command()).setStyle(Style.EMPTY.withColor(Formatting.WHITE))));
@@ -116,7 +116,7 @@ public class DelayCommand {
 
     private static CompletableFuture<Suggestions> getIdSuggestions(CommandContext<ServerCommandSource> context, SuggestionsBuilder builder) {
         return CommandSource.suggestMatching(((CommandScheduler) context.getSource().getServer().getSaveProperties()
-                .getMainWorldProperties().getScheduledEvents()).getCommandEventMap().keySet(), builder);
+                .getMainWorldProperties().getScheduledEvents()).technicalToolbox$GetCommandEventMap().keySet(), builder);
     }
 
     private static int remove(CommandContext<ServerCommandSource> context) {
@@ -124,7 +124,7 @@ public class DelayCommand {
                 .getScheduledEvents();
         MutableText out;
         String id = context.getArgument("id", String.class);
-        if (c.removeCommandEvent(id)) {
+        if (c.technicalToolbox$RemoveCommandEvent(id)) {
             out = TextUtils.formattable("Removed scheduled command with identifier ").append(TextUtils.formattable(id)
                     .setStyle(Style.EMPTY.withColor(Formatting.GREEN)));
         }

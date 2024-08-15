@@ -21,7 +21,7 @@ public class CommandNodeMixin<S> implements CommandNodeModifier {
     @Shadow @Final private Map<String, LiteralCommandNode<S>> literals;
 
     @Override
-    public void removeStringInstance(String s) {
+    public void technicalToolbox$RemoveStringInstance(String s) {
         this.children.remove(s);
         this.literals.remove(s);
         this.arguments.remove(s);
