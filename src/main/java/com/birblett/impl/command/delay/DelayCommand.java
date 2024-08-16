@@ -1,7 +1,7 @@
 package com.birblett.impl.command.delay;
 
 import com.birblett.impl.config.ConfigOption;
-import com.birblett.lib.command.delay.CommandOption;
+import com.birblett.lib.command.delay.AliasedCommandSource;
 import com.birblett.lib.command.delay.CommandScheduler;
 import com.birblett.util.TextUtils;
 import com.mojang.brigadier.CommandDispatcher;
@@ -64,7 +64,7 @@ public class DelayCommand {
     }
 
     private static <T> T getOpt(CommandContext<ServerCommandSource> context, String arg, T def, Class<T> clazz) {
-        CommandOption c = (CommandOption) context.getSource();
+        AliasedCommandSource c = (AliasedCommandSource) context.getSource();
         try {
             Object o = c.technicalToolbox$GetOpt(arg);
             return o == null ? def : clazz.cast(o);
@@ -75,7 +75,7 @@ public class DelayCommand {
     }
 
     private static ServerCommandSource optionalArgument(CommandContext<ServerCommandSource> context, String opt, Class<?> clazz) {
-        CommandOption s = (CommandOption) context.getSource();
+        AliasedCommandSource s = (AliasedCommandSource) context.getSource();
         s.technicalToolbox$SetOpt(opt, context.getArgument(opt, clazz));
         return context.getSource();
     }
@@ -87,7 +87,7 @@ public class DelayCommand {
         boolean silent = DelayCommand.getOpt(context, "silent", false, Boolean.class);
         long delay = context.getArgument("delay", Long.class);
         String command = context.getArgument("command", String.class);
-        ((CommandOption) context.getSource()).technicalToolbox$ResetOpt();
+        ((AliasedCommandSource) context.getSource()).technicalToolbox$ResetOpt();
         MutableText out = ((CommandScheduler) context.getSource().getServer().getSaveProperties().getMainWorldProperties()
                 .getScheduledEvents()).technicalToolbox$AddCommandEvent(command, context.getSource().getWorld().getTime() + delay,
                         id, priority, silent, Objects.equals(source, "server") ? context.getSource().getServer().getCommandSource() :

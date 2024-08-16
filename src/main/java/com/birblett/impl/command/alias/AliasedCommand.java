@@ -3,6 +3,7 @@ package com.birblett.impl.command.alias;
 import com.birblett.TechnicalToolbox;
 import com.birblett.impl.config.ConfigOption;
 import com.birblett.lib.command.CommandSourceModifier;
+import com.birblett.lib.command.delay.AliasedCommandSource;
 import com.birblett.util.ServerUtil;
 import com.birblett.util.TextUtils;
 import com.mojang.brigadier.CommandDispatcher;
@@ -36,15 +37,16 @@ import java.util.regex.Pattern;
  */
 public class AliasedCommand {
 
-    private final String alias;
+    private String alias;
+    private boolean compiled = false;
     private final List<String> commands = new ArrayList<>();
     private final List<Instruction> instructions = new ArrayList<>();
     private final LinkedHashMap<String, VariableDefinition> argumentDefinitions = new LinkedHashMap<>();
     private int permission;
     private boolean silent;
     private static final Pattern SAVED_ARGS = Pattern.compile("\\{\\$[^:]+(:[^}]+)?}");
-    private static final Pattern STATEMENT = Pattern.compile("\\[\\[[^]]+]]");
-    private static final Pattern STATEMENT_BEGIN = Pattern.compile("\\[\\[[^ \\]]*");
+    private static final Pattern STATEMENT = Pattern.compile("\\[.*]");
+    private static final Pattern STATEMENT_BEGIN = Pattern.compile("\\[[^\\ ]+");
     public static final HashMap<String, Entry<?>> ARGUMENT_TYPES = new HashMap<>();
     public String status = null;
 
@@ -73,7 +75,12 @@ public class AliasedCommand {
         this.commands.add(command);
         this.permission = ConfigOption.ALIAS_DEFAULT_PERMISSION.val();
         this.silent = ConfigOption.ALIAS_DEFAULT_SILENT.val();
-        this.register(dispatcher);
+        try {
+            this.register(dispatcher);
+        }
+        catch (Exception e) {
+            TechnicalToolbox.log("Something went wrong registering alias {}", this.alias);
+        }
         AliasManager.ALIASES.put(this.alias, this);
     }
 
@@ -85,7 +92,12 @@ public class AliasedCommand {
         }
         this.permission = permission;
         this.silent = silent;
-        this.register(dispatcher);
+        try {
+            this.register(dispatcher);
+        }
+        catch (Exception e) {
+            TechnicalToolbox.log("Something went wrong registering alias {}", this.alias);
+        }
         AliasManager.ALIASES.put(this.alias, this);
     }
 
@@ -160,7 +172,8 @@ public class AliasedCommand {
     public interface Operator {
 
         Object getValue();
-        Operator operation(String operator, Operator second);
+        Operator operation(String operator, Operator other);
+        boolean compare(String comparator, Operator other);
 
     }
 
@@ -176,11 +189,11 @@ public class AliasedCommand {
 
         public NumberOperator(Number value) {
             if (value instanceof Integer || value instanceof Long) {
-                this.longVal = (long) value;
+                this.longVal = value.longValue();
             }
             else {
                 this.isLong = false;
-                this.doubleVal = (double) value;
+                this.doubleVal = value.doubleValue();
             }
         }
 
@@ -190,6 +203,9 @@ public class AliasedCommand {
             }
             catch (NumberFormatException e) {
                 try {
+                    if (s.endsWith("s")) {
+                        return new NumberOperator(Double.parseDouble(s.substring(0, s.length() - 1)));
+                    }
                     return new NumberOperator(Double.parseDouble(s));
                 }
                 catch (NumberFormatException f) {
@@ -230,6 +246,10 @@ public class AliasedCommand {
                         return new NumberOperator((this.isLong && second.isLong) ? Math.pow(second.longVal, this.longVal) :
                                 Math.pow(second.getDoubleValue(), this.getDoubleValue()));
                     }
+                    case "%" -> {
+                        return new NumberOperator((this.isLong && second.isLong) ? second.longVal % this.longVal :
+                                second.getDoubleValue() % this.getDoubleValue());
+                    }
                 }
             }
             else if (other instanceof StringOperator str) {
@@ -238,23 +258,28 @@ public class AliasedCommand {
             return null;
         }
 
-        public boolean compare(String comparator, NumberOperator other) {
-            switch (comparator) {
-                case "=" -> {
-                    return (this.isLong && other.isLong) ? this.longVal == other.longVal : this.getDoubleValue() == other.getDoubleValue();
+        public boolean compare(String comparator, Operator other) {
+            if (other instanceof NumberOperator num) {
+                switch (comparator) {
+                    case "=" -> {
+                        return (this.isLong && num.isLong) ? this.longVal == num.longVal : this.getDoubleValue() == num.getDoubleValue();
+                    }
+                    case ">" -> {
+                        return (this.isLong && num.isLong) ? this.longVal > num.longVal : this.getDoubleValue() > num.getDoubleValue();
+                    }
+                    case "<" -> {
+                        return (this.isLong && num.isLong) ? this.longVal < num.longVal : this.getDoubleValue() < num.getDoubleValue();
+                    }
+                    case ">=" -> {
+                        return (this.isLong && num.isLong) ? this.longVal >= num.longVal : this.getDoubleValue() >= num.getDoubleValue();
+                    }
+                    case "<=" -> {
+                        return (this.isLong && num.isLong) ? this.longVal <= num.longVal : this.getDoubleValue() <= num.getDoubleValue();
+                    }
                 }
-                case ">" -> {
-                    return (this.isLong && other.isLong) ? this.longVal > other.longVal : this.getDoubleValue() > other.getDoubleValue();
-                }
-                case "<" -> {
-                    return (this.isLong && other.isLong) ? this.longVal < other.longVal : this.getDoubleValue() < other.getDoubleValue();
-                }
-                case ">=" -> {
-                    return (this.isLong && other.isLong) ? this.longVal >= other.longVal : this.getDoubleValue() >= other.getDoubleValue();
-                }
-                case "<=" -> {
-                    return (this.isLong && other.isLong) ? this.longVal <= other.longVal : this.getDoubleValue() <= other.getDoubleValue();
-                }
+            }
+            else if (other instanceof StringOperator str) {
+                return str.compare("=", this);
             }
             return false;
         }
@@ -270,21 +295,25 @@ public class AliasedCommand {
 
         @Override
         public StringOperator operation(String operator, Operator second) {
-            if ("+".equals(operator)) {
-                return new StringOperator(second.getValue() + this.str);
-            }
-            return null;
+            return new StringOperator(second.getValue() + this.str);
+        }
+
+        @Override
+        public boolean compare(String comparator, Operator other) {
+            return this.str.equals(other.getValue().toString());
         }
 
     }
 
     /**
-     * The basic instructio interface; only requires an execute method; everything else is
+     * The basic instruction interface; only requires an execute method; everything else is
      * instruction-specific.
      */
     private interface Instruction {
 
-        int execute(AliasedCommand aliasedCommand, CommandContext<ServerCommandSource> context, LinkedHashMap<String, Variable> variables);
+        default int execute(AliasedCommand aliasedCommand, CommandContext<ServerCommandSource> context, LinkedHashMap<String, Variable> variables) {
+            return -1;
+        }
 
     }
 
@@ -311,42 +340,215 @@ public class AliasedCommand {
     }
 
     /**
+     * Contains methods and values for parsing expressions i.e. for if/assign/return statements
+     */
+    private interface ExpressionParser {
+
+        record ExpressionOperator(String op, int precedence) {}
+        HashMap<String, Integer> PRECEDENCE = new HashMap<>();
+        HashMap<Class<?>, Integer> TYPE_MAP = new HashMap<>();
+        HashMap<String, Integer> TYPE_VALUE_MAP = new HashMap<>();
+        HashMap<Integer, String> INV_VALUE_MAP = new HashMap<>();
+        Pattern EXPRESSION_TOKENIZER =
+                Pattern.compile("((?<!\\\\)\".*?(?<!\\\\)\"|[0-9]+[.][0-9]+[fF]?|[0-9]+[fF]?|[()+\\-%*/^]|[a-zA-Z]+)");
+
+        default Integer parseExpression(String expr, Integer type, List<LinkedHashMap<String, VariableDefinition>> vars, Queue<Object> post) {
+            int inferredType = type != null ? type : 0;
+            Stack<ExpressionOperator> stack = new Stack<>();
+            Matcher m = EXPRESSION_TOKENIZER.matcher(expr);
+            boolean lastOperand = true;
+            int depth = 0;
+            while (m.find()) {
+                String token = m.group();
+                if (token.startsWith("\"") && token.endsWith("\"")) {
+                    if (type == null) {
+                        inferredType = 4;
+                    }
+                    else if (type < 4) {
+                        this.error("can't forcibly coerce string type to numerical value");
+                        return null;
+                    }
+                }
+                switch (token) {
+                    case " " -> {}
+                    case "(" -> {
+                        if (!lastOperand) {
+                            this.error("operand can't directly follow another operand");
+                            return null;
+                        }
+                        depth++;
+                    }
+                    case ")" -> {
+                        if (lastOperand) {
+                            this.error("operator can't directly follow another operator");
+                            return null;
+                        }
+                        depth--;
+                    }
+                    case "+", "-", "*", "/", "^", "%" -> {
+                        if (lastOperand) {
+                            this.error("operator can't directly follow another operator");
+                            return null;
+                        }
+                        lastOperand = true;
+                        int p = PRECEDENCE.get(token) + 3 * depth;
+                        while (!stack.isEmpty() && stack.peek().precedence >= p) {
+                            post.add(stack.pop().op);
+                        }
+                        stack.push(new ExpressionOperator(token, p));
+                    }
+                    default -> {
+                        if (!lastOperand) {
+                            this.error("operand can't directly follow another operand");
+                            return null;
+                        }
+                        NumberOperator num = NumberOperator.fromString(token);
+                        if (num == null) {
+                            if (token.startsWith("\"") && token.endsWith("\"")) {
+                                inferredType = 4;
+                                post.add(new StringOperator(token.substring(1, token.length() - 1)));
+                            }
+                            else {
+                                boolean valid = false;
+                                for (LinkedHashMap<String, VariableDefinition> varMap : vars) {
+                                    if (varMap.containsKey(token)) {
+                                        valid = true;
+                                        inferredType = Math.max(inferredType, TYPE_MAP.getOrDefault(varMap.get(token).type.clazz, 4));
+                                        post.add(token);
+                                        break;
+                                    }
+                                }
+                                if (!valid) {
+                                    this.error("no declaration/forward reference of variable \"" + token + "\"");
+                                    return null;
+                                }
+                            }
+                        }
+                        else {
+                            if (type == null) {
+                                Number n = (Number) num.getValue();
+                                if (token.endsWith("f")) {
+                                    inferredType = 2;
+                                }
+                                else {
+                                    if (inferredType != 0 || n.intValue() != num.getDoubleValue()) {
+                                        if (inferredType <= 1 && n.longValue() == num.getDoubleValue()) {
+                                            inferredType = 1;
+                                        } else {
+                                            inferredType = 3;
+                                        }
+                                    }
+                                }
+                            }
+                            post.add(num);
+                        }
+                        lastOperand = false;
+                    }
+                }
+            }
+            if (lastOperand) {
+                this.error("expression contains operator without operand");
+                return null;
+            }
+            while (!stack.isEmpty()) {
+                post.add(stack.pop().op);
+            }
+            if (depth != 0) {
+                this.error("mismatched parentheses in expression");
+                return null;
+            }
+            boolean hasString = false;
+            boolean hasNonAddition = false;
+            for (Object o : post) {
+                if (o instanceof String s && "-*/^%".contains(s)) {
+                    hasNonAddition = true;
+                }
+                else if (o instanceof StringOperator) {
+                    inferredType = 4;
+                    hasString = true;
+                }
+            }
+            if (hasString && hasNonAddition) {
+                this.error("string type only supports concatenation");
+                return null;
+            }
+            return inferredType;
+        }
+
+        default Operator evaluate(Queue<Object> post, LinkedHashMap<String, Variable> variables) {
+            Queue<Object> postfix = new LinkedList<>(post);
+            Stack<Operator> eval = new Stack<>();
+            if (!postfix.isEmpty()) {
+                while (!postfix.isEmpty()) {
+                    Object o = postfix.poll();
+                    if (o instanceof String tok) {
+                        if ("+-*/^%".contains(tok)) {
+                            switch (tok) {
+                                case "*", "+", "^", "%" -> eval.push(eval.pop().operation(tok, eval.pop()));
+                                case "/", "-" -> {
+                                    Operator arg = eval.pop();
+                                    eval.push(eval.pop().operation(tok, arg));
+                                }
+                            }
+                        }
+                        else {
+                            Variable v = variables.get(tok);
+                            if (Number.class.isAssignableFrom(v.type.type.clazz)) {
+                                eval.push(new NumberOperator((Number) v.value));
+                            }
+                            else {
+                                eval.push(new StringOperator(v.value.toString()));
+                            }
+                        }
+                    }
+                    else if (o instanceof Operator op) {
+                        eval.push(op);
+                    }
+                }
+            }
+            return eval.peek();
+        }
+
+        void error(String s);
+
+    }
+
+    static {
+        ExpressionParser.PRECEDENCE.put("+", 0);
+        ExpressionParser.PRECEDENCE.put("-", 0);
+        ExpressionParser.PRECEDENCE.put("*", 1);
+        ExpressionParser.PRECEDENCE.put("/", 1);
+        ExpressionParser.PRECEDENCE.put("%", 1);
+        ExpressionParser.PRECEDENCE.put("^", 2);
+        ExpressionParser.TYPE_MAP.put(Integer.class, 0);
+        ExpressionParser.TYPE_MAP.put(Long.class, 1);
+        ExpressionParser.TYPE_MAP.put(Float.class, 2);
+        ExpressionParser.TYPE_MAP.put(Double.class, 3);
+        ExpressionParser.TYPE_MAP.put(String.class, 4);
+        ExpressionParser.TYPE_VALUE_MAP.put("int", 0);
+        ExpressionParser.TYPE_VALUE_MAP.put("long", 1);
+        ExpressionParser.TYPE_VALUE_MAP.put("float", 2);
+        ExpressionParser.TYPE_VALUE_MAP.put("double", 3);
+        ExpressionParser.TYPE_VALUE_MAP.put("string", 4);
+        ExpressionParser.INV_VALUE_MAP.put(0, "int");
+        ExpressionParser.INV_VALUE_MAP.put(1, "long");
+        ExpressionParser.INV_VALUE_MAP.put(2, "float");
+        ExpressionParser.INV_VALUE_MAP.put(3, "double");
+        ExpressionParser.INV_VALUE_MAP.put(4, "string");
+    }
+
+    /**
      * Is capable of assigning to variables and evaluating the value of expressions. Handles
      * order of operations and parentheses by converting to postfix and doing some preprocessing
      * during the compilation step, and interprets the postfix instructions via a stack.
      */
-    private static class AssignmentInstruction implements Instruction {
-
-        private record Operator(String op, int precedence) {}
-        private static final HashMap<String, Integer> PRECEDENCE = new HashMap<>();
-        public static final HashMap<Class<?>, Integer> TYPE_MAP = new HashMap<>();
-        public static final HashMap<Integer, String> INVERSE_TYPE_MAP = new HashMap<>();
-        public static final Pattern EXPRESSION_TOKENIZER =
-                Pattern.compile("((?<!\\\\)\".*?(?<!\\\\)\"|[0-9]+[.][0-9]+|[0-9]+|[()+\\-*/^]|[a-zA-Z]+)");
-
-        static {
-            PRECEDENCE.put("+", 0);
-            PRECEDENCE.put("-", 0);
-            PRECEDENCE.put("*", 1);
-            PRECEDENCE.put("/", 1);
-            PRECEDENCE.put("^", 2);
-            TYPE_MAP.put(Integer.class, 0);
-            TYPE_MAP.put(Long.class, 1);
-            TYPE_MAP.put(Float.class, 2);
-            TYPE_MAP.put(Double.class, 3);
-            TYPE_MAP.put(String.class, 4);
-            INVERSE_TYPE_MAP.put(0, "integer");
-            INVERSE_TYPE_MAP.put(1, "long");
-            INVERSE_TYPE_MAP.put(2, "float");
-            INVERSE_TYPE_MAP.put(3, "double");
-            INVERSE_TYPE_MAP.put(4, "string");
-        }
+    private static class AssignmentInstruction implements ExpressionParser, Instruction {
 
         protected boolean valid = true;
         protected int type = 0;
         private final String assignVar;
-        private final Queue<Object> post = new LinkedList<>();
-        public String err = null;
+        protected String err = null;
+        protected final Queue<Object> post = new LinkedList<>();
 
         public AssignmentInstruction(String assignVar, String expr, List<LinkedHashMap<String, VariableDefinition>> vars) {
             String[] assn = assignVar.split(" ");
@@ -368,135 +570,14 @@ public class AliasedCommand {
             if (map != null) {
                 this.type = TYPE_MAP.getOrDefault(map.get(this.assignVar).type.clazz, 4);
             }
-            Stack<Operator> stack = new Stack<>();
-            boolean lastOperand = true;
-            int depth = 0;
-            Matcher m = EXPRESSION_TOKENIZER.matcher(expr);
-            while (m.find()) {
-                String token = m.group();
-                if (token.startsWith("\"") && token.endsWith("\"")) {
-                    if (newAssignment) {
-                        this.type = 4;
-                    }
-                    else if (assn.length == 2 && "int|long|float|double".contains(assn[0])) {
-                        this.err = "can't forcibly coerce string type to numerical value";
-                        this.valid = false;
-                        return;
-                    }
-                }
-                switch (token) {
-                    case " " -> {}
-                    case "(" -> {
-                        if (!lastOperand) {
-                            this.err = "operand can't directly follow another operand";
-                            this.valid = false;
-                            return;
-                        }
-                        depth++;
-                    }
-                    case ")" -> {
-                        if (lastOperand) {
-                            this.err = "operator can't directly follow another operator";
-                            this.valid = false;
-                            return;
-                        }
-                        depth--;
-                    }
-                    case "+", "-", "*", "/", "^" -> {
-                        if (lastOperand) {
-                            this.err = "operator can't directly follow another operator";
-                            this.valid = false;
-                            return;
-                        }
-                        lastOperand = true;
-                        int p = PRECEDENCE.get(token) + 3 * depth;
-                        while (!stack.isEmpty() && stack.peek().precedence >= p) {
-                            this.post.add(stack.pop().op);
-                        }
-                        stack.push(new Operator(token, p));
-                    }
-                    default -> {
-                        if (!lastOperand) {
-                            this.err = "operand can't directly follow another operand";
-                            this.valid = false;
-                            return;
-                        }
-                        NumberOperator num = NumberOperator.fromString(token);
-                        if (num == null) {
-                            if (token.startsWith("\"") && token.endsWith("\"")) {
-                                this.type = 4;
-                                this.post.add(new StringOperator(token.substring(1, token.length() - 1)));
-                            }
-                            else {
-                                this.valid = false;
-                                for (LinkedHashMap<String, VariableDefinition> varMap : vars) {
-                                    if (varMap.containsKey(token)) {
-                                        this.valid = true;
-                                        this.type = Math.max(this.type, TYPE_MAP.getOrDefault(varMap.get(token).type.clazz, 4));
-                                        this.post.add(token);
-                                        break;
-                                    }
-                                }
-                                if (!this.valid) {
-                                    this.err = "no declaration/forward reference of variable \"" + token + "\"";
-                                    return;
-                                }
-                            }
-                        }
-                        else {
-                            if (newAssignment) {
-                                Number n = (Number) num.getValue();
-                                if (this.type == 0 && n.intValue() == num.getDoubleValue()) {
-                                    this.type = 0;
-                                }
-                                else if (this.type <= 1 && n.longValue() == num.getDoubleValue()) {
-                                    this.type = 1;
-                                }
-                                else if (this.type <= 2 && n.floatValue() == num.getDoubleValue()) {
-                                    this.type = 2;
-                                }
-                                else {
-                                    this.type = 3;
-                                }
-                            }
-                            this.post.add(num);
-                        }
-                        lastOperand = false;
-                    }
-                }
-            }
-            TechnicalToolbox.log("END PARSE {}", this.valid);
-            if (lastOperand) {
-                this.err = "expression contains operator without operand";
+            Integer forcedType = (!newAssignment && assn.length == 2) ? TYPE_VALUE_MAP.get(assn[0]) : null;
+            Integer type = this.parseExpression(expr, forcedType, vars, this.post);
+            if (type == null) {
                 this.valid = false;
                 return;
             }
-            while (!stack.isEmpty()) {
-                this.post.add(stack.pop().op);
-            }
-            if (depth != 0) {
-                this.err = "mismatched parentheses in expression";
-                this.valid = false;
-                return;
-            }
-            boolean hasString = false;
-            boolean hasNonAddition = false;
-            for (Object o : this.post) {
-                if (o instanceof String s && "-*/^".contains(s)) {
-                    hasNonAddition = true;
-                }
-                else if (o instanceof StringOperator) {
-                    this.type = 4;
-                    hasString = true;
-                }
-            }
-            if (hasString && hasNonAddition) {
-                this.err = "string type only supports concatenation";
-                this.valid = false;
-                return;
-            }
-            String varType = assn.length == 2 && "int|long|float|long|string".contains(assn[0]) ? assn[0] :
-                    INVERSE_TYPE_MAP.getOrDefault(this.type, "string");
+            this.type = type;
+            String varType = INV_VALUE_MAP.getOrDefault(this.type, "string");
             if (newAssignment) {
                 vars.getLast().put(this.assignVar, new VariableDefinition(this.assignVar, varType, new String[0]));
             }
@@ -507,52 +588,23 @@ public class AliasedCommand {
 
         @Override
         public int execute(AliasedCommand aliasedCommand, CommandContext<ServerCommandSource> context, LinkedHashMap<String, Variable> variables) {
-            Queue<Object> postfix = new LinkedList<>(this.post);
-            Stack<AliasedCommand.Operator> eval = new Stack<>();
-            if (!postfix.isEmpty()) {
-                if (postfix.peek() instanceof AliasedCommand.Operator o) {
-                    eval.push(o);
-                    postfix.poll();
-                }
-                while (!postfix.isEmpty()) {
-                    Object o = postfix.poll();
-                    if (o instanceof String tok) {
-                        if ("+-*/^".contains(tok)) {
-                            switch (tok) {
-                                case "*", "+", "^" -> eval.push(eval.pop().operation(tok, eval.pop()));
-                                case "/", "-" -> {
-                                    AliasedCommand.Operator arg = eval.pop();
-                                    eval.push(eval.pop().operation(tok, arg));
-                                }
-                            }
-                        }
-                        else {
-                            Variable v = variables.get(tok);
-                            if (Number.class.isAssignableFrom(v.type.type.clazz)) {
-                                eval.push(new NumberOperator((Number) v.value));
-                            }
-                            else {
-                                eval.push(new StringOperator(v.value.toString()));
-                            }
-                        }
-                    }
-                    else if (o instanceof AliasedCommand.Operator op) {
-                        eval.push(op);
-                    }
-                }
-            }
+            Operator o = this.evaluate(this.post, variables);
             if (!variables.containsKey(this.assignVar)) {
-                variables.put(this.assignVar, new Variable(new VariableDefinition(this.assignVar, INVERSE_TYPE_MAP
+                variables.put(this.assignVar, new Variable(new VariableDefinition(this.assignVar, INV_VALUE_MAP
                         .getOrDefault(this.type, "string"), new String[0]), null));
-
             }
-            if (eval.peek() instanceof NumberOperator n) {
+            if (o instanceof NumberOperator n) {
                 variables.put(this.assignVar, new Variable(variables.get(this.assignVar).type, n.getValue()));
             }
-            else if (eval.peek() instanceof StringOperator s) {
+            else if (o instanceof StringOperator s) {
                 variables.put(this.assignVar, new Variable(variables.get(this.assignVar).type, s.str));
             }
             return -1;
+        }
+
+        @Override
+        public void error(String s) {
+            this.err = s;
         }
 
     }
@@ -573,7 +625,6 @@ public class AliasedCommand {
             return this.jumpTo;
         }
 
-
         @Override
         public String toString() {
             return "jmp " + this.jumpTo;
@@ -583,53 +634,41 @@ public class AliasedCommand {
 
     /**
      * Tests a condition; if it fails, it jumps to after the if statement ends. Jumping past
-     * [[elif/else/end]] when successful is handled via {@link AliasedCommand.IfJumpInstruction}.
+     * [elif/else/end] when successful is handled via {@link AliasedCommand.IfJumpInstruction}.
      */
-    private static class IfInstruction extends JumpInstruction {
+    private static class IfInstruction extends JumpInstruction implements ExpressionParser {
 
         protected String name = "if";
         protected String cmp;
-        protected String left;
-        private final boolean[] ref = {false, false};
-        protected String right;
+        private final Queue<Object> left = new LinkedList<>();
+        private final Queue<Object> right = new LinkedList<>();
+        protected String err = null;
         public boolean valid = true;
-        public String err = null;
-        public static final Pattern NON_VAR = Pattern.compile("((?<!\\\\)\".*?(?<!\\\\)\"|[0-9]+[.][0-9]+|[0-9]+)");
 
         public IfInstruction(String expression, List<LinkedHashMap<String, VariableDefinition>> vars) {
             super(-1);
             String[] comparators = expression.split(" *[<=>] *");
             if (comparators.length != 2) {
-                this.err = "must be be of format [[" + this.name + " operator1 (>|>=|<|<=|==) operator2]]";
+                this.err = "must be be of format [" + this.name + " operator1 (>|>=|<|<=|==) operator2]";
                 this.valid = false;
                 return;
             }
             String cmp = expression.replace(comparators[0], "").replace(comparators[1], "").strip();
             if (cmp.length() == 1 && "<=>".contains(cmp) || cmp.length() == 2 && cmp.matches("(<=|>=)")) {
                 this.cmp = cmp;
-                this.left = comparators[0];
-                this.right = comparators[1];
-                int i = 0;
-                for (String s : new String[]{this.left, this.right}) {
-                    Matcher m = NON_VAR.matcher(s);
-                    if (!m.find() || !m.group().equals(s)) {
-                        this.ref[i] = true;
-                        this.valid = false;
-                        for (LinkedHashMap<String, VariableDefinition> varMap : vars) {
-                            if (varMap.containsKey(s)) {
-                                this.valid = true;
-                                if (!cmp.equals("=") && !Number.class.isAssignableFrom(varMap.get(s).type.clazz)) {
-                                    this.valid = false;
-                                    this.err = "string types only support comparing equality";
-                                    return;
-                                }
-                            }
-                        }
-                        if (!this.valid) {
-                            this.err = "no declaration/forward reference of variable \"" + s + "\"";
-                            return;
-                        }
-                    }
+                Integer[] type = {0, 0};
+                type[0] = this.parseExpression(comparators[0], null, vars, this.left);
+                if (type[0] == null) {
+                    this.valid = false;
+                    return;
+                }
+                type[1] = this.parseExpression(comparators[1], null, vars, this.right);
+                if (type[1] == null) {
+                    this.valid = false;
+                    return;
+                }
+                if (!Objects.equals(type[0], type[1]) && (type[0] == 4 || type[1] == 4) && !"=".equals(this.cmp)) {
+                    this.err = "string type only supports comparison of equality";
                 }
             }
             else {
@@ -640,33 +679,19 @@ public class AliasedCommand {
 
         @Override
         public int execute(AliasedCommand aliasedCommand, CommandContext<ServerCommandSource> context, LinkedHashMap<String, Variable> variables) {
-            String l = this.left;
-            String r = this.right;
-            if (ref[0]) {
-                l = variables.get(this.left).value.toString();
-            }
-            else if (this.left.startsWith("\"") && this.left.endsWith("\"")) {
-                l = l.substring(1, l.length() - 1);
-            }
-            if (ref[1]) {
-                r = variables.get(this.right).value.toString();
-            }
-            else if (this.right.startsWith("\"") && this.right.endsWith("\"")) {
-                r = r.substring(1, r.length() - 1);
-            }
-            NumberOperator leftOp = NumberOperator.fromString(l);
-            if (leftOp != null) {
-                NumberOperator rightOp = NumberOperator.fromString(r);
-                if (rightOp != null) {
-                    return leftOp.compare(this.cmp, rightOp) ? -1 : this.jumpTo;
-                }
-            }
-            return l.equals(r) ? -1 : this.jumpTo;
+            Operator l = this.evaluate(this.left, variables);
+            Operator r = this.evaluate(this.right, variables);
+            return l.compare(this.cmp, r) ? -1 : this.jumpTo;
         }
 
         @Override
         public String toString() {
             return "if [" + this.left + this.cmp + this.right + "] else jmp " + this.jumpTo;
+        }
+
+        @Override
+        public void error(String s) {
+            this.err = s;
         }
 
     }
@@ -686,7 +711,7 @@ public class AliasedCommand {
     }
 
     /**
-     * For all intents and purposes, an IfInstruction, but [[elif/else/end]] make some exceptions for this
+     * For all intents and purposes, an IfInstruction, but [elif/else/end] make some exceptions for this
      */
     private static class WhileInstruction extends IfInstruction {
 
@@ -696,6 +721,18 @@ public class AliasedCommand {
             super(expression, vars);
             this.startAddress = startAddress;
             this.name = "while";
+        }
+
+    }
+
+    private static class ReturnInstruction implements Instruction {
+
+        public ReturnInstruction(String expression, List<LinkedHashMap<String, VariableDefinition>> vars) {
+        }
+
+        @Override
+        public int execute(AliasedCommand aliasedCommand, CommandContext<ServerCommandSource> context, LinkedHashMap<String, Variable> variables) {
+            return 0;
         }
 
     }
@@ -714,7 +751,7 @@ public class AliasedCommand {
 
     /**
      * Attempts to compile the currently stored alias; control flow/assignment are formatted as
-     * [[statement]], everything else that does not match the regex will be interpreted as a command
+     * [statement], everything else that does not match the regex will be interpreted as a command
      * @return false if it fails to compile
      */
     private boolean compile() {
@@ -722,9 +759,6 @@ public class AliasedCommand {
         Stack<Instruction> controlFlowStack = new Stack<>();
         List<LinkedHashMap<String, VariableDefinition>> scope = new ArrayList<>();
         scope.add(new LinkedHashMap<>(this.argumentDefinitions));
-        for (String s : scope.getFirst().keySet()) {
-            TechnicalToolbox.log("arg {} {}", s, scope.getFirst().get(s).name);
-        }
         int address = 0, depth = 0;
         for (int i = 0; i < this.commands.size(); i++) {
             String s = this.commands.get(i);
@@ -734,15 +768,18 @@ public class AliasedCommand {
                 if (m.find() && (c = m.group()).equals(s.strip())) {
                     m = STATEMENT_BEGIN.matcher(c);
                     if (m.find()) {
-                        String ctrl = m.group().replaceFirst("\\[\\[", "");
+                        String ctrl = m.group().replaceFirst("\\[", "");
+                        if (ctrl.endsWith("]")) {
+                            ctrl = ctrl.substring(0, ctrl.length() - 1);
+                        }
                         switch (ctrl) {
                             // handles assignment - handles expressions using either longs or doubles depending on which is necessary,
                             // then casts to matching type on assignment
                             case "assign" -> {
-                                String[] instr = c.replace("[[assign", "").replace("]]", "").strip()
+                                String[] instr = c.substring(1, c.length() - 1).replaceFirst("assign", "").strip()
                                         .split("=", 2);
-                                if (instr.length != 2 || instr[1].contains("=")) {
-                                    return this.compileError(i, "assignment must be of form [[assign var = (expression)]]");
+                                if (instr.length != 2) {
+                                    return this.compileError(i, "assignment must be of form [assign var = (expression)]");
                                 }
                                 AssignmentInstruction e = new AssignmentInstruction(instr[0].strip(), instr[1], scope);
                                 if (!e.valid) {
@@ -754,7 +791,7 @@ public class AliasedCommand {
                             case "if" -> {
                                 depth++;
                                 scope.add(new LinkedHashMap<>());
-                                String instr = c.replace("[[if", "").replace("]]", "").strip();
+                                String instr =  c.substring(1, c.length() - 1).replaceFirst("if", "").strip();
                                 IfInstruction instruction = new IfInstruction(instr, scope);
                                 if (!instruction.valid) {
                                     return this.compileError(i, instruction.err);
@@ -763,16 +800,16 @@ public class AliasedCommand {
                                 controlFlowStack.add(instruction);
                             }
                             // sets previous if/elif conditional jump to the current address and creates an IfJump instruction, which will
-                            // point to the next [[end]] block when that gets compiled
+                            // point to the next [end] block when that gets compiled
                             case "elif" -> {
-                                if (controlFlowStack.peek() instanceof IfInstruction instruction &&
+                                if (!controlFlowStack.isEmpty() && controlFlowStack.peek() instanceof IfInstruction instruction &&
                                         !(instruction instanceof WhileInstruction)) {
                                     instruction.jumpTo = ++address;
                                     controlFlowStack.pop();
                                     Instruction jumpInstruction = new IfJumpInstruction(-1, depth);
                                     this.instructions.add(jumpInstruction);
                                     controlFlowStack.add(jumpInstruction);
-                                    String instr = c.replace("[[elif", "").replace("]]", "").strip();
+                                    String instr =  c.substring(1, c.length() - 1).replaceFirst("elif", "").strip();
                                     IfInstruction newInstruction = new IfInstruction(instr, scope);
                                     if (!newInstruction.valid) {
                                         return this.compileError(i, newInstruction.err);
@@ -783,13 +820,13 @@ public class AliasedCommand {
                                     scope.add(new LinkedHashMap<>());
                                 }
                                 else {
-                                    return this.compileError(i, "[[elif]] must follow an [[if/elif]]");
+                                    return this.compileError(i, "[elif] must follow an [if/elif]");
                                 }
                             }
                             // strictly speaking this does not need an explicit instruction but i was lazy and didn't want to do extra
-                            // validation for [[end]]
+                            // validation for [end]
                             case "else" -> {
-                                if (controlFlowStack.peek() instanceof IfInstruction instruction &&
+                                if (!controlFlowStack.isEmpty() && controlFlowStack.peek() instanceof IfInstruction instruction &&
                                         !(instruction instanceof WhileInstruction)) {
                                     instruction.jumpTo = address + 1;
                                     controlFlowStack.pop();
@@ -800,14 +837,14 @@ public class AliasedCommand {
                                     scope.add(new LinkedHashMap<>());
                                 }
                                 else {
-                                    return this.compileError(i, "{} - line {}: [[else]] must follow an [[if/elif]]");
+                                    return this.compileError(i, "{} - line {}: [else] must follow an [if/elif]");
                                 }
                             }
                             // basically identical to if i actually haven't tested this and have no idea if it works or not
                             case "while" -> {
                                 depth++;
                                 scope.add(new LinkedHashMap<>());
-                                String instr = c.replace("[[while", "").replace("]]", "").strip();
+                                String instr =  c.substring(1, c.length() - 1).replaceFirst("while", "").strip();
                                 WhileInstruction instruction = new WhileInstruction(address, instr, scope);
                                 if (!instruction.valid) {
                                     return this.compileError(i, instruction.err);
@@ -815,12 +852,12 @@ public class AliasedCommand {
                                 this.instructions.add(instruction);
                                 controlFlowStack.add(instruction);
                             }
-                            // [[end]] handles all control flow so compilation depends on whatever happens to be on the stack
+                            // [end] handles all control flow so compilation depends on whatever happens to be on the stack
                             case "end" -> {
                                 depth--;
                                 scope.removeLast();
                                 if (controlFlowStack.isEmpty()) {
-                                    return this.compileError(i, "[[end]] does not enclose any control block");
+                                    return this.compileError(i, "[end] does not enclose any control block");
                                 }
                                 else if (controlFlowStack.peek() instanceof WhileInstruction instruction) {
                                     this.instructions.add(new JumpInstruction(instruction.startAddress));
@@ -843,7 +880,7 @@ public class AliasedCommand {
                                 }
                             }
                             default -> {
-                                return this.compileError(i, "invalid statement [[" + ctrl +"]]");
+                                return this.compileError(i, "invalid statement [" + ctrl +"]");
                             }
                         }
                     }
@@ -854,13 +891,46 @@ public class AliasedCommand {
                 address++;
             }
         }
+        while (!controlFlowStack.isEmpty()) {
+            scope.removeLast();
+            if (controlFlowStack.peek() instanceof WhileInstruction instruction) {
+                this.instructions.add(new JumpInstruction(instruction.startAddress));
+                instruction.jumpTo = address + 1;
+                controlFlowStack.pop();
+            }
+            else if (controlFlowStack.peek() instanceof JumpInstruction instruction) {
+                instruction.jumpTo = address--;
+                controlFlowStack.pop();
+                while (!controlFlowStack.isEmpty() && controlFlowStack.peek() instanceof IfJumpInstruction instruction1) {
+                    instruction1.jumpTo = address + 1;
+                    controlFlowStack.pop();
+                }
+            }
+            else {
+                return false;
+            }
+            address++;
+        }
         /*
         TechnicalToolbox.log("/{} compiled", this.alias);
         for (int i = 0; i < this.instructions.size(); i++) {
             TechnicalToolbox.log("{}: {}", i, this.instructions.get(i));
         }
-         */
+        */
         return true;
+    }
+
+    /**
+     * Attempts to register a command, and sends compiler errors to the source.
+     * @param source command source to send feedback to
+     * @return whether compilation was successful or not
+     */
+    public boolean register(ServerCommandSource source) {
+        boolean b = this.register(source.getDispatcher());
+        if (!b) {
+            source.sendError(TextUtils.formattable("Failed to compile alias \"" + this.alias + "\", see logs for details"));
+        }
+        return b;
     }
 
     /**
@@ -870,7 +940,7 @@ public class AliasedCommand {
      */
     public boolean register(CommandDispatcher<ServerCommandSource> dispatcher) {
         // Compile first, if compilation fails then it does nothing
-        if (!this.compile()) {
+        if (!(this.compiled = this.compile())) {
             return false;
         }
         this.status = "Compiled successfully";
@@ -929,12 +999,24 @@ public class AliasedCommand {
     }
 
     /**
+     * Deregisters a command alias and resends the command tree.
+     * @param server server to deregister commands from.
+     */
+    public void deregister(MinecraftServer server, boolean hard) {
+        ServerUtil.removeCommandByName(server, this.alias);
+        if (hard) {
+            AliasManager.ALIASES.remove(this.alias);
+        }
+    }
+
+    /**
      * Executes an alias from start to finish. Configured to interpret {@link AliasedCommand.Instruction}.
      * @param context command context
      */
     private int execute(CommandContext<ServerCommandSource> context) {
         LinkedHashMap<String, Variable> variableDefinitions = new LinkedHashMap<>();
         List<AliasedCommand.Instruction> instructions = List.copyOf(this.instructions);
+        AliasedCommandSource source = (AliasedCommandSource) context.getSource();
         // load arguments locally
         for (VariableDefinition var : this.argumentDefinitions.values()) {
             if ("selection".equals(var.typeName)) {
@@ -946,9 +1028,10 @@ public class AliasedCommand {
                 variableDefinitions.put(var.name, new Variable(var, arg));
             }
         }
-        int i, c;
+        int i;
         // main loop for running instructions; opcode of -2 is error, -1 is donothing, >=0 is an instruction index to jump to
-        for (i = c = 0; i < instructions.size() && c < 10000; i++, c++) {
+        for (i = 0; i < instructions.size() && source.technicalToolbox$getInstructionCount() < 10000; i++,
+                source.technicalToolbox$AddToInstructionCount(1)) {
             int out = instructions.get(i).execute(this, context, variableDefinitions);
             if (out == -2) {
                 return 0;
@@ -990,8 +1073,14 @@ public class AliasedCommand {
         return true;
     }
 
+    public boolean rename(CommandContext<ServerCommandSource> context, String name) {
+        this.deregister(context.getSource().getServer(), true);
+        this.alias = name;
+        return this.register(context.getSource());
+    }
+
     /**
-     * Adds a command to the end of the current alias script and automatically updates argument count.
+     * Adds a line to the end of the current alias script and automatically updates argument count.
      * @param command full command to add.
      */
     public void addCommand(String command) {
@@ -999,23 +1088,7 @@ public class AliasedCommand {
     }
 
     /**
-     * @return full command script as text.
-     */
-    public MutableText getCommandText() {
-        MutableText out = TextUtils.formattable("Commands:\n");
-        int lineNum = 0;
-        for (String line : this.getCommands()) {
-            out.append(TextUtils.formattable( " " + ++lineNum + ". ")).append(TextUtils.formattable(line)
-                    .formatted(Formatting.YELLOW));
-            if (lineNum != this.getCommands().size()) {
-                out.append(TextUtils.formattable("\n"));
-            }
-        }
-        return out;
-    }
-
-    /**
-     * Removes the command at the given position. Can't remove the last line of an alias.
+     * Removes a line at the given position. Can't remove the last line of an alias.
      * @param line line number
      * @return Fail message if removal failed, otherwise null.
      */
@@ -1068,17 +1141,6 @@ public class AliasedCommand {
             out.append(TextUtils.formattable("> ").formatted(Formatting.GREEN));
         }
         return out;
-    }
-
-    /**
-     * Deregisters a command alias and resends the command tree.
-     * @param server server to deregister commands from.
-     */
-    public void deregister(MinecraftServer server, boolean hard) {
-        ServerUtil.removeCommandByName(server, this.alias);
-        if (hard) {
-            AliasManager.ALIASES.remove(this.alias);
-        }
     }
 
     /**
@@ -1229,9 +1291,23 @@ public class AliasedCommand {
      */
     public void refresh(ServerCommandSource source) {
         this.deregister(source.getServer(), false);
-        if (!this.register(source.getDispatcher())) {
-            source.sendError(TextUtils.formattable("Failed to compile alias \"" + this.alias + "\", see logs for details"));
+        this.register(source);
+    }
+
+    /**
+     * @return full command script as text.
+     */
+    public MutableText getCommandText() {
+        MutableText out = TextUtils.formattable("Commands:\n");
+        int lineNum = 0;
+        for (String line : this.getCommands()) {
+            out.append(TextUtils.formattable( " " + ++lineNum + ". ")).append(TextUtils.formattable(line)
+                    .formatted(Formatting.YELLOW));
+            if (lineNum != this.getCommands().size()) {
+                out.append(TextUtils.formattable("\n"));
+            }
         }
+        return out;
     }
 
     /**

@@ -1,5 +1,6 @@
 package com.birblett.mixin.command;
 
+import com.birblett.TechnicalToolbox;
 import com.birblett.impl.command.AliasCommand;
 import com.birblett.impl.command.CameraCommand;
 import com.birblett.impl.command.ToolboxCommand;
@@ -32,7 +33,12 @@ public class CommandManagerMixin {
         CameraCommand.register(dispatcher);
         DelayCommand.register(dispatcher);
         for (AliasedCommand aliasedCommand : AliasManager.ALIASES.values()) {
-            aliasedCommand.register(dispatcher);
+            try {
+                aliasedCommand.register(dispatcher);
+            }
+            catch (Exception e) {
+                TechnicalToolbox.log("Something went wrong with compiling alias {}", aliasedCommand.getAlias());
+            }
         }
     }
 

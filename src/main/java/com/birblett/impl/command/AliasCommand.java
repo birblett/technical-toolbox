@@ -76,6 +76,10 @@ public class AliasCommand {
                                 .then(CommandManager.literal("remove")
                                         .then(CommandManager.argument("line number", IntegerArgumentType.integer(1))
                                                 .executes(AliasCommand::modifyRemove)))
+                                // renames an alias to a specified string
+                                .then(CommandManager.literal("rename")
+                                        .then(CommandManager.argument("name", StringArgumentType.word())
+                                                .executes(AliasCommand::modifyRename)))
                                 // sets the required permission level of the alias
                                 .then(CommandManager.literal("permission")
                                         .then(CommandManager.argument("permission level", IntegerArgumentType.integer(1, 4))
@@ -169,6 +173,19 @@ public class AliasCommand {
         }
         context.getSource().sendFeedback(() -> text, false);
         return 1;
+    }
+
+    private static int modifyRename(CommandContext<ServerCommandSource> context) {
+        String alias = context.getArgument("alias", String.class);
+        AliasedCommand cmd = AliasManager.ALIASES.get(alias);
+        String newName = context.getArgument("name", String.class);
+        if (cmd != null) {
+            context.getSource().sendFeedback(() -> TextUtils.formattable("Renamed to ").append(TextUtils.formattable(newName)
+                    .formatted(Formatting.GREEN)), false);
+            return cmd.rename(context, newName) ? 1 : 0;
+        }
+        context.getSource().sendError(TextUtils.formattable("Couldn't find alias \"" + alias + "\""));
+        return 0;
     }
 
     private static int modifyAdd(CommandContext<ServerCommandSource> context) {
