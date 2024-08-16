@@ -381,29 +381,32 @@ public class AliasedCommand {
                     else if (assn.length == 2 && "int|long|float|double".contains(assn[0])) {
                         this.err = "can't forcibly coerce string type to numerical value";
                         this.valid = false;
-                        break;
+                        return;
                     }
                 }
                 switch (token) {
                     case " " -> {}
                     case "(" -> {
                         if (!lastOperand) {
+                            this.err = "operand can't directly follow another operand";
                             this.valid = false;
-                            break;
+                            return;
                         }
                         depth++;
                     }
                     case ")" -> {
                         if (lastOperand) {
+                            this.err = "operator can't directly follow another operator";
                             this.valid = false;
-                            break;
+                            return;
                         }
                         depth--;
                     }
                     case "+", "-", "*", "/", "^" -> {
                         if (lastOperand) {
+                            this.err = "operator can't directly follow another operator";
                             this.valid = false;
-                            break;
+                            return;
                         }
                         lastOperand = true;
                         int p = PRECEDENCE.get(token) + 3 * depth;
@@ -414,9 +417,9 @@ public class AliasedCommand {
                     }
                     default -> {
                         if (!lastOperand) {
-                            this.err = "token can't directly follow another token";
+                            this.err = "operand can't directly follow another operand";
                             this.valid = false;
-                            break;
+                            return;
                         }
                         NumberOperator num = NumberOperator.fromString(token);
                         if (num == null) {
@@ -436,7 +439,7 @@ public class AliasedCommand {
                                 }
                                 if (!this.valid) {
                                     this.err = "no declaration/forward reference of variable \"" + token + "\"";
-                                    break;
+                                    return;
                                 }
                             }
                         }
@@ -462,45 +465,43 @@ public class AliasedCommand {
                     }
                 }
             }
+            TechnicalToolbox.log("END PARSE {}", this.valid);
             if (lastOperand) {
                 this.err = "expression contains operator without operand";
                 this.valid = false;
+                return;
             }
-            if (this.valid) {
-                while (!stack.isEmpty()) {
-                    this.post.add(stack.pop().op);
+            while (!stack.isEmpty()) {
+                this.post.add(stack.pop().op);
+            }
+            if (depth != 0) {
+                this.err = "mismatched parentheses in expression";
+                this.valid = false;
+                return;
+            }
+            boolean hasString = false;
+            boolean hasNonAddition = false;
+            for (Object o : this.post) {
+                if (o instanceof String s && "-*/^".contains(s)) {
+                    hasNonAddition = true;
                 }
-                if (depth != 0) {
-                    this.err = "mismatched parentheses in expression";
-                    this.valid = false;
+                else if (o instanceof StringOperator) {
+                    this.type = 4;
+                    hasString = true;
                 }
-                if (this.valid) {
-                    boolean hasString = false;
-                    boolean hasNonAddition = false;
-                    for (Object o : this.post) {
-                        if (o instanceof String s && "-*/^".contains(s)) {
-                            hasNonAddition = true;
-                        }
-                        else if (o instanceof StringOperator) {
-                            this.type = 4;
-                            hasString = true;
-                        }
-                    }
-                    if (hasString && hasNonAddition) {
-                        this.err = "string type only supports concatenation";
-                        this.valid = false;
-                    }
-                    if (this.valid) {
-                        String varType = assn.length == 2 && "int|long|float|long|string".contains(assn[0]) ? assn[0] :
-                                INVERSE_TYPE_MAP.getOrDefault(this.type, "string");
-                        if (newAssignment) {
-                            vars.getLast().put(this.assignVar, new VariableDefinition(this.assignVar, varType, new String[0]));
-                        }
-                        else {
-                            map.put(this.assignVar, new VariableDefinition(this.assignVar, varType, new String[0]));
-                        }
-                    }
-                }
+            }
+            if (hasString && hasNonAddition) {
+                this.err = "string type only supports concatenation";
+                this.valid = false;
+                return;
+            }
+            String varType = assn.length == 2 && "int|long|float|long|string".contains(assn[0]) ? assn[0] :
+                    INVERSE_TYPE_MAP.getOrDefault(this.type, "string");
+            if (newAssignment) {
+                vars.getLast().put(this.assignVar, new VariableDefinition(this.assignVar, varType, new String[0]));
+            }
+            else {
+                map.put(this.assignVar, new VariableDefinition(this.assignVar, varType, new String[0]));
             }
         }
 
@@ -601,40 +602,39 @@ public class AliasedCommand {
             if (comparators.length != 2) {
                 this.err = "must be be of format [[" + this.name + " operator1 (>|>=|<|<=|==) operator2]]";
                 this.valid = false;
+                return;
             }
-            else {
-                String cmp = expression.replace(comparators[0], "").replace(comparators[1], "").strip();
-                if (cmp.length() == 1 && "<=>".contains(cmp) || cmp.length() == 2 && cmp.matches("(<=|>=)")) {
-                    this.cmp = cmp;
-                    this.left = comparators[0];
-                    this.right = comparators[1];
-                    int i = 0;
-                    for (String s : new String[]{this.left, this.right}) {
-                        Matcher m = NON_VAR.matcher(s);
-                        if (!m.find() || !m.group().equals(s)) {
-                            this.ref[i] = true;
-                            this.valid = false;
-                            for (LinkedHashMap<String, VariableDefinition> varMap : vars) {
-                                if (varMap.containsKey(s)) {
-                                    this.valid = true;
-                                    if (!cmp.equals("=") && !Number.class.isAssignableFrom(varMap.get(s).type.clazz)) {
-                                        this.valid = false;
-                                        this.err = "string types only support comparing equality";
-                                        break;
-                                    }
+            String cmp = expression.replace(comparators[0], "").replace(comparators[1], "").strip();
+            if (cmp.length() == 1 && "<=>".contains(cmp) || cmp.length() == 2 && cmp.matches("(<=|>=)")) {
+                this.cmp = cmp;
+                this.left = comparators[0];
+                this.right = comparators[1];
+                int i = 0;
+                for (String s : new String[]{this.left, this.right}) {
+                    Matcher m = NON_VAR.matcher(s);
+                    if (!m.find() || !m.group().equals(s)) {
+                        this.ref[i] = true;
+                        this.valid = false;
+                        for (LinkedHashMap<String, VariableDefinition> varMap : vars) {
+                            if (varMap.containsKey(s)) {
+                                this.valid = true;
+                                if (!cmp.equals("=") && !Number.class.isAssignableFrom(varMap.get(s).type.clazz)) {
+                                    this.valid = false;
+                                    this.err = "string types only support comparing equality";
+                                    return;
                                 }
                             }
-                            if (!this.valid) {
-                                this.err = "no declaration/forward reference of variable \"" + s + "\"";
-                                break;
-                            }
+                        }
+                        if (!this.valid) {
+                            this.err = "no declaration/forward reference of variable \"" + s + "\"";
+                            return;
                         }
                     }
                 }
-                else {
-                    this.err = "invalid comparator \"" + cmp + "\"";
-                    this.valid = false;
-                }
+            }
+            else {
+                this.err = "invalid comparator \"" + cmp + "\"";
+                this.valid = false;
             }
         }
 
@@ -722,6 +722,9 @@ public class AliasedCommand {
         Stack<Instruction> controlFlowStack = new Stack<>();
         List<LinkedHashMap<String, VariableDefinition>> scope = new ArrayList<>();
         scope.add(new LinkedHashMap<>(this.argumentDefinitions));
+        for (String s : scope.getFirst().keySet()) {
+            TechnicalToolbox.log("arg {} {}", s, scope.getFirst().get(s).name);
+        }
         int address = 0, depth = 0;
         for (int i = 0; i < this.commands.size(); i++) {
             String s = this.commands.get(i);
@@ -1181,8 +1184,21 @@ public class AliasedCommand {
             return false;
         }
         if (this.argumentDefinitions.containsKey(name)) {
-            this.argumentDefinitions.remove(name);
-            source.sendFeedback(() -> TextUtils.formattable("Removed argument ").append(TextUtils.formattable(name)
+            // too lazy to make a modified linked hashmap so just poll in reverse until it can replace the old entry
+            LinkedHashMap<String, VariableDefinition> list = new LinkedHashMap<>();
+            Map.Entry<String, VariableDefinition> tmp;
+            while ((tmp = this.argumentDefinitions.pollLastEntry()) != null) {
+                if (name.equals(tmp.getKey())) {
+                    VariableDefinition v = tmp.getValue();
+                    list.put(newName, new VariableDefinition(newName, v.typeName, v.args));
+                    break;
+                }
+                else {
+                    list.put(tmp.getKey(), tmp.getValue());
+                }
+            }
+            this.argumentDefinitions.putAll(list.reversed());
+            source.sendFeedback(() -> TextUtils.formattable("Renamed argument to ").append(TextUtils.formattable(newName)
                     .formatted(Formatting.GREEN)), false);
             this.refresh(source);
             return true;

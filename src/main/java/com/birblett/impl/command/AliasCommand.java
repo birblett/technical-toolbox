@@ -94,7 +94,13 @@ public class AliasCommand {
                                         .then(CommandManager.literal("remove")
                                                 .then(CommandManager.argument("argument", StringArgumentType.string())
                                                         .suggests(AliasCommand::modifyListArguments)
-                                                        .executes(AliasCommand::modifyArgumentRemove))))
+                                                        .executes(AliasCommand::modifyArgumentRemove)))
+                                        // rename an argument
+                                        .then(CommandManager.literal("rename")
+                                                .then(CommandManager.argument("argument", StringArgumentType.string())
+                                                        .suggests(AliasCommand::modifyListArguments)
+                                                        .then(CommandManager.argument("newArgument", StringArgumentType.string())
+                                                            .executes(AliasCommand::modifyArgumentRename)))))
                                 // if called without subcommands will instead output alias information
                                 .executes(AliasCommand::modifyInfo)))));
     }
@@ -320,7 +326,6 @@ public class AliasCommand {
             String[] stringArgs = new String[args.length];
             if ("selection".equals(argType)) {
                 String selectionArgs = context.getArgument("comma_separated_selection", String.class);
-                TechnicalToolbox.log("{}", selectionArgs);
                 if (selectionArgs.isEmpty()) {
                     context.getSource().sendError(TextUtils.formattable("Can't accept empty selection"));
                     return 0;
@@ -355,6 +360,18 @@ public class AliasCommand {
         if (cmd != null) {
             String name = context.getArgument("argument", String.class);
             return cmd.removeArgument(context.getSource(), name) ? 0 : 1;
+        }
+        context.getSource().sendError(TextUtils.formattable("Couldn't find alias \"" + alias + "\""));
+        return 0;
+    }
+
+    private static int modifyArgumentRename(CommandContext<ServerCommandSource> context) {
+        String alias = context.getArgument("alias", String.class);
+        AliasedCommand cmd = AliasManager.ALIASES.get(alias);
+        if (cmd != null) {
+            String argument = context.getArgument("argument", String.class);
+            String name = context.getArgument("newArgument", String.class);
+            return cmd.renameArgument(context.getSource(), argument, name) ? 0 : 1;
         }
         context.getSource().sendError(TextUtils.formattable("Couldn't find alias \"" + alias + "\""));
         return 0;
