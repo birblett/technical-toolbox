@@ -28,13 +28,13 @@ public class CommandManagerMixin {
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void onRegister(CommandManager.RegistrationEnvironment environment, CommandRegistryAccess commandRegistryAccess, CallbackInfo ci) {
-        ToolboxCommand.register(dispatcher);
-        AliasCommand.register(dispatcher);
-        CameraCommand.register(dispatcher);
-        DelayCommand.register(dispatcher);
+        ToolboxCommand.register(this.dispatcher);
+        AliasCommand.register(this.dispatcher);
+        CameraCommand.register(this.dispatcher);
+        DelayCommand.register(this.dispatcher);
         for (AliasedCommand aliasedCommand : AliasManager.ALIASES.values()) {
             try {
-                aliasedCommand.register(dispatcher);
+                aliasedCommand.register(this.dispatcher);
             }
             catch (Exception e) {
                 TechnicalToolbox.log("Something went wrong with compiling alias {}", aliasedCommand.getAlias());

@@ -1,5 +1,7 @@
 package com.birblett.impl.command.alias.language;
 
+import com.birblett.TechnicalToolbox;
+
 /**
  * The basic interface for operators in expressions - essentially a data container.
  * getValue returns raw data, operation specifies how it interfaces with other
@@ -8,10 +10,9 @@ package com.birblett.impl.command.alias.language;
 public interface Operator {
 
     Object getValue();
-
     Operator operation(String operator, Operator other);
-
     boolean compare(String comparator, Operator other);
+    Object toType(int type);
 
     /**
      * Supports operations between two numbers, or a number and a string. Internal calculations
@@ -51,40 +52,40 @@ public interface Operator {
         }
 
         public double getDoubleValue() {
-            return this.isLong ? (double) this.longVal : this.doubleVal;
+            return this.isLong ? this.longVal : this.doubleVal;
         }
 
         @Override
         public Object getValue() {
-            return this.isLong ? this.longVal : this.doubleVal;
+            return this.isLong ? (Object) this.longVal : (Object) this.doubleVal;
         }
 
         public Operator operation(String operator, Operator other) {
             if (other instanceof NumberOperator second) {
                 switch (operator) {
                     case "+" -> {
-                        return new NumberOperator((this.isLong && second.isLong) ? this.longVal + second.longVal : this.getDoubleValue() +
-                                second.getDoubleValue());
+                        return new NumberOperator((this.isLong && second.isLong) ? (Number) (this.longVal + second.longVal) : (Number)
+                                (this.getDoubleValue() + second.getDoubleValue()));
                     }
                     case "-" -> {
-                        return new NumberOperator((this.isLong && second.isLong) ? this.longVal - second.longVal : this.getDoubleValue() -
-                                second.getDoubleValue());
+                        return new NumberOperator((this.isLong && second.isLong) ? (Number) (this.longVal - second.longVal) : (Number)
+                                (this.getDoubleValue() - second.getDoubleValue()));
                     }
                     case "*" -> {
-                        return new NumberOperator((this.isLong && second.isLong) ? this.longVal * second.longVal : this.getDoubleValue() *
-                                second.getDoubleValue());
+                        return new NumberOperator((this.isLong && second.isLong) ? (Number) (this.longVal * second.longVal) : (Number)
+                                (this.getDoubleValue() * second.getDoubleValue()));
                     }
                     case "/" -> {
-                        return new NumberOperator((this.isLong && second.isLong) ? this.longVal / second.longVal : this.getDoubleValue() /
-                                second.getDoubleValue());
+                        return new NumberOperator((this.isLong && second.isLong) ? (Number) (this.longVal / second.longVal) : (Number)
+                                (this.getDoubleValue() / second.getDoubleValue()));
                     }
                     case "^" -> {
                         return new NumberOperator((this.isLong && second.isLong) ? Math.pow(second.longVal, this.longVal) :
                                 Math.pow(second.getDoubleValue(), this.getDoubleValue()));
                     }
                     case "%" -> {
-                        return new NumberOperator((this.isLong && second.isLong) ? second.longVal % this.longVal :
-                                second.getDoubleValue() % this.getDoubleValue());
+                        return new NumberOperator((this.isLong && second.isLong) ? (Number) (this.longVal % second.longVal) : (Number)
+                                (this.getDoubleValue() % second.getDoubleValue()));
                     }
                 }
             }
@@ -120,6 +121,30 @@ public interface Operator {
             return false;
         }
 
+        @Override
+        public Object toType(int type) {
+            switch (type) {
+                case 0 -> {
+                    return ((Number) this.getValue()).intValue();
+                }
+                case 1 -> {
+                    return ((Number) this.getValue()).longValue();
+                }
+                case 2 -> {
+                    return ((Number) this.getValue()).floatValue();
+                }
+                case 3 -> {
+                    return ((Number) this.getValue()).doubleValue();
+                }
+            }
+            return String.valueOf(this.isLong ? this.longVal : this.getDoubleValue());
+        }
+
+        @Override
+        public String toString() {
+            return (this.isLong ? "long" : "double") + ": " + this.getValue();
+        }
+
     }
 
     record StringOperator(String str) implements Operator {
@@ -137,6 +162,14 @@ public interface Operator {
         @Override
         public boolean compare(String comparator, Operator other) {
             return this.str.equals(other.getValue().toString());
+        }
+
+        @Override
+        public Object toType(int type) {
+            if (type < 4) {
+                return 0;
+            }
+            return this.str;
         }
 
     }

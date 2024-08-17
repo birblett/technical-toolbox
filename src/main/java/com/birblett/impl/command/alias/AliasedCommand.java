@@ -132,7 +132,7 @@ public class AliasedCommand {
                                 if (instr.length != 2) {
                                     return this.compileError(i, "assignment must be of form [let var = (expression)]");
                                 }
-                                Instruction.AssignmentInstruction e = new Instruction.AssignmentInstruction(instr[0].strip(), instr[1], scope);
+                                Instruction.Let e = new Instruction.Let(instr[0].strip(), instr[1], scope);
                                 if (!e.valid) {
                                     return this.compileError(i, e.err);
                                 }
@@ -143,7 +143,7 @@ public class AliasedCommand {
                                 depth++;
                                 scope.add(new LinkedHashMap<>());
                                 String instr =  c.substring(1, c.length() - 1).replaceFirst("if", "").strip();
-                                Instruction.IfInstruction instruction = new Instruction.IfInstruction(instr, scope);
+                                Instruction.If instruction = new Instruction.If(instr, scope);
                                 if (!instruction.valid) {
                                     return this.compileError(i, instruction.err);
                                 }
@@ -153,15 +153,15 @@ public class AliasedCommand {
                             // sets previous if/elif conditional jump to the current address and creates an IfJump instruction, which will
                             // point to the next [end] block when that gets compiled
                             case "elif" -> {
-                                if (!controlFlowStack.isEmpty() && controlFlowStack.peek() instanceof Instruction.IfInstruction instruction &&
-                                        !(instruction instanceof Instruction.WhileInstruction)) {
+                                if (!controlFlowStack.isEmpty() && controlFlowStack.peek() instanceof Instruction.If instruction &&
+                                        !(instruction instanceof Instruction.While)) {
                                     instruction.jumpTo = ++address;
                                     controlFlowStack.pop();
-                                    Instruction jumpInstruction = new Instruction.IfJumpInstruction(-1, depth);
+                                    Instruction jumpInstruction = new Instruction.IfJump(-1, depth);
                                     this.instructions.add(jumpInstruction);
                                     controlFlowStack.add(jumpInstruction);
                                     String instr =  c.substring(1, c.length() - 1).replaceFirst("elif", "").strip();
-                                    Instruction.IfInstruction newInstruction = new Instruction.IfInstruction(instr, scope);
+                                    Instruction.If newInstruction = new Instruction.If(instr, scope);
                                     if (!newInstruction.valid) {
                                         return this.compileError(i, newInstruction.err);
                                     }
@@ -177,11 +177,11 @@ public class AliasedCommand {
                             // strictly speaking this does not need an explicit instruction but i was lazy and didn't want to do extra
                             // validation for [end]
                             case "else" -> {
-                                if (!controlFlowStack.isEmpty() && controlFlowStack.peek() instanceof Instruction.IfInstruction instruction &&
-                                        !(instruction instanceof Instruction.WhileInstruction)) {
+                                if (!controlFlowStack.isEmpty() && controlFlowStack.peek() instanceof Instruction.If instruction &&
+                                        !(instruction instanceof Instruction.While)) {
                                     instruction.jumpTo = address + 1;
                                     controlFlowStack.pop();
-                                    Instruction newInstruction = new Instruction.JumpInstruction(address);
+                                    Instruction newInstruction = new Instruction.Jump(address);
                                     this.instructions.add(newInstruction);
                                     controlFlowStack.add(newInstruction);
                                     scope.removeLast();
@@ -196,7 +196,7 @@ public class AliasedCommand {
                                 depth++;
                                 scope.add(new LinkedHashMap<>());
                                 String instr =  c.substring(1, c.length() - 1).replaceFirst("while", "").strip();
-                                Instruction.WhileInstruction instruction = new Instruction.WhileInstruction(address, instr, scope);
+                                Instruction.While instruction = new Instruction.While(address, instr, scope);
                                 if (!instruction.valid) {
                                     return this.compileError(i, instruction.err);
                                 }
@@ -210,17 +210,17 @@ public class AliasedCommand {
                                 if (controlFlowStack.isEmpty()) {
                                     return this.compileError(i, "[end] does not enclose any control block");
                                 }
-                                else if (controlFlowStack.peek() instanceof Instruction.WhileInstruction instruction) {
-                                    this.instructions.add(new Instruction.JumpInstruction(instruction.startAddress));
+                                else if (controlFlowStack.peek() instanceof Instruction.While instruction) {
+                                    this.instructions.add(new Instruction.Jump(instruction.startAddress));
                                     instruction.jumpTo = address + 1;
                                     controlFlowStack.pop();
                                 }
-                                else if (controlFlowStack.peek() instanceof Instruction.JumpInstruction instruction) {
+                                else if (controlFlowStack.peek() instanceof Instruction.Jump instruction) {
                                     instruction.jumpTo = address--;
                                     controlFlowStack.pop();
                                     // processes all the previous if/elif/else chains, so they correctly skip over elif/else after if
                                     // their condition passes
-                                    while (!controlFlowStack.isEmpty() && controlFlowStack.peek() instanceof Instruction.IfJumpInstruction instruction1) {
+                                    while (!controlFlowStack.isEmpty() && controlFlowStack.peek() instanceof Instruction.IfJump instruction1) {
                                         instruction1.jumpTo = address + 1;
                                         controlFlowStack.pop();
                                     }
@@ -230,6 +230,29 @@ public class AliasedCommand {
                                     return false;
                                 }
                             }
+                            // [return] causes the program to terminate immediately and if specified can return a value accessed via [fetch]
+                            case "return" -> {
+                                String instr =  c.substring(1, c.length() - 1).replaceFirst("return", "").strip();
+                                Instruction.Return instruction = new Instruction.Return(instr, scope);
+                                if (!instruction.valid) {
+                                    return this.compileError(i, instruction.err);
+                                }
+                                this.instructions.add(instruction);
+                            }
+                            // [fetch] retrieves the last return value in scope. there is no type inference for return values so it must be
+                            // cast. attempting to cast a string as any number will set it to 0.
+                            case "fetch" -> {
+                                String[] instr =  c.substring(1, c.length() - 1).replaceFirst("fetch", "").strip()
+                                        .split(" ");
+                                if (instr.length != 2) {
+                                    return this.compileError(i, "fetch should be of form [fetch type <var>]");
+                                }
+                                Instruction.Fetch instruction = new Instruction.Fetch(instr[0], instr[1], scope);
+                                if (!instruction.valid) {
+                                    return this.compileError(i, instruction.err);
+                                }
+                                this.instructions.add(instruction);
+                            }
                             default -> {
                                 return this.compileError(i, "invalid statement [" + ctrl +"]");
                             }
@@ -237,22 +260,22 @@ public class AliasedCommand {
                     }
                 }
                 else {
-                    this.instructions.add(new Instruction.CommandInstruction(cmd));
+                    this.instructions.add(new Instruction.Command(cmd));
                 }
                 address++;
             }
         }
         while (!controlFlowStack.isEmpty()) {
             scope.removeLast();
-            if (controlFlowStack.peek() instanceof Instruction.WhileInstruction instruction) {
-                this.instructions.add(new Instruction.JumpInstruction(instruction.startAddress));
+            if (controlFlowStack.peek() instanceof Instruction.While instruction) {
+                this.instructions.add(new Instruction.Jump(instruction.startAddress));
                 instruction.jumpTo = address + 1;
                 controlFlowStack.pop();
             }
-            else if (controlFlowStack.peek() instanceof Instruction.JumpInstruction instruction) {
+            else if (controlFlowStack.peek() instanceof Instruction.Jump instruction) {
                 instruction.jumpTo = address--;
                 controlFlowStack.pop();
-                while (!controlFlowStack.isEmpty() && controlFlowStack.peek() instanceof Instruction.IfJumpInstruction instruction1) {
+                while (!controlFlowStack.isEmpty() && controlFlowStack.peek() instanceof Instruction.IfJump instruction1) {
                     instruction1.jumpTo = address + 1;
                     controlFlowStack.pop();
                 }
@@ -394,7 +417,7 @@ public class AliasedCommand {
             }
         }
         int i;
-        // main loop for running instructions; opcode of -2 is error, -1 is donothing, >=0 is an instruction index to jump to
+        // main loop for running instructions; opcode of -2 is return, -1 is donothing, >=0 is an instruction index to jump to
         for (i = 0; i < instructions.size() && (ConfigOptions.ALIAS_INSTRUCTION_LIMIT.val() == -1 ||
                 source.technicalToolbox$getInstructionCount() < ConfigOptions.ALIAS_INSTRUCTION_LIMIT.val()) &&
                 source.technicalToolbox$getRecursionCount() < ConfigOptions.ALIAS_MAX_RECURSION_DEPTH.val(); i++) {

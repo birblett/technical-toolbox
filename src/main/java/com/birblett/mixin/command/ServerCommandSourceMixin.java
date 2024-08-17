@@ -1,5 +1,6 @@
 package com.birblett.mixin.command;
 
+import com.birblett.impl.command.alias.language.Operator;
 import com.birblett.lib.command.CommandSourceModifier;
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
@@ -21,7 +22,8 @@ public class ServerCommandSourceMixin implements CommandSourceModifier {
 
     @Unique private boolean overridePermissions = false;
     @Unique private boolean shutUp = false;
-    @Unique private HashMap<String, String> selectorMap = new HashMap<>();
+    @Unique private final HashMap<String, String> selectorMap = new HashMap<>();
+    @Unique private Operator ret = null;
 
     @Override
     public void technicalToolbox$setPermissionOverride(boolean override) {
@@ -41,6 +43,16 @@ public class ServerCommandSourceMixin implements CommandSourceModifier {
     @Override
     public String technicalToolbox$getSelectorArgument(String name) {
         return this.selectorMap.get(name);
+    }
+
+    @Override
+    public void technicalToolbox$setReturnValue(Operator o) {
+        this.ret = o;
+    }
+
+    @Override
+    public Operator technicalToolbox$getReturnValue() {
+        return this.ret;
     }
 
     @ModifyReturnValue(method = "hasPermissionLevel", at = @At("RETURN"))

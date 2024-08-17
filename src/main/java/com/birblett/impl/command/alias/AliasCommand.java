@@ -167,6 +167,14 @@ public class AliasCommand {
 
     private static int reload(CommandContext<ServerCommandSource> context) {
         TechnicalToolbox.ALIAS_MANAGER.readAliases(context.getSource().getServer());
+        for (AliasedCommand aliasedCommand : AliasManager.ALIASES.values()) {
+            try {
+                aliasedCommand.register(context.getSource().getDispatcher());
+            }
+            catch (Exception e) {
+                TechnicalToolbox.log("Something went wrong with compiling alias {}", aliasedCommand.getAlias());
+            }
+        }
         context.getSource().sendFeedback(() -> TextUtils.formattable("Reloaded aliases from disk"), false);
         ServerUtil.refreshCommandTree(context.getSource().getServer());
         return 0;
@@ -340,6 +348,10 @@ public class AliasCommand {
             if (cmd.global) {
                 context.getSource().sendError(TextUtils.formattable("Alias \"" + alias + "\" is global and " +
                         "can't be modified via commands"));
+                return 0;
+            }
+            if (line >= cmd.getCommands().size()) {
+                context.getSource().sendError(TextUtils.formattable("Out of bounds line index: " + line));
                 return 0;
             }
             MutableText err;

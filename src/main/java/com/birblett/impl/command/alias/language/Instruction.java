@@ -1,6 +1,8 @@
 package com.birblett.impl.command.alias.language;
 
+import com.birblett.TechnicalToolbox;
 import com.birblett.impl.command.alias.AliasedCommand;
+import com.birblett.lib.command.CommandSourceModifier;
 import com.mojang.brigadier.context.CommandContext;
 import net.minecraft.server.command.ServerCommandSource;
 
@@ -20,7 +22,7 @@ public interface Instruction {
      * Holds a single command; does text replacement for variables on execution.
      * @param command
      */
-    record CommandInstruction(String command) implements Instruction {
+    record Command(String command) implements Instruction {
 
         @Override
         public int execute(AliasedCommand aliasedCommand, CommandContext<ServerCommandSource> context, LinkedHashMap<String, Variable> variables) {
@@ -43,7 +45,7 @@ public interface Instruction {
      * order of operations and parentheses by converting to postfix and doing some preprocessing
      * during the compilation step, and interprets the postfix instructions via a stack.
      */
-    class AssignmentInstruction implements ExpressionParser, Instruction {
+    class Let implements ExpressionParser, Instruction {
 
         public boolean valid = true;
         protected int type = 0;
@@ -51,7 +53,7 @@ public interface Instruction {
         public String err = null;
         protected final Queue<Object> post = new LinkedList<>();
 
-        public AssignmentInstruction(String assignVar, String expr, List<LinkedHashMap<String, Variable.Definition>> vars) {
+        public Let(String assignVar, String expr, List<LinkedHashMap<String, Variable.Definition>> vars) {
             String[] assn = assignVar.split(" ");
             if (assn.length == 2) {
                 this.assignVar = assn[1];
@@ -124,11 +126,11 @@ public interface Instruction {
     /**
      * The basic jump instruction; tells the interpreter to jump to a specific index.
      */
-    class JumpInstruction implements Instruction {
+    class Jump implements Instruction {
 
         public int jumpTo;
 
-        public JumpInstruction(int jumpTo) {
+        public Jump(int jumpTo) {
             this.jumpTo = jumpTo;
         }
 
@@ -146,9 +148,9 @@ public interface Instruction {
 
     /**
      * Tests a condition; if it fails, it jumps to after the if statement ends. Jumping past
-     * [elif/else/end] when successful is handled via {@link Instruction.IfJumpInstruction}.
+     * [elif/else/end] when successful is handled via {@link IfJump}.
      */
-    class IfInstruction extends JumpInstruction implements ExpressionParser {
+    class If extends Jump implements ExpressionParser {
 
         protected String name = "if";
         protected String cmp;
@@ -157,7 +159,7 @@ public interface Instruction {
         public String err = null;
         public boolean valid = true;
 
-        public IfInstruction(String expression, List<LinkedHashMap<String, Variable.Definition>> vars) {
+        public If(String expression, List<LinkedHashMap<String, Variable.Definition>> vars) {
             super(-1);
             String[] comparators = expression.split(" *[<=>] *");
             if (comparators.length != 2) {
@@ -211,11 +213,11 @@ public interface Instruction {
     /**
      * A JumpInstruction with an extra depth field to tell the compiler not to overwrite other instructions when out of scope.
      */
-    class IfJumpInstruction extends JumpInstruction {
+    class IfJump extends Jump {
 
         protected final int depth;
 
-        public IfJumpInstruction(int jumpTo, int depth) {
+        public IfJump(int jumpTo, int depth) {
             super(jumpTo);
             this.depth = depth;
         }
@@ -225,11 +227,11 @@ public interface Instruction {
     /**
      * For all intents and purposes, an IfInstruction, but [elif/else/end] make some exceptions for this
      */
-    class WhileInstruction extends IfInstruction {
+    class While extends If {
 
         public int startAddress;
 
-        public WhileInstruction(int startAddress, String expression, List<LinkedHashMap<String, Variable.Definition>> vars) {
+        public While(int startAddress, String expression, List<LinkedHashMap<String, Variable.Definition>> vars) {
             super(expression, vars);
             this.startAddress = startAddress;
             this.name = "while";
@@ -237,14 +239,94 @@ public interface Instruction {
 
     }
 
-    class ReturnInstruction implements Instruction {
+    /**
+     * Sets a return value in the current context (if applicable) and tells the program to terminate.
+     */
+    class Return implements Instruction, ExpressionParser {
 
-        public ReturnInstruction(String expression, List<LinkedHashMap<String, Variable.Definition>> vars) {
+        public boolean valid = true;
+        public String err = null;
+        int inferredType = -1;
+        private final Queue<Object> post = new LinkedList<>();
+
+        public Return(String expr, List<LinkedHashMap<String, Variable.Definition>> vars) {
+            if (!expr.isEmpty()) {
+                this.inferredType = this.parseExpression(expr, null, vars, this.post);
+            }
         }
 
         @Override
         public int execute(AliasedCommand aliasedCommand, CommandContext<ServerCommandSource> context, LinkedHashMap<String, Variable> variables) {
-            return 0;
+            if (this.inferredType >= 0) {
+                Operator o = this.evaluate(this.post, variables);
+                ((CommandSourceModifier) context.getSource()).technicalToolbox$setReturnValue(o);
+            }
+            else {
+                ((CommandSourceModifier) context.getSource()).technicalToolbox$setReturnValue(null);
+            }
+            return -2;
+        }
+
+        @Override
+        public void error(String s) {
+            this.valid = false;
+            this.err = s;
+        }
+    }
+
+    /**
+     * Fetches last return value, cast to a specific type. Numeric casts on numeric values will
+     * cast as normal but will default to 0 if return type is string. Always defaults to 0 if
+     * return value is null.
+     */
+    class Fetch implements Instruction, ExpressionParser {
+
+        public boolean valid = true;
+        public String err = null;
+        private int type = 0;
+        private String assignVar = null;
+
+        public Fetch(String type, String var, List<LinkedHashMap<String, Variable.Definition>> vars) {
+            if (!AliasConstants.TYPE_VALUE_MAP.containsKey(type)) {
+                this.error("not a valid type: " + type);
+            }
+            this.assignVar = var;
+            if (!this.assignVar.matches("[a-zA-Z_][a-zA-Z0-9_]*")) {
+                this.err = "invalid variable name " + this.assignVar;
+                this.valid = false;
+                return;
+            }
+            this.type = AliasConstants.TYPE_VALUE_MAP.get(type);
+            boolean newAssignment = true;
+            Variable.Definition definition = new Variable.Definition(this.assignVar, AliasConstants.INV_VALUE_MAP.get(this.type),
+                    new String[0]);
+            for (LinkedHashMap<String, Variable.Definition> varMap : vars) {
+                if (varMap.containsKey(this.assignVar)) {
+                    newAssignment = false;
+                    varMap.put(this.assignVar, definition);
+                    break;
+                }
+            }
+            if (newAssignment) {
+                vars.getLast().put(this.assignVar, definition);
+            }
+        }
+
+        @Override
+        public int execute(AliasedCommand aliasedCommand, CommandContext<ServerCommandSource> context, LinkedHashMap<String, Variable> variables) {
+            Operator o = ((CommandSourceModifier) context.getSource()).technicalToolbox$getReturnValue();
+            if (o == null) {
+                o = new Operator.NumberOperator(0);
+            }
+            Variable.Definition def = new Variable.Definition(this.assignVar, AliasConstants.INV_VALUE_MAP.get(this.type), new String[0]);
+            variables.put(this.assignVar, new Variable(def, o.toType(this.type)));
+            return -1;
+        }
+
+        @Override
+        public void error(String s) {
+            this.valid = false;
+            this.err = s;
         }
 
     }
