@@ -2,6 +2,7 @@ package com.birblett.impl.command;
 
 import com.birblett.TechnicalToolbox;
 import com.birblett.impl.config.ConfigOption;
+import com.birblett.impl.config.ConfigOptions;
 import com.birblett.util.TextUtils;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -26,7 +27,7 @@ public class ToolboxCommand {
 
     public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
         dispatcher.register(CommandManager.literal("toolbox")
-                .requires(source -> source.hasPermissionLevel(ConfigOption.CONFIG_VIEW_PERMISSION_LEVEL.val()))
+                .requires(source -> source.hasPermissionLevel(ConfigOptions.CONFIG_VIEW_PERMISSION_LEVEL.val()))
                 .then(CommandManager.literal("config")
                         .then(CommandManager.argument("config_option", StringArgumentType.string())
                                 .suggests((context, builder) -> CommandSource.suggestMatching(TechnicalToolbox.CONFIG_MANAGER
@@ -74,7 +75,7 @@ public class ToolboxCommand {
                 context.getSource().sendFeedback(() -> TextUtils
                         .formattable("Successfully set value ").append(TextUtils.formattable(value).setStyle(Style.EMPTY
                                 .withColor(Formatting.GREEN))).append(TextUtils.formattable(" for option " + option)), true);
-                if (ConfigOption.CONFIG_WRITE_ON_CHANGE.val()) {
+                if (ConfigOptions.CONFIG_WRITE_ON_CHANGE.val()) {
                     TechnicalToolbox.CONFIG_MANAGER.writeConfigs(context.getSource().getServer());
                 }
                 return 1;

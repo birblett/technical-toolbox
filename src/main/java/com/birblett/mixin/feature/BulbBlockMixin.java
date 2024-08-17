@@ -1,6 +1,6 @@
 package com.birblett.mixin.feature;
 
-import com.birblett.impl.config.ConfigOption;
+import com.birblett.impl.config.ConfigOptions;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.BulbBlock;
@@ -17,8 +17,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
  * Allows copper bulbs to be activated on a game tick delay rather than instantly. Also allows the block updates from
- * powering to be ignored. See {@link ConfigOption#FEATURE_COPPER_BULB_DELAY} and
- * {@link ConfigOption#FEATURE_COPPER_BULB_NO_POWERED_UPDATES}.
+ * powering to be ignored. See {@link ConfigOptions#FEATURE_COPPER_BULB_DELAY} and
+ * {@link ConfigOptions#FEATURE_COPPER_BULB_NO_POWERED_UPDATES}.
  */
 @Mixin(BulbBlock.class)
 public abstract class BulbBlockMixin extends Block {
@@ -29,10 +29,10 @@ public abstract class BulbBlockMixin extends Block {
 
     @Inject(method = "neighborUpdate", at = @At("HEAD"), cancellable = true)
     protected void bulbDelayLogic(BlockState state, World world, BlockPos pos, Block sourceBlock, BlockPos sourcePos, boolean notify, CallbackInfo ci) {
-        int delay = ConfigOption.FEATURE_COPPER_BULB_DELAY.val();
+        int delay = ConfigOptions.FEATURE_COPPER_BULB_DELAY.val();
         if (delay > 0 && world instanceof ServerWorld) {
             boolean bl = world.isReceivingRedstonePower(pos);
-            if (ConfigOption.FEATURE_COPPER_BULB_NO_POWERED_UPDATES.val()) {
+            if (ConfigOptions.FEATURE_COPPER_BULB_NO_POWERED_UPDATES.val()) {
                 world.getWorldChunk(pos).setBlockState(pos, state.with(BulbBlock.POWERED, bl), false);
                 world.updateListeners(pos, state, state.with(BulbBlock.POWERED, bl), Block.NOTIFY_ALL_AND_REDRAW);
             }

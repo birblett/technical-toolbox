@@ -3,8 +3,7 @@ package com.birblett.impl.command;
 import com.birblett.TechnicalToolbox;
 import com.birblett.impl.command.alias.AliasManager;
 import com.birblett.impl.command.alias.AliasedCommand;
-import com.birblett.impl.config.ConfigManager;
-import com.birblett.impl.config.ConfigOption;
+import com.birblett.impl.config.ConfigOptions;
 import com.birblett.util.ServerUtil;
 import com.birblett.util.TextUtils;
 import com.mojang.brigadier.CommandDispatcher;
@@ -203,7 +202,7 @@ public class AliasCommand {
                         "can't be modified via commands"));
                 return 0;
             }
-            if (ConfigOption.ALIAS_MODIFY_COMPILE.val() && cmd.refresh(context.getSource())) {
+            if (ConfigOptions.ALIAS_MODIFY_COMPILE.val() && cmd.refresh(context.getSource())) {
                 context.getSource().sendFeedback(() -> TextUtils.formattable("Successfully compiled alias ")
                         .append(TextUtils.formattable(alias).formatted(Formatting.GREEN)), false);
                 return 1;
@@ -246,7 +245,7 @@ public class AliasCommand {
             MutableText out = TextUtils.formattable("Added line: \"").append(TextUtils.formattable(command).formatted(Formatting.YELLOW))
                     .append(TextUtils.formattable("\"\n")).append(cmd.getCommandText());
             context.getSource().sendFeedback(() -> out, false);
-            if (ConfigOption.ALIAS_MODIFY_COMPILE.val()) {
+            if (ConfigOptions.ALIAS_MODIFY_COMPILE.val()) {
                 cmd.refresh(context.getSource());
             }
             return 1;
@@ -274,7 +273,7 @@ public class AliasCommand {
             MutableText out = TextUtils.formattable("Inserted command at line " + line + ": \"").append(TextUtils.formattable(command)
                     .formatted(Formatting.YELLOW)).append(TextUtils.formattable("\"\n")).append(cmd.getCommandText());
             context.getSource().sendFeedback(() -> out, false);
-            if (ConfigOption.ALIAS_MODIFY_COMPILE.val()) {
+            if (ConfigOptions.ALIAS_MODIFY_COMPILE.val()) {
                 cmd.refresh(context.getSource());
             }
             return 1;
@@ -325,7 +324,7 @@ public class AliasCommand {
             MutableText out = TextUtils.formattable("Set command at line " + line + ": \"").append(TextUtils.formattable(command)
                     .formatted(Formatting.YELLOW)).append(TextUtils.formattable("\"\n")).append(cmd.getCommandText());
             context.getSource().sendFeedback(() -> out, false);
-            if (ConfigOption.ALIAS_MODIFY_COMPILE.val()) {
+            if (ConfigOptions.ALIAS_MODIFY_COMPILE.val()) {
                 cmd.refresh(context.getSource());
             }
             return 1;
@@ -353,7 +352,7 @@ public class AliasCommand {
             MutableText out = TextUtils.formattable("Removed command at " +
                     "line " + line + "\n").append(cmd.getCommandText());
             context.getSource().sendFeedback(() -> out, false);
-            if (ConfigOption.ALIAS_MODIFY_COMPILE.val()) {
+            if (ConfigOptions.ALIAS_MODIFY_COMPILE.val()) {
                 cmd.refresh(context.getSource());
             }
             return 1;

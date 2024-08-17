@@ -1,7 +1,7 @@
 package com.birblett.impl.command.alias;
 
 import com.birblett.TechnicalToolbox;
-import com.birblett.impl.config.ConfigOption;
+import com.birblett.impl.config.ConfigOptions;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.WorldSavePath;
 import org.apache.commons.io.FileUtils;
@@ -144,10 +144,10 @@ public class AliasManager {
                 TechnicalToolbox.warn("{} alias files not registered in server, moved to trash", removedCount);
             }
             File[] files = recycle.listFiles((dir, name) -> name.endsWith(".alias"));
-            if (ConfigOption.ALIAS_RECYCLE_BIN_SIZE.val() != -1 && files != null) {
+            if (ConfigOptions.ALIAS_RECYCLE_BIN_SIZE.val() != -1 && files != null) {
                 Arrays.sort(files, Comparator.comparingLong(File::lastModified));
                 int removed = 0;
-                while (files.length > ConfigOption.ALIAS_RECYCLE_BIN_SIZE.val()) {
+                while (files.length > ConfigOptions.ALIAS_RECYCLE_BIN_SIZE.val()) {
                     files = Arrays.copyOfRange(files, 1, files.length);
                     removed++;
                 }

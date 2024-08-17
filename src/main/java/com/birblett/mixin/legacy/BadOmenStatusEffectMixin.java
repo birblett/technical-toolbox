@@ -1,6 +1,6 @@
 package com.birblett.mixin.legacy;
 
-import com.birblett.impl.config.ConfigOption;
+import com.birblett.impl.config.ConfigOptions;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.effect.BadOmenStatusEffect;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -13,14 +13,14 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
  * Instant activation of raids while having Bad Omen, while legacy raid mechanics are active. See
- * {@link ConfigOption#LEGACY_BAD_OMEN}
+ * {@link ConfigOptions#LEGACY_BAD_OMEN}
  */
 @Mixin(BadOmenStatusEffect.class)
 public class BadOmenStatusEffectMixin {
 
     @Inject(method = "applyUpdateEffect", at = @At("HEAD"), cancellable = true)
     private void instantRaidProc(LivingEntity entity, int amplifier, CallbackInfoReturnable<Boolean> cir) {
-        if (ConfigOption.LEGACY_BAD_OMEN.val() && entity instanceof ServerPlayerEntity serverPlayerEntity &&
+        if (ConfigOptions.LEGACY_BAD_OMEN.val() && entity instanceof ServerPlayerEntity serverPlayerEntity &&
                 !entity.isSpectator()) {
             ServerWorld serverWorld = serverPlayerEntity.getServerWorld();
             if (serverWorld.getDifficulty() == Difficulty.PEACEFUL) {

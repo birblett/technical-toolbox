@@ -1,6 +1,6 @@
 package com.birblett.mixin.legacy;
 
-import com.birblett.impl.config.ConfigOption;
+import com.birblett.impl.config.ConfigOptions;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.sugar.Local;
 import net.minecraft.entity.Entity;
@@ -25,14 +25,14 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
  * Disables raid captain ominous bottle drops when old raid mechanics are enabled and instead directly applies bad omen.
- * See {@link com.birblett.impl.config.ConfigOption#LEGACY_BAD_OMEN}
+ * See {@link ConfigOptions#LEGACY_BAD_OMEN}
  */
 @Mixin(RaiderEntity.class)
 public class RaiderEntityMixin {
 
     @Inject(method = "isCaptain", at = @At("HEAD"), cancellable = true)
     private void disableCaptainPredicate(CallbackInfoReturnable<Boolean> cir) {
-        if (ConfigOption.LEGACY_BAD_OMEN.val()) {
+        if (ConfigOptions.LEGACY_BAD_OMEN.val()) {
             cir.setReturnValue(false);
         }
     }
@@ -40,7 +40,7 @@ public class RaiderEntityMixin {
     @ModifyExpressionValue(method = "onDeath", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/raid/RaiderEntity;getRaid()Lnet/minecraft/village/raid/Raid;"))
     private Raid handleRaidCaptain(Raid raid, @Local(argsOnly = true) DamageSource source) {
         RaiderEntity self = (RaiderEntity) (Object) this;
-        if (ConfigOption.LEGACY_BAD_OMEN.val() && self.isPatrolLeader() && raid == null && ((ServerWorld)
+        if (ConfigOptions.LEGACY_BAD_OMEN.val() && self.isPatrolLeader() && raid == null && ((ServerWorld)
                 (self.getWorld())).getRaidAt(self.getBlockPos()) == null) {
             ItemStack itemStack = self.getEquippedStack(EquipmentSlot.HEAD);
             PlayerEntity playerEntity = null;

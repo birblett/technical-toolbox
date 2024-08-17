@@ -1,6 +1,6 @@
 package com.birblett.mixin.legacy;
 
-import com.birblett.impl.config.ConfigOption;
+import com.birblett.impl.config.ConfigOptions;
 import net.minecraft.block.AbstractFireBlock;
 import net.minecraft.entity.decoration.EndCrystalEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -15,7 +15,7 @@ public class EndCrystalEntityMixin {
 
     @Inject(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/decoration/EndCrystalEntity;checkBlockCollision()V"), cancellable = true)
     private void oldEndCrystalLogic(CallbackInfo ci) {
-        if (ConfigOption.LEGACY_END_CRYSTAL_COLLISION.val()) {
+        if (ConfigOptions.LEGACY_END_CRYSTAL_COLLISION.val()) {
             EndCrystalEntity entity = (EndCrystalEntity) (Object) this;
             if (entity.getWorld() instanceof ServerWorld) {
                 BlockPos blockPos = entity.getBlockPos();

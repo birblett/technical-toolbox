@@ -1,6 +1,6 @@
 package com.birblett.mixin.feature;
 
-import com.birblett.impl.config.ConfigOption;
+import com.birblett.impl.config.ConfigOptions;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import net.minecraft.enchantment.Enchantment;
@@ -15,7 +15,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import java.util.Optional;
 
 /**
- * Allows different protection enchantments to be combined. See {@link ConfigOption#LEGACY_PROTECTION_COMPATIBILITY}
+ * Allows different protection enchantments to be combined. See {@link ConfigOptions#LEGACY_PROTECTION_COMPATIBILITY}
  */
 @Mixin(AnvilScreenHandler.class)
 public class AnvilScreenHandlerMixin {
@@ -25,7 +25,7 @@ public class AnvilScreenHandlerMixin {
     @WrapOperation(method = "updateResult", at = @At(value = "INVOKE", target = "Lnet/minecraft/enchantment/Enchantment;canBeCombined(Lnet/minecraft/registry/entry/RegistryEntry;Lnet/minecraft/registry/entry/RegistryEntry;)Z"))
     private boolean allowProtectionCombination(RegistryEntry<Enchantment> first, RegistryEntry<Enchantment> second, Operation<Boolean> original) {
         Optional<TagKey<Enchantment>> t;
-        if (ConfigOption.LEGACY_PROTECTION_COMPATIBILITY.val() && first.value().exclusiveSet() == second.value().exclusiveSet() && (t =
+        if (ConfigOptions.LEGACY_PROTECTION_COMPATIBILITY.val() && first.value().exclusiveSet() == second.value().exclusiveSet() && (t =
                 first.value().exclusiveSet().getTagKey()).isPresent() && t.get().id().equals(PROTECTION_ID)) {
             return true;
         }

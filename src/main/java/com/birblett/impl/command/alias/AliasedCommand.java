@@ -1,7 +1,7 @@
 package com.birblett.impl.command.alias;
 
 import com.birblett.TechnicalToolbox;
-import com.birblett.impl.config.ConfigOption;
+import com.birblett.impl.config.ConfigOptions;
 import com.birblett.lib.command.CommandSourceModifier;
 import com.birblett.lib.command.delay.AliasedCommandSource;
 import com.birblett.util.ServerUtil;
@@ -76,8 +76,8 @@ public class AliasedCommand {
         this.global = false;
         this.alias = alias;
         this.commands.add(command);
-        this.permission = ConfigOption.ALIAS_DEFAULT_PERMISSION.val();
-        this.silent = ConfigOption.ALIAS_DEFAULT_SILENT.val();
+        this.permission = ConfigOptions.ALIAS_DEFAULT_PERMISSION.val();
+        this.silent = ConfigOptions.ALIAS_DEFAULT_SILENT.val();
         AliasManager.ALIASES.put(this.alias, this);
         this.register(dispatcher);
     }
@@ -1044,9 +1044,9 @@ public class AliasedCommand {
         }
         int i;
         // main loop for running instructions; opcode of -2 is error, -1 is donothing, >=0 is an instruction index to jump to
-        for (i = 0; i < instructions.size() && (ConfigOption.ALIAS_INSTRUCTION_LIMIT.val() == -1 ||
-                source.technicalToolbox$getInstructionCount() < ConfigOption.ALIAS_INSTRUCTION_LIMIT.val()) &&
-                source.technicalToolbox$getRecursionCount() < ConfigOption.ALIAS_MAX_RECURSION_DEPTH.val(); i++) {
+        for (i = 0; i < instructions.size() && (ConfigOptions.ALIAS_INSTRUCTION_LIMIT.val() == -1 ||
+                source.technicalToolbox$getInstructionCount() < ConfigOptions.ALIAS_INSTRUCTION_LIMIT.val()) &&
+                source.technicalToolbox$getRecursionCount() < ConfigOptions.ALIAS_MAX_RECURSION_DEPTH.val(); i++) {
             source.technicalToolbox$AddToInstructionCount(1);
             int out = instructions.get(i).execute(this, context, variableDefinitions);
             if (out == -2) {
@@ -1056,20 +1056,20 @@ public class AliasedCommand {
                 i = out - 1;
             }
         }
-        if (source.technicalToolbox$getRecursionCount() >= ConfigOption.ALIAS_MAX_RECURSION_DEPTH.val()) {
-            if (source.technicalToolbox$getRecursionCount() == ConfigOption.ALIAS_MAX_RECURSION_DEPTH.val()) {
+        if (source.technicalToolbox$getRecursionCount() >= ConfigOptions.ALIAS_MAX_RECURSION_DEPTH.val()) {
+            if (source.technicalToolbox$getRecursionCount() == ConfigOptions.ALIAS_MAX_RECURSION_DEPTH.val()) {
                 context.getSource().sendError(TextUtils.formattable("Exceeded the max recursion depth of " +
-                        ConfigOption.ALIAS_MAX_RECURSION_DEPTH.val()));
+                        ConfigOptions.ALIAS_MAX_RECURSION_DEPTH.val()));
                 source.technicalToolbox$AddToRecursionDepth(1);
             }
             return 0;
         }
         if (i < instructions.size()) {
             context.getSource().sendError(TextUtils.formattable("Exceeded the instruction limit of " +
-                    ConfigOption.ALIAS_INSTRUCTION_LIMIT.val()));
+                    ConfigOptions.ALIAS_INSTRUCTION_LIMIT.val()));
             return 0;
         }
-        if (source.technicalToolbox$getRecursionCount() < ConfigOption.ALIAS_MAX_RECURSION_DEPTH.val()) {
+        if (source.technicalToolbox$getRecursionCount() < ConfigOptions.ALIAS_MAX_RECURSION_DEPTH.val()) {
             source.technicalToolbox$AddToRecursionDepth(-1);
         }
         return 1;
@@ -1369,10 +1369,10 @@ public class AliasedCommand {
     public boolean writeToFile(Path path) {
         try (BufferedWriter bufferedWriter = Files.newBufferedWriter(path, StandardOpenOption.TRUNCATE_EXISTING)) {
             bufferedWriter.write("Alias: " + this.alias + "\n");
-            if (this.permission != ConfigOption.ALIAS_DEFAULT_PERMISSION.val()) {
+            if (this.permission != ConfigOptions.ALIAS_DEFAULT_PERMISSION.val()) {
                 bufferedWriter.write("Permission level: " + this.permission + "\n");
             }
-            if (this.silent != (ConfigOption.ALIAS_DEFAULT_SILENT.val())) {
+            if (this.silent != (ConfigOptions.ALIAS_DEFAULT_SILENT.val())) {
                 bufferedWriter.write("Silent: \"" + this.silent + "\"\n");
             }
             if (!this.argumentDefinitions.isEmpty()) {
@@ -1409,9 +1409,9 @@ public class AliasedCommand {
      */
     public static boolean readFromFile(MinecraftServer server, Path path, boolean global) {
         try (BufferedReader bufferedReader = Files.newBufferedReader(path)) {
-            boolean readingCommandState = false, silent = ConfigOption.ALIAS_DEFAULT_SILENT.val();
+            boolean readingCommandState = false, silent = ConfigOptions.ALIAS_DEFAULT_SILENT.val();
             String line, alias = null;
-            int permission = ConfigOption.ALIAS_DEFAULT_PERMISSION.val();
+            int permission = ConfigOptions.ALIAS_DEFAULT_PERMISSION.val();
             List<String> commands = new ArrayList<>();
             List<VariableDefinition> arguments = new ArrayList<>();
             while ((line = bufferedReader.readLine()) != null) {

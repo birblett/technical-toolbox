@@ -1,6 +1,6 @@
 package com.birblett.mixin.command.camera;
 
-import com.birblett.impl.config.ConfigOption;
+import com.birblett.impl.config.ConfigOptions;
 import com.birblett.lib.command.camera.CameraInterface;
 import com.birblett.util.TextUtils;
 import net.minecraft.entity.Entity;
@@ -191,11 +191,11 @@ public class ServerPlayerEntityMixin implements CameraInterface {
             value = "INVOKE"), cancellable = true)
     protected void cameraSpectating(Entity target, CallbackInfo ci) {
         ServerPlayerEntity player = (ServerPlayerEntity) (Object) this;
-        if (this.isCamera && ! ConfigOption.CAMERA_CAN_SPECTATE.val()) {
+        if (this.isCamera && ! ConfigOptions.CAMERA_CAN_SPECTATE.val()) {
             player.sendMessage(TextUtils.formattable("Entity spectating is currently disabled in camera mode"), true);
             ci.cancel();
         }
-        else if (this.isCamera && ConfigOption.CAMERA_CONSOLE_LOGGING.val().equals("spectate") && player.getServer()
+        else if (this.isCamera && ConfigOptions.CAMERA_CONSOLE_LOGGING.val().equals("spectate") && player.getServer()
                 != null) {
             player.getServer().sendMessage(TextUtils.formattable("[Camera Mode] " + player.getNameForScoreboard() + " is spectating " +
                     target.getNameForScoreboard()));

@@ -1,6 +1,6 @@
 package com.birblett.mixin.feature;
 
-import com.birblett.impl.config.ConfigOption;
+import com.birblett.impl.config.ConfigOptions;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
@@ -18,7 +18,7 @@ import org.spongepowered.asm.mixin.injection.At;
 
 /**
  * Allows for adjustment of crafter cooldown and toggling quasi power. See
- * {@link ConfigOption#FEATURE_CRAFTER_COOLDOWN} and {@link ConfigOption#FEATURE_CRAFTER_QUASI_POWER}.
+ * {@link ConfigOptions#FEATURE_CRAFTER_COOLDOWN} and {@link ConfigOptions#FEATURE_CRAFTER_QUASI_POWER}.
  */
 @Mixin(CrafterBlock.class)
 public abstract class CrafterBlockMixin {
@@ -28,7 +28,7 @@ public abstract class CrafterBlockMixin {
     @WrapOperation(method = "neighborUpdate", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/World;scheduleBlockTick(Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/Block;I)V"))
     private void crafterDelay(World world, BlockPos pos, Block block, int i, Operation<Void> original) {
         if (world instanceof ServerWorld serverWorld) {
-            int cd = ConfigOption.FEATURE_CRAFTER_COOLDOWN.val();
+            int cd = ConfigOptions.FEATURE_CRAFTER_COOLDOWN.val();
             if (cd == 0) {
                 this.scheduledTick(world.getBlockState(pos), serverWorld, pos, world.getRandom());
             } else {
@@ -39,7 +39,7 @@ public abstract class CrafterBlockMixin {
 
     @ModifyExpressionValue(method = "neighborUpdate", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/World;isReceivingRedstonePower(Lnet/minecraft/util/math/BlockPos;)Z"))
     private boolean allowQuasi(boolean b, @Local(argsOnly = true) World world, @Local(ordinal = 0, argsOnly = true) BlockPos pos) {
-        if (ConfigOption.FEATURE_CRAFTER_QUASI_POWER.val()) {
+        if (ConfigOptions.FEATURE_CRAFTER_QUASI_POWER.val()) {
             return b || world.isReceivingRedstonePower(pos.up());
         }
         return b;

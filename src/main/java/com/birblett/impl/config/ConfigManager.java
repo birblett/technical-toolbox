@@ -117,7 +117,7 @@ public class ConfigManager {
         try (BufferedWriter bufferedWriter = Files.newBufferedWriter(this.getFile(server))) {
             int options = 0;
             for (ConfigOption c : ConfigOption.OPTIONS) {
-                if (!ConfigOption.CONFIG_WRITE_ONLY_CHANGES.val() || !c.getWriteable().equals(c.getDefaultValue())) {
+                if (!ConfigOptions.CONFIG_WRITE_ONLY_CHANGES.val() || !c.getWriteable().equals(c.getDefaultValue())) {
                     bufferedWriter.write(c.getName() + ": " + c.getWriteable() + "\n");
                     if (c.hasLineBreak()) {
                         bufferedWriter.write("\n");

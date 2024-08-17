@@ -1,6 +1,6 @@
 package com.birblett.mixin.legacy;
 
-import com.birblett.impl.config.ConfigOption;
+import com.birblett.impl.config.ConfigOptions;
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
@@ -18,7 +18,7 @@ public class EntityTypeMixin<T extends Entity> {
     @ModifyReturnValue(method = "isFireImmune", at = @At("RETURN"))
     private boolean endCrystalFireImmunity(boolean b) {
         if (((Object) this).equals(END_CRYSTAL)) {
-            return !ConfigOption.LEGACY_END_CRYSTAL_FIRE_DAMAGE.val();
+            return !ConfigOptions.LEGACY_END_CRYSTAL_FIRE_DAMAGE.val();
         }
         return b;
     }

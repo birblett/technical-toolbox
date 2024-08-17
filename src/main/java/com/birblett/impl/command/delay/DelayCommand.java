@@ -1,6 +1,6 @@
 package com.birblett.impl.command.delay;
 
-import com.birblett.impl.config.ConfigOption;
+import com.birblett.impl.config.ConfigOptions;
 import com.birblett.lib.command.delay.AliasedCommandSource;
 import com.birblett.lib.command.delay.CommandScheduler;
 import com.birblett.util.TextUtils;
@@ -32,10 +32,10 @@ import java.util.concurrent.CompletableFuture;
 public class DelayCommand {
 
     public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
-        LiteralCommandNode<ServerCommandSource> node = dispatcher.register(CommandManager.literal(ConfigOption
+        LiteralCommandNode<ServerCommandSource> node = dispatcher.register(CommandManager.literal(ConfigOptions
                         .DELAY_COMMAND.val())
                 .requires(source -> source.hasPermissionLevel(4)));
-        dispatcher.register(CommandManager.literal(ConfigOption
+        dispatcher.register(CommandManager.literal(ConfigOptions
                         .DELAY_COMMAND.val())
                 .requires(source -> source.hasPermissionLevel(4))
                 .then(CommandManager.literal("as")

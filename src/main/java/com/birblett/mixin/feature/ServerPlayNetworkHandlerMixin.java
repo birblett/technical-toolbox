@@ -1,14 +1,14 @@
 package com.birblett.mixin.feature;
 
-import com.birblett.impl.config.ConfigOption;
+import com.birblett.impl.config.ConfigOptions;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import net.minecraft.server.network.ServerPlayNetworkHandler;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 
 /**
- * Increase player velocity thresholds before correcting packets are sent. See {@link ConfigOption#FEATURE_SPEED_LIMIT},
- * {@link ConfigOption#FEATURE_SPEED_LIMIT_ELYTRA}, and {@link ConfigOption#FEATURE_SPEED_LIMIT_VEHICLE}
+ * Increase player velocity thresholds before correcting packets are sent. See {@link ConfigOptions#FEATURE_SPEED_LIMIT},
+ * {@link ConfigOptions#FEATURE_SPEED_LIMIT_ELYTRA}, and {@link ConfigOptions#FEATURE_SPEED_LIMIT_VEHICLE}
  */
 @Mixin(ServerPlayNetworkHandler.class)
 public class ServerPlayNetworkHandlerMixin {
@@ -18,7 +18,7 @@ public class ServerPlayNetworkHandlerMixin {
      */
     @ModifyExpressionValue(method = "onPlayerMove", at = @At(value = "CONSTANT", args = "floatValue=100.0f"))
     private float speedLimit(float f) {
-        return ConfigOption.FEATURE_SPEED_LIMIT.val();
+        return ConfigOptions.FEATURE_SPEED_LIMIT.val();
     }
 
     /**
@@ -26,7 +26,7 @@ public class ServerPlayNetworkHandlerMixin {
      */
     @ModifyExpressionValue(method = "onPlayerMove", at = @At(value = "CONSTANT", args = "floatValue=300.0f"))
     private float elytraSpeedLimit(float f) {
-        return ConfigOption.FEATURE_SPEED_LIMIT_ELYTRA.val();
+        return ConfigOptions.FEATURE_SPEED_LIMIT_ELYTRA.val();
     }
 
     /**
@@ -34,7 +34,7 @@ public class ServerPlayNetworkHandlerMixin {
      */
     @ModifyExpressionValue(method = "onVehicleMove", at = @At(value = "CONSTANT", args = "doubleValue=100.0"))
     private double disableCameraOnDisconnect(double d) {
-        return ConfigOption.FEATURE_SPEED_LIMIT_VEHICLE.val();
+        return ConfigOptions.FEATURE_SPEED_LIMIT_VEHICLE.val();
     }
 
 }
