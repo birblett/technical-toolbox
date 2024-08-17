@@ -342,7 +342,7 @@ public class AliasedCommand {
     }
 
     /**
-     * Contains methods and values for parsing expressions i.e. for if/assign/return statements
+     * Contains methods and values for parsing expressions i.e. for if/let/return statements
      */
     private interface ExpressionParser {
 
@@ -556,8 +556,19 @@ public class AliasedCommand {
             if (assn.length == 2) {
                 this.assignVar = assn[1];
             }
+            else if (assn.length != 1) {
+                this.assignVar = "";
+                this.err = "expected 1-2 arguments for assignment, got " + assn.length;
+                this.valid = false;
+                return;
+            }
             else {
                 this.assignVar = assignVar;
+            }
+            if (!this.assignVar.matches("[a-zA-Z_][a-zA-Z0-9_]*")) {
+                this.err = "invalid variable name " + this.assignVar;
+                this.valid = false;
+                return;
             }
             boolean newAssignment = true;
             LinkedHashMap<String, VariableDefinition> map = null;
@@ -776,11 +787,11 @@ public class AliasedCommand {
                         switch (ctrl) {
                             // handles assignment - handles expressions using either longs or doubles depending on which is necessary,
                             // then casts to matching type on assignment
-                            case "assign" -> {
-                                String[] instr = c.substring(1, c.length() - 1).replaceFirst("assign", "").strip()
+                            case "let" -> {
+                                String[] instr = c.substring(1, c.length() - 1).replaceFirst("let", "").strip()
                                         .split("=", 2);
                                 if (instr.length != 2) {
-                                    return this.compileError(i, "assignment must be of form [assign var = (expression)]");
+                                    return this.compileError(i, "assignment must be of form [let var = (expression)]");
                                 }
                                 AssignmentInstruction e = new AssignmentInstruction(instr[0].strip(), instr[1], scope);
                                 if (!e.valid) {
