@@ -24,6 +24,7 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -75,13 +76,8 @@ public class AliasedCommand {
         this.commands.add(command);
         this.permission = ConfigOption.ALIAS_DEFAULT_PERMISSION.val();
         this.silent = ConfigOption.ALIAS_DEFAULT_SILENT.val();
-        try {
-            this.register(dispatcher);
-        }
-        catch (Exception e) {
-            TechnicalToolbox.log("Something went wrong registering alias {}", this.alias);
-        }
         AliasManager.ALIASES.put(this.alias, this);
+        this.register(dispatcher);
     }
 
     private AliasedCommand(String alias, int permission, boolean silent, CommandDispatcher<ServerCommandSource> dispatcher, Collection<String> commands, Collection<VariableDefinition> arguments) {
@@ -92,12 +88,6 @@ public class AliasedCommand {
         }
         this.permission = permission;
         this.silent = silent;
-        try {
-            this.register(dispatcher);
-        }
-        catch (Exception e) {
-            TechnicalToolbox.log("Something went wrong registering alias {}", this.alias);
-        }
         AliasManager.ALIASES.put(this.alias, this);
     }
 
@@ -928,7 +918,8 @@ public class AliasedCommand {
     public boolean register(ServerCommandSource source) {
         boolean b = this.register(source.getDispatcher());
         if (!b) {
-            source.sendError(TextUtils.formattable("Failed to compile alias \"" + this.alias + "\", see logs for details"));
+            source.sendError(TextUtils.formattable("Failed to compile:"));
+            source.sendError(TextUtils.formattable(this.status));
         }
         return b;
     }
@@ -939,6 +930,9 @@ public class AliasedCommand {
      * @return true if successful, false if compilation failed
      */
     public boolean register(CommandDispatcher<ServerCommandSource> dispatcher) {
+        if (!AliasManager.ALIASES.containsKey(this.alias)) {
+            AliasManager.ALIASES.put(this.alias, this);
+        }
         // Compile first, if compilation fails then it does nothing
         if (!(this.compiled = this.compile())) {
             return false;
@@ -992,9 +986,6 @@ public class AliasedCommand {
                     .requires(source -> source.hasPermissionLevel(this.getPermission())))
                     .executes(this::execute));
         }
-        if (!AliasManager.ALIASES.containsKey(this.alias)) {
-            AliasManager.ALIASES.put(this.alias, this);
-        }
         return true;
     }
 
@@ -1030,7 +1021,8 @@ public class AliasedCommand {
         }
         int i;
         // main loop for running instructions; opcode of -2 is error, -1 is donothing, >=0 is an instruction index to jump to
-        for (i = 0; i < instructions.size() && source.technicalToolbox$getInstructionCount() < 10000; i++,
+        for (i = 0; i < instructions.size() && (ConfigOption.ALIAS_INSTRUCTION_LIMIT.val() == -1 ||
+                source.technicalToolbox$getInstructionCount() < ConfigOption.ALIAS_INSTRUCTION_LIMIT.val()); i++,
                 source.technicalToolbox$AddToInstructionCount(1)) {
             int out = instructions.get(i).execute(this, context, variableDefinitions);
             if (out == -2) {
@@ -1041,7 +1033,8 @@ public class AliasedCommand {
             }
         }
         if (i < instructions.size()) {
-            context.getSource().sendError(TextUtils.formattable("Exceeded the instruction limit of " + 10000));
+            context.getSource().sendError(TextUtils.formattable("Exceeded the instruction limit of " +
+                    ConfigOption.ALIAS_INSTRUCTION_LIMIT.val()));
             return 0;
         }
         return 1;
@@ -1289,9 +1282,9 @@ public class AliasedCommand {
      * Deregisters and attempts to re-register this alias with the provided command source's server.
      * @param source command user; error messages sent if failed to re-register
      */
-    public void refresh(ServerCommandSource source) {
+    public boolean refresh(ServerCommandSource source) {
         this.deregister(source.getServer(), false);
-        this.register(source);
+        return this.register(source);
     }
 
     /**
@@ -1325,7 +1318,7 @@ public class AliasedCommand {
      * @return whether alias was written successfully or not
      */
     public boolean writeToFile(Path path) {
-        try (BufferedWriter bufferedWriter = Files.newBufferedWriter(path)) {
+        try (BufferedWriter bufferedWriter = Files.newBufferedWriter(path, StandardOpenOption.TRUNCATE_EXISTING)) {
             bufferedWriter.write("Alias: " + this.alias + "\n");
             if (this.permission != ConfigOption.ALIAS_DEFAULT_PERMISSION.val()) {
                 bufferedWriter.write("Permission level: " + this.permission + "\n");

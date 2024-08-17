@@ -3,6 +3,8 @@ package com.birblett.impl.command;
 import com.birblett.TechnicalToolbox;
 import com.birblett.impl.command.alias.AliasManager;
 import com.birblett.impl.command.alias.AliasedCommand;
+import com.birblett.impl.config.ConfigManager;
+import com.birblett.impl.config.ConfigOption;
 import com.birblett.util.ServerUtil;
 import com.birblett.util.TextUtils;
 import com.mojang.brigadier.CommandDispatcher;
@@ -32,13 +34,13 @@ public class AliasCommand {
                 // adds an alias by name, with a given command
                 .then(CommandManager.literal("add")
                         .requires(source -> source.hasPermissionLevel(4))
-                        .then(CommandManager.argument("alias", StringArgumentType.string())
+                        .then(CommandManager.argument("alias", StringArgumentType.word())
                                 .then(CommandManager.argument("command", StringArgumentType.greedyString())
                                         .executes(AliasCommand::add))))
                 // removes an alias by name completely
                 .then(CommandManager.literal("remove")
                         .requires(source -> source.hasPermissionLevel(4))
-                        .then(CommandManager.argument("alias", StringArgumentType.string())
+                        .then(CommandManager.argument("alias", StringArgumentType.word())
                                 .suggests((context, builder) -> CommandSource.suggestMatching(AliasManager.ALIASES.keySet(), builder))
                                 .executes(AliasCommand::remove)))
                 // reads all alias from file
@@ -52,10 +54,15 @@ public class AliasCommand {
                 // lists all aliases the executing player can use
                 .then(CommandManager.literal("list")
                         .executes(AliasCommand::list))
+                // attemps to compile a specific alias
+                .then(CommandManager.literal("compile")
+                        .requires(source -> !ConfigOption.ALIAS_MODIFY_COMPILE.val())
+                        .then(CommandManager.argument("alias", StringArgumentType.word())
+                        .executes(AliasCommand::compile)))
                 // modifies an existing alias
                 .then(CommandManager.literal("modify")
                         .requires(source -> source.hasPermissionLevel(4))
-                        .then(CommandManager.argument("alias", StringArgumentType.string())
+                        .then(CommandManager.argument("alias", StringArgumentType.word())
                                 .suggests((context, builder) -> CommandSource.suggestMatching(AliasManager.ALIASES.keySet(), builder))
                                 // add a line to an alias
                                 .then(CommandManager.literal("add")
@@ -96,14 +103,14 @@ public class AliasCommand {
                                         .then(AliasCommand.addOrSetArguments("set", true))
                                         // remove an argument
                                         .then(CommandManager.literal("remove")
-                                                .then(CommandManager.argument("argument", StringArgumentType.string())
+                                                .then(CommandManager.argument("argument", StringArgumentType.word())
                                                         .suggests(AliasCommand::modifyListArguments)
                                                         .executes(AliasCommand::modifyArgumentRemove)))
                                         // rename an argument
                                         .then(CommandManager.literal("rename")
-                                                .then(CommandManager.argument("argument", StringArgumentType.string())
+                                                .then(CommandManager.argument("argument", StringArgumentType.word())
                                                         .suggests(AliasCommand::modifyListArguments)
-                                                        .then(CommandManager.argument("newArgument", StringArgumentType.string())
+                                                        .then(CommandManager.argument("newArgument", StringArgumentType.word())
                                                             .executes(AliasCommand::modifyArgumentRename)))))
                                 // if called without subcommands will instead output alias information
                                 .executes(AliasCommand::modifyInfo)))));
@@ -175,6 +182,21 @@ public class AliasCommand {
         return 1;
     }
 
+    private static int compile(CommandContext<ServerCommandSource> context) {
+        String alias = context.getArgument("alias", String.class);
+        AliasedCommand cmd = AliasManager.ALIASES.get(alias);
+        if (cmd != null) {
+            if (ConfigOption.ALIAS_MODIFY_COMPILE.val() && cmd.refresh(context.getSource())) {
+                context.getSource().sendFeedback(() -> TextUtils.formattable("Successfully compiled alias ")
+                        .append(TextUtils.formattable(alias).formatted(Formatting.GREEN)), false);
+                return 1;
+            }
+            return 0;
+        }
+        context.getSource().sendError(TextUtils.formattable("Couldn't find alias \"" + alias));
+        return 0;
+    }
+
     private static int modifyRename(CommandContext<ServerCommandSource> context) {
         String alias = context.getArgument("alias", String.class);
         AliasedCommand cmd = AliasManager.ALIASES.get(alias);
@@ -197,7 +219,9 @@ public class AliasCommand {
             MutableText out = TextUtils.formattable("Added line: \"").append(TextUtils.formattable(command).formatted(Formatting.YELLOW))
                     .append(TextUtils.formattable("\"\n")).append(cmd.getCommandText());
             context.getSource().sendFeedback(() -> out, false);
-            cmd.refresh(context.getSource());
+            if (ConfigOption.ALIAS_MODIFY_COMPILE.val()) {
+                cmd.refresh(context.getSource());
+            }
             return 1;
         }
         context.getSource().sendError(TextUtils.formattable("Couldn't find alias \"" + alias + "\""));
@@ -218,7 +242,9 @@ public class AliasCommand {
             MutableText out = TextUtils.formattable("Inserted command at line " + line + ": \"").append(TextUtils.formattable(command)
                     .formatted(Formatting.YELLOW)).append(TextUtils.formattable("\"\n")).append(cmd.getCommandText());
             context.getSource().sendFeedback(() -> out, false);
-            cmd.refresh(context.getSource());
+            if (ConfigOption.ALIAS_MODIFY_COMPILE.val()) {
+                cmd.refresh(context.getSource());
+            }
             return 1;
         }
         context.getSource().sendError(TextUtils.formattable("Couldn't find alias \"" + alias + "\""));
@@ -259,7 +285,9 @@ public class AliasCommand {
             MutableText out = TextUtils.formattable("Set command at line " + line + ": \"").append(TextUtils.formattable(command)
                     .formatted(Formatting.YELLOW)).append(TextUtils.formattable("\"\n")).append(cmd.getCommandText());
             context.getSource().sendFeedback(() -> out, false);
-            cmd.refresh(context.getSource());
+            if (ConfigOption.ALIAS_MODIFY_COMPILE.val()) {
+                cmd.refresh(context.getSource());
+            }
             return 1;
         }
         context.getSource().sendError(TextUtils.formattable("Couldn't find alias \"" + alias + "\""));
@@ -280,7 +308,9 @@ public class AliasCommand {
             MutableText out = TextUtils.formattable("Removed command at " +
                     "line " + line + "\n").append(cmd.getCommandText());
             context.getSource().sendFeedback(() -> out, false);
-            cmd.refresh(context.getSource());
+            if (ConfigOption.ALIAS_MODIFY_COMPILE.val()) {
+                cmd.refresh(context.getSource());
+            }
             return 1;
         }
         context.getSource().sendError(TextUtils.formattable("Couldn't find alias \"" + alias));
@@ -396,7 +426,7 @@ public class AliasCommand {
 
     private static LiteralArgumentBuilder<ServerCommandSource> addOrSetArguments(String literalName, boolean replace) {
         return CommandManager.literal(literalName)
-                .then(CommandManager.argument("argument", StringArgumentType.string())
+                .then(CommandManager.argument("argument", StringArgumentType.word())
                         .suggests((context, builder) -> replace ? AliasCommand.modifyListArguments(context, builder) : Suggestions.empty())
                         .then(CommandManager.literal("int")
                                 .executes(context -> modifyArgumentSet(context, "int", replace, Integer.class)))

@@ -41,23 +41,26 @@ public class ConfigOption<T> {
             "Default permission level required to execute aliases.",
             0, 4,
             "0", "4");
-    public static final ConfigOption<String> ALIAS_DEFAULT_SEPARATOR = new ConfigOption<>(
-            "aliasDefaultSeparator", ",",
-            "Default argument separator for new aliases.",
-            true, ",", "\" \"") {
-        @Override
-        public Text setFromString(String value) {
-            if (!value.isEmpty()) {
-                this.value = value;
-                return null;
-            };
-            return TextUtils.formattable("Option aliasDefaultSeparator requires string of length > 0");
-        }
-    };
     public static final ConfigOption<Boolean> ALIAS_DEFAULT_SILENT = boolConfig(
             "aliasDefaultSilent", false,
             "Whether aliases default to sending feedback or not.",
             "true", "false");
+    public static final ConfigOption<Integer> ALIAS_INSTRUCTION_LIMIT = intConfig(
+            "aliasInstructionLimit", 50000,
+            "Maximum number of instructions (not lines) that an alias can execute. " +
+                    "Also accounts for alias recursion. Set to -1 for no limit.",
+            -1, Integer.MAX_VALUE, "-1", "20");
+    public static final ConfigOption<Boolean> ALIAS_MODIFY_COMPILE = boolConfig(
+            "aliasCompileOnModification", true,
+            "Whether aliases should be compiled whenever they are modified. When false, " +
+                    "they can instead be compiled with /alias compile.",
+            "true", "false");
+    public static final ConfigOption<Integer> ALIAS_RECYCLE_BIN_SIZE = intConfig(
+            "aliasRecycleBinSize", 20,
+            "Size of the recycle bin for old or unused alias files. Older files are " +
+                    "recycled after hitting the limit. Set to -1 for no limit.",
+            -1, 20,
+            "0", "-1", "20");
     public static final ConfigOption<String> CAMERA_COMMAND = new ConfigOption<>(
             "cameraCommand", "cam",
             "Camera command string, usage /[cmd string].",
@@ -289,6 +292,21 @@ public class ConfigOption<T> {
         return intConfig(name, defaultValue, desc, min, max, false, suggestions);
     }
 
+    public static ConfigOption<Long> longConfig(String name, long defaultValue, String desc, long min, long max, boolean hasLineBreak, String... suggestions) {
+        return new ConfigOption<>(name, defaultValue, desc, hasLineBreak, suggestions) {
+            @Override
+            public Text setFromString(String value) {
+                Pair<Long, Text> out = getLongOption(this.getName(), value, defaultValue, min, max);
+                this.value = out.getLeft();
+                return out.getRight();
+            }
+        };
+    }
+
+    public static ConfigOption<Long> longConfig(String name, long defaultValue, String desc, long min, long max, String... suggestions) {
+        return longConfig(name, defaultValue, desc, min, max, false, suggestions);
+    }
+
     public static ConfigOption<Float> floatConfig(String name, float defaultValue, String desc, float min, float max, boolean hasLineBreak, String... suggestions) {
         return new ConfigOption<>(name, defaultValue, desc, hasLineBreak, suggestions) {
             @Override
@@ -337,6 +355,30 @@ public class ConfigOption<T> {
                     return new Pair<>(defaultValue, t.append(TextUtils.formattable(">= " + left)));
                 }
                 else if (right != Integer.MAX_VALUE) {
+                    return new Pair<>(defaultValue, t.append(TextUtils.formattable("<= " + right)));
+                }
+            }
+        }
+        catch (Exception e) {
+            return new Pair<>(defaultValue, setFailGeneric(name, value));
+        }
+        return new Pair<>(tmp, null);
+    }
+
+    public static Pair<Long, Text> getLongOption(String name, String value, long defaultValue, long left, long right) {
+        long tmp;
+        try {
+            tmp = Long.parseLong(value);
+            if (tmp < left || tmp > right) {
+                MutableText t = TextUtils.formattable("Invalid input " + value + ": " + name + " only accepts values ");
+                if (left != Long.MIN_VALUE && right != Long.MAX_VALUE) {
+                    return new Pair<>(defaultValue, t.append(TextUtils.formattable("in range [" + left + ", " + right
+                            + "]")));
+                }
+                else if (left != Long.MIN_VALUE) {
+                    return new Pair<>(defaultValue, t.append(TextUtils.formattable(">= " + left)));
+                }
+                else if (right != Long.MAX_VALUE) {
                     return new Pair<>(defaultValue, t.append(TextUtils.formattable("<= " + right)));
                 }
             }
