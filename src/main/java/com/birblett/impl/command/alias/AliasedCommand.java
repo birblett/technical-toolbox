@@ -1030,6 +1030,7 @@ public class AliasedCommand {
         LinkedHashMap<String, Variable> variableDefinitions = new LinkedHashMap<>();
         List<AliasedCommand.Instruction> instructions = List.copyOf(this.instructions);
         AliasedCommandSource source = (AliasedCommandSource) context.getSource();
+        source.technicalToolbox$AddToRecursionDepth(1);
         // load arguments locally
         for (VariableDefinition var : this.argumentDefinitions.values()) {
             if ("selection".equals(var.typeName)) {
@@ -1044,8 +1045,9 @@ public class AliasedCommand {
         int i;
         // main loop for running instructions; opcode of -2 is error, -1 is donothing, >=0 is an instruction index to jump to
         for (i = 0; i < instructions.size() && (ConfigOption.ALIAS_INSTRUCTION_LIMIT.val() == -1 ||
-                source.technicalToolbox$getInstructionCount() < ConfigOption.ALIAS_INSTRUCTION_LIMIT.val()); i++,
-                source.technicalToolbox$AddToInstructionCount(1)) {
+                source.technicalToolbox$getInstructionCount() < ConfigOption.ALIAS_INSTRUCTION_LIMIT.val()) &&
+                source.technicalToolbox$getRecursionCount() < ConfigOption.ALIAS_MAX_RECURSION_DEPTH.val(); i++) {
+            source.technicalToolbox$AddToInstructionCount(1);
             int out = instructions.get(i).execute(this, context, variableDefinitions);
             if (out == -2) {
                 return 0;
@@ -1054,10 +1056,21 @@ public class AliasedCommand {
                 i = out - 1;
             }
         }
+        if (source.technicalToolbox$getRecursionCount() >= ConfigOption.ALIAS_MAX_RECURSION_DEPTH.val()) {
+            if (source.technicalToolbox$getRecursionCount() == ConfigOption.ALIAS_MAX_RECURSION_DEPTH.val()) {
+                context.getSource().sendError(TextUtils.formattable("Exceeded the max recursion depth of " +
+                        ConfigOption.ALIAS_MAX_RECURSION_DEPTH.val()));
+                source.technicalToolbox$AddToRecursionDepth(1);
+            }
+            return 0;
+        }
         if (i < instructions.size()) {
             context.getSource().sendError(TextUtils.formattable("Exceeded the instruction limit of " +
                     ConfigOption.ALIAS_INSTRUCTION_LIMIT.val()));
             return 0;
+        }
+        if (source.technicalToolbox$getRecursionCount() < ConfigOption.ALIAS_MAX_RECURSION_DEPTH.val()) {
+            source.technicalToolbox$AddToRecursionDepth(-1);
         }
         return 1;
     }

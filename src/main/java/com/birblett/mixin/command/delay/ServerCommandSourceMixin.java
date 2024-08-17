@@ -12,6 +12,7 @@ public class ServerCommandSourceMixin implements AliasedCommandSource {
 
     @Unique private final HashMap<String, Object> commandOptions = new HashMap<>();
     @Unique private int instructionCount = 0;
+    @Unique private int recursionCount = 0;
     @Unique private Object returns = null;
 
     @Override
@@ -37,6 +38,16 @@ public class ServerCommandSourceMixin implements AliasedCommandSource {
     @Override
     public int technicalToolbox$getInstructionCount() {
         return this.instructionCount;
+    }
+
+    @Override
+    public void technicalToolbox$AddToRecursionDepth(int i) {
+        this.recursionCount += i;
+    }
+
+    @Override
+    public int technicalToolbox$getRecursionCount() {
+        return this.recursionCount;
     }
 
 }

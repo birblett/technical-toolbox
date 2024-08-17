@@ -50,6 +50,11 @@ public class ConfigOption<T> {
             "Maximum number of instructions (not lines) that an alias can execute. " +
                     "Also accounts for alias recursion. Set to -1 for no limit.",
             -1, Integer.MAX_VALUE, "-1", "20");
+    public static final ConfigOption<Integer> ALIAS_MAX_RECURSION_DEPTH = intConfig(
+            "aliasMaxRecursionDepth", 500,
+            "Maximum number of recursive calls. Setting too high may result in " +
+                    "stack overflow for some recursive programs.",
+            0, Integer.MAX_VALUE, "500");
     public static final ConfigOption<Boolean> ALIAS_MODIFY_COMPILE = boolConfig(
             "aliasCompileOnModification", true,
             "Whether aliases should be compiled whenever they are modified. When false, " +

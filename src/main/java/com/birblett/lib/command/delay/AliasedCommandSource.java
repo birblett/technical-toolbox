@@ -7,5 +7,7 @@ public interface AliasedCommandSource {
     void technicalToolbox$ResetOpt();
     void technicalToolbox$AddToInstructionCount(int i);
     int technicalToolbox$getInstructionCount();
+    void technicalToolbox$AddToRecursionDepth(int i);
+    int technicalToolbox$getRecursionCount();
 
 }
