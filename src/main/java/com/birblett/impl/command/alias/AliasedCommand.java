@@ -1,13 +1,13 @@
 package com.birblett.impl.command.alias;
 
 import com.birblett.TechnicalToolbox;
+import com.birblett.impl.command.alias.language.*;
 import com.birblett.impl.config.ConfigOptions;
 import com.birblett.lib.command.CommandSourceModifier;
 import com.birblett.lib.command.delay.AliasedCommandSource;
 import com.birblett.util.ServerUtil;
 import com.birblett.util.TextUtils;
 import com.mojang.brigadier.CommandDispatcher;
-import com.mojang.brigadier.arguments.*;
 import com.mojang.brigadier.builder.ArgumentBuilder;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
@@ -26,8 +26,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.*;
-import java.util.function.BiFunction;
-import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -42,35 +40,14 @@ public class AliasedCommand {
     private boolean compiled = false;
     private final List<String> commands = new ArrayList<>();
     private final List<Instruction> instructions = new ArrayList<>();
-    private final LinkedHashMap<String, VariableDefinition> argumentDefinitions = new LinkedHashMap<>();
+    private final LinkedHashMap<String, Variable.Definition> argumentDefinitions = new LinkedHashMap<>();
     private int permission;
     private boolean silent;
     public final boolean global;
     private static final Pattern SAVED_ARGS = Pattern.compile("\\{\\$[^:]+(:[^}]+)?}");
     private static final Pattern STATEMENT = Pattern.compile("\\[.*]");
-    private static final Pattern STATEMENT_BEGIN = Pattern.compile("\\[[^\\ ]+");
-    public static final HashMap<String, Entry<?>> ARGUMENT_TYPES = new HashMap<>();
+    private static final Pattern STATEMENT_BEGIN = Pattern.compile("\\[[^ ]+");
     public String status = null;
-
-    static {
-        ARGUMENT_TYPES.put("int", new Entry<>(0, opt -> IntegerArgumentType.integer(), Integer.class));
-        ARGUMENT_TYPES.put("int_range", new Entry<>(2, opt -> AliasedCommand.rangeArgumentType(opt, Integer.class, Integer::parseInt,
-                IntegerArgumentType::integer), Integer.class));
-        ARGUMENT_TYPES.put("long", new Entry<>(0, opt -> LongArgumentType.longArg(), Long.class));
-        ARGUMENT_TYPES.put("long_range", new Entry<>(2, opt -> AliasedCommand.rangeArgumentType(opt, Long.class, Long::parseLong,
-                LongArgumentType::longArg), Long.class));
-        ARGUMENT_TYPES.put("float", new Entry<>(0, opt -> FloatArgumentType.floatArg(), Float.class));
-        ARGUMENT_TYPES.put("float_range", new Entry<>(2, opt -> AliasedCommand.rangeArgumentType(opt, Float.class, Float::parseFloat,
-                FloatArgumentType::floatArg), Float.class));
-        ARGUMENT_TYPES.put("double", new Entry<>(0, opt -> DoubleArgumentType.doubleArg(), Double.class));
-        ARGUMENT_TYPES.put("double_range", new Entry<>(2, opt -> AliasedCommand.rangeArgumentType(opt, Double.class,
-                Double::parseDouble, DoubleArgumentType::doubleArg), Double.class));
-        ARGUMENT_TYPES.put("boolean", new Entry<>(0, opt -> BoolArgumentType.bool(), Boolean.class));
-        ARGUMENT_TYPES.put("word", new Entry<>(0, opt -> StringArgumentType.word(), String.class));
-        ARGUMENT_TYPES.put("string", new Entry<>(0, opt -> StringArgumentType.string(), String.class));
-        ARGUMENT_TYPES.put("regex", new Entry<>(1, opt -> StringArgumentType.string(), String.class));
-        ARGUMENT_TYPES.put("selection", new Entry<>(-1, opt -> StringArgumentType.string(), String.class));
-    }
 
     public AliasedCommand(String alias, String command, CommandDispatcher<ServerCommandSource> dispatcher) {
         this.global = false;
@@ -82,12 +59,12 @@ public class AliasedCommand {
         this.register(dispatcher);
     }
 
-    private AliasedCommand(String alias, int permission, boolean silent, CommandDispatcher<ServerCommandSource> dispatcher, Collection<String> commands, Collection<VariableDefinition> arguments, boolean global) {
+    private AliasedCommand(String alias, int permission, boolean silent, Collection<String> commands, Collection<Variable.Definition> arguments, boolean global) {
         this.global = global;
         this.alias = alias;
         this.commands.addAll(commands);
         List<String> args = new ArrayList<>();
-        for (VariableDefinition var : arguments) {
+        for (Variable.Definition var : arguments) {
             if (var.name.matches("[a-zA-Z_][a-zA-Z0-9_]*")) {
                 this.argumentDefinitions.put(var.name, var);
             }
@@ -124,644 +101,6 @@ public class AliasedCommand {
     }
 
     /**
-     * Defines variable type, primarily for use with arguments.
-     * @param argc number of arguments required
-     * @param argumentTypeProvider provides an argument type to be passed to an argument builder
-     * @param clazz class used to retrieve arguments
-     */
-    public record Entry<T>(int argc, Function<String[], ArgumentType<T>> argumentTypeProvider, Class<T> clazz) {}
-
-    /**
-     * Defines various traits related to variables, such as its name, type, and expected arguments.
-     */
-    public static class VariableDefinition {
-
-        public final String name;
-        public final String typeName;
-        public final Entry<?> type;
-        public final String[] args;
-
-        public VariableDefinition(String name, String type, String[] args) {
-            this.name = name;
-            this.typeName = type;
-            this.type = ARGUMENT_TYPES.getOrDefault(type, ARGUMENT_TYPES.get("string"));
-            this.args = args;
-        }
-
-        public ArgumentType<?> getArgumentType() {
-            return this.type.argumentTypeProvider().apply(this.args);
-        }
-
-        @Override
-        public int hashCode() {
-            return name.hashCode();
-        }
-
-    }
-
-    /**
-     * The basic variable for use during program execution. Holds a definition and a value.
-     * @param type
-     * @param value
-     */
-    private record Variable(VariableDefinition type, Object value) {}
-
-    /**
-     * The basic interface for operators in expressions - essentially a data container.
-     * getValue returns raw data, operation specifies how it interfaces with other
-     * Operators.
-     */
-    public interface Operator {
-
-        Object getValue();
-        Operator operation(String operator, Operator other);
-        boolean compare(String comparator, Operator other);
-
-    }
-
-    /**
-     * Supports operations between two numbers, or a number and a string. Internal calculations
-     * handled via long and double values where necessary.
-     */
-    private static class NumberOperator implements Operator {
-
-        private boolean isLong = true;
-        private long longVal;
-        private double doubleVal;
-
-        public NumberOperator(Number value) {
-            if (value instanceof Integer || value instanceof Long) {
-                this.longVal = value.longValue();
-            }
-            else {
-                this.isLong = false;
-                this.doubleVal = value.doubleValue();
-            }
-        }
-
-        public static NumberOperator fromString(String s) {
-            try {
-                return new NumberOperator(Long.parseLong(s));
-            }
-            catch (NumberFormatException e) {
-                try {
-                    if (s.endsWith("s")) {
-                        return new NumberOperator(Double.parseDouble(s.substring(0, s.length() - 1)));
-                    }
-                    return new NumberOperator(Double.parseDouble(s));
-                }
-                catch (NumberFormatException f) {
-                    return null;
-                }
-            }
-        }
-
-        public double getDoubleValue() {
-            return this.isLong ? (double) this.longVal : this.doubleVal;
-        }
-
-        @Override
-        public Object getValue() {
-            return this.isLong ? this.longVal : this.doubleVal;
-        }
-
-        public Operator operation(String operator, Operator other) {
-            if (other instanceof NumberOperator second) {
-                switch (operator) {
-                    case "+" -> {
-                        return new NumberOperator((this.isLong && second.isLong) ? this.longVal + second.longVal : this.getDoubleValue() +
-                                second.getDoubleValue());
-                    }
-                    case "-" -> {
-                        return new NumberOperator((this.isLong && second.isLong) ? this.longVal - second.longVal : this.getDoubleValue() -
-                                second.getDoubleValue());
-                    }
-                    case "*" -> {
-                        return new NumberOperator((this.isLong && second.isLong) ? this.longVal * second.longVal : this.getDoubleValue() *
-                                second.getDoubleValue());
-                    }
-                    case "/" -> {
-                        return new NumberOperator((this.isLong && second.isLong) ? this.longVal / second.longVal : this.getDoubleValue() /
-                                second.getDoubleValue());
-                    }
-                    case "^" -> {
-                        return new NumberOperator((this.isLong && second.isLong) ? Math.pow(second.longVal, this.longVal) :
-                                Math.pow(second.getDoubleValue(), this.getDoubleValue()));
-                    }
-                    case "%" -> {
-                        return new NumberOperator((this.isLong && second.isLong) ? second.longVal % this.longVal :
-                                second.getDoubleValue() % this.getDoubleValue());
-                    }
-                }
-            }
-            else if (other instanceof StringOperator str) {
-                return new StringOperator(this.getValue().toString()).operation("+", str);
-            }
-            return null;
-        }
-
-        public boolean compare(String comparator, Operator other) {
-            if (other instanceof NumberOperator num) {
-                switch (comparator) {
-                    case "=" -> {
-                        return (this.isLong && num.isLong) ? this.longVal == num.longVal : this.getDoubleValue() == num.getDoubleValue();
-                    }
-                    case ">" -> {
-                        return (this.isLong && num.isLong) ? this.longVal > num.longVal : this.getDoubleValue() > num.getDoubleValue();
-                    }
-                    case "<" -> {
-                        return (this.isLong && num.isLong) ? this.longVal < num.longVal : this.getDoubleValue() < num.getDoubleValue();
-                    }
-                    case ">=" -> {
-                        return (this.isLong && num.isLong) ? this.longVal >= num.longVal : this.getDoubleValue() >= num.getDoubleValue();
-                    }
-                    case "<=" -> {
-                        return (this.isLong && num.isLong) ? this.longVal <= num.longVal : this.getDoubleValue() <= num.getDoubleValue();
-                    }
-                }
-            }
-            else if (other instanceof StringOperator str) {
-                return str.compare("=", this);
-            }
-            return false;
-        }
-
-    }
-
-    private record StringOperator(String str) implements Operator {
-
-        @Override
-        public Object getValue() {
-            return this.str;
-        }
-
-        @Override
-        public StringOperator operation(String operator, Operator second) {
-            return new StringOperator(second.getValue() + this.str);
-        }
-
-        @Override
-        public boolean compare(String comparator, Operator other) {
-            return this.str.equals(other.getValue().toString());
-        }
-
-    }
-
-    /**
-     * The basic instruction interface; only requires an execute method; everything else is
-     * instruction-specific.
-     */
-    private interface Instruction {
-
-        default int execute(AliasedCommand aliasedCommand, CommandContext<ServerCommandSource> context, LinkedHashMap<String, Variable> variables) {
-            return -1;
-        }
-
-    }
-
-    /**
-     * Holds a single command; does text replacement for variables on execution.
-     * @param command
-     */
-    private record CommandInstruction(String command) implements Instruction {
-
-        @Override
-        public int execute(AliasedCommand aliasedCommand, CommandContext<ServerCommandSource> context, LinkedHashMap<String, Variable> variables) {
-            String cmd = this.command;
-            for (String var : variables.keySet()) {
-                cmd = cmd.replaceAll("\\{\\$" + var + "}", variables.get(var).value.toString());
-            }
-            return aliasedCommand.executeCommand(context, cmd) ? -1 : -2;
-        }
-
-        @Override
-        public String toString() {
-            return this.command;
-        }
-
-    }
-
-    /**
-     * Contains methods and values for parsing expressions i.e. for if/let/return statements
-     */
-    private interface ExpressionParser {
-
-        record ExpressionOperator(String op, int precedence) {}
-        HashMap<String, Integer> PRECEDENCE = new HashMap<>();
-        HashMap<Class<?>, Integer> TYPE_MAP = new HashMap<>();
-        HashMap<String, Integer> TYPE_VALUE_MAP = new HashMap<>();
-        HashMap<Integer, String> INV_VALUE_MAP = new HashMap<>();
-        Pattern TOKEN = Pattern.compile("((?<!\\\\)\".*?(?<!\\\\)\"|[0-9]+[.][0-9]+[fF]?|[0-9]+[fF]?|[()+\\-%*/^]|[a-zA-Z_][a-zA-Z0-9_]*)");
-
-        default Integer parseExpression(String expr, Integer type, List<LinkedHashMap<String, VariableDefinition>> vars, Queue<Object> post) {
-            int inferredType = type != null ? type : 0;
-            Stack<ExpressionOperator> stack = new Stack<>();
-            Matcher m = TOKEN.matcher(expr);
-            boolean lastOperand = true;
-            int depth = 0;
-            while (m.find()) {
-                String token = m.group();
-                if (token.startsWith("\"") && token.endsWith("\"")) {
-                    if (type == null) {
-                        inferredType = 4;
-                    }
-                    else if (type < 4) {
-                        this.error("can't forcibly coerce string type to numerical value");
-                        return null;
-                    }
-                }
-                switch (token) {
-                    case " " -> {}
-                    case "(" -> {
-                        if (!lastOperand) {
-                            this.error("operand can't directly follow another operand");
-                            return null;
-                        }
-                        depth++;
-                    }
-                    case ")" -> {
-                        if (lastOperand) {
-                            this.error("operator can't directly follow another operator");
-                            return null;
-                        }
-                        depth--;
-                    }
-                    case "+", "-", "*", "/", "^", "%" -> {
-                        if (lastOperand) {
-                            this.error("operator can't directly follow another operator");
-                            return null;
-                        }
-                        lastOperand = true;
-                        int p = PRECEDENCE.get(token) + 3 * depth;
-                        while (!stack.isEmpty() && stack.peek().precedence >= p) {
-                            post.add(stack.pop().op);
-                        }
-                        stack.push(new ExpressionOperator(token, p));
-                    }
-                    default -> {
-                        if (!lastOperand) {
-                            this.error("operand can't directly follow another operand");
-                            return null;
-                        }
-                        NumberOperator num = NumberOperator.fromString(token);
-                        if (num == null) {
-                            if (token.startsWith("\"") && token.endsWith("\"")) {
-                                inferredType = 4;
-                                post.add(new StringOperator(token.substring(1, token.length() - 1)));
-                            }
-                            else {
-                                boolean valid = false;
-                                for (LinkedHashMap<String, VariableDefinition> varMap : vars) {
-                                    if (varMap.containsKey(token)) {
-                                        valid = true;
-                                        inferredType = Math.max(inferredType, TYPE_MAP.getOrDefault(varMap.get(token).type.clazz, 4));
-                                        post.add(token);
-                                        break;
-                                    }
-                                }
-                                if (!valid) {
-                                    this.error("no declaration/forward reference of variable \"" + token + "\"");
-                                    return null;
-                                }
-                            }
-                        }
-                        else {
-                            if (type == null) {
-                                Number n = (Number) num.getValue();
-                                if (token.endsWith("f")) {
-                                    inferredType = 2;
-                                }
-                                else {
-                                    if (inferredType != 0 || n.intValue() != num.getDoubleValue()) {
-                                        if (inferredType <= 1 && n.longValue() == num.getDoubleValue()) {
-                                            inferredType = 1;
-                                        } else {
-                                            inferredType = 3;
-                                        }
-                                    }
-                                }
-                            }
-                            post.add(num);
-                        }
-                        lastOperand = false;
-                    }
-                }
-            }
-            if (lastOperand) {
-                this.error("expression contains operator without operand");
-                return null;
-            }
-            while (!stack.isEmpty()) {
-                post.add(stack.pop().op);
-            }
-            if (depth != 0) {
-                this.error("mismatched parentheses in expression");
-                return null;
-            }
-            boolean hasString = false;
-            boolean hasNonAddition = false;
-            for (Object o : post) {
-                if (o instanceof String s && "-*/^%".contains(s)) {
-                    hasNonAddition = true;
-                }
-                else if (o instanceof StringOperator) {
-                    inferredType = 4;
-                    hasString = true;
-                }
-            }
-            if (hasString && hasNonAddition) {
-                this.error("string type only supports concatenation");
-                return null;
-            }
-            return inferredType;
-        }
-
-        default Operator evaluate(Queue<Object> post, LinkedHashMap<String, Variable> variables) {
-            Queue<Object> postfix = new LinkedList<>(post);
-            Stack<Operator> eval = new Stack<>();
-            if (!postfix.isEmpty()) {
-                while (!postfix.isEmpty()) {
-                    Object o = postfix.poll();
-                    if (o instanceof String tok) {
-                        if ("+-*/^%".contains(tok)) {
-                            switch (tok) {
-                                case "*", "+", "^", "%" -> eval.push(eval.pop().operation(tok, eval.pop()));
-                                case "/", "-" -> {
-                                    Operator arg = eval.pop();
-                                    eval.push(eval.pop().operation(tok, arg));
-                                }
-                            }
-                        }
-                        else {
-                            Variable v = variables.get(tok);
-                            if (Number.class.isAssignableFrom(v.type.type.clazz)) {
-                                eval.push(new NumberOperator((Number) v.value));
-                            }
-                            else {
-                                eval.push(new StringOperator(v.value.toString()));
-                            }
-                        }
-                    }
-                    else if (o instanceof Operator op) {
-                        eval.push(op);
-                    }
-                }
-            }
-            return eval.peek();
-        }
-
-        void error(String s);
-
-    }
-
-    static {
-        ExpressionParser.PRECEDENCE.put("+", 0);
-        ExpressionParser.PRECEDENCE.put("-", 0);
-        ExpressionParser.PRECEDENCE.put("*", 1);
-        ExpressionParser.PRECEDENCE.put("/", 1);
-        ExpressionParser.PRECEDENCE.put("%", 1);
-        ExpressionParser.PRECEDENCE.put("^", 2);
-        ExpressionParser.TYPE_MAP.put(Integer.class, 0);
-        ExpressionParser.TYPE_MAP.put(Long.class, 1);
-        ExpressionParser.TYPE_MAP.put(Float.class, 2);
-        ExpressionParser.TYPE_MAP.put(Double.class, 3);
-        ExpressionParser.TYPE_MAP.put(String.class, 4);
-        ExpressionParser.TYPE_VALUE_MAP.put("int", 0);
-        ExpressionParser.TYPE_VALUE_MAP.put("long", 1);
-        ExpressionParser.TYPE_VALUE_MAP.put("float", 2);
-        ExpressionParser.TYPE_VALUE_MAP.put("double", 3);
-        ExpressionParser.TYPE_VALUE_MAP.put("string", 4);
-        ExpressionParser.INV_VALUE_MAP.put(0, "int");
-        ExpressionParser.INV_VALUE_MAP.put(1, "long");
-        ExpressionParser.INV_VALUE_MAP.put(2, "float");
-        ExpressionParser.INV_VALUE_MAP.put(3, "double");
-        ExpressionParser.INV_VALUE_MAP.put(4, "string");
-    }
-
-    /**
-     * Is capable of assigning to variables and evaluating the value of expressions. Handles
-     * order of operations and parentheses by converting to postfix and doing some preprocessing
-     * during the compilation step, and interprets the postfix instructions via a stack.
-     */
-    private static class AssignmentInstruction implements ExpressionParser, Instruction {
-
-        protected boolean valid = true;
-        protected int type = 0;
-        private final String assignVar;
-        protected String err = null;
-        protected final Queue<Object> post = new LinkedList<>();
-
-        public AssignmentInstruction(String assignVar, String expr, List<LinkedHashMap<String, VariableDefinition>> vars) {
-            String[] assn = assignVar.split(" ");
-            if (assn.length == 2) {
-                this.assignVar = assn[1];
-            }
-            else if (assn.length != 1) {
-                this.assignVar = "";
-                this.err = "expected 1-2 arguments for assignment, got " + assn.length;
-                this.valid = false;
-                return;
-            }
-            else {
-                this.assignVar = assignVar;
-            }
-            if (!this.assignVar.matches("[a-zA-Z_][a-zA-Z0-9_]*")) {
-                this.err = "invalid variable name " + this.assignVar;
-                this.valid = false;
-                return;
-            }
-            boolean newAssignment = true;
-            LinkedHashMap<String, VariableDefinition> map = null;
-            for (LinkedHashMap<String, VariableDefinition> varMap : vars) {
-                if (varMap.containsKey(this.assignVar)) {
-                    newAssignment = false;
-                    map = varMap;
-                    break;
-                }
-            }
-            if (map != null) {
-                this.type = TYPE_MAP.getOrDefault(map.get(this.assignVar).type.clazz, 4);
-            }
-            Integer forcedType = (!newAssignment && assn.length == 2) ? TYPE_VALUE_MAP.get(assn[0]) : null;
-            Integer type = this.parseExpression(expr, forcedType, vars, this.post);
-            if (type == null) {
-                this.valid = false;
-                return;
-            }
-            this.type = type;
-            String varType = INV_VALUE_MAP.getOrDefault(this.type, "string");
-            if (newAssignment) {
-                vars.getLast().put(this.assignVar, new VariableDefinition(this.assignVar, varType, new String[0]));
-            }
-            else {
-                map.put(this.assignVar, new VariableDefinition(this.assignVar, varType, new String[0]));
-            }
-        }
-
-        @Override
-        public int execute(AliasedCommand aliasedCommand, CommandContext<ServerCommandSource> context, LinkedHashMap<String, Variable> variables) {
-            Operator o = this.evaluate(this.post, variables);
-            if (!variables.containsKey(this.assignVar)) {
-                variables.put(this.assignVar, new Variable(new VariableDefinition(this.assignVar, INV_VALUE_MAP
-                        .getOrDefault(this.type, "string"), new String[0]), null));
-            }
-            if (o instanceof NumberOperator n) {
-                variables.put(this.assignVar, new Variable(variables.get(this.assignVar).type, n.getValue()));
-            }
-            else if (o instanceof StringOperator s) {
-                variables.put(this.assignVar, new Variable(variables.get(this.assignVar).type, s.str));
-            }
-            return -1;
-        }
-
-        @Override
-        public void error(String s) {
-            this.err = s;
-        }
-
-    }
-
-    /**
-     * The basic jump instruction; tells the interpreter to jump to a specific index.
-     */
-    private static class JumpInstruction implements Instruction {
-
-        protected int jumpTo;
-
-        public JumpInstruction(int jumpTo) {
-            this.jumpTo = jumpTo;
-        }
-
-        @Override
-        public int execute(AliasedCommand aliasedCommand, CommandContext<ServerCommandSource> context, LinkedHashMap<String, Variable> variables) {
-            return this.jumpTo;
-        }
-
-        @Override
-        public String toString() {
-            return "jmp " + this.jumpTo;
-        }
-
-    }
-
-    /**
-     * Tests a condition; if it fails, it jumps to after the if statement ends. Jumping past
-     * [elif/else/end] when successful is handled via {@link AliasedCommand.IfJumpInstruction}.
-     */
-    private static class IfInstruction extends JumpInstruction implements ExpressionParser {
-
-        protected String name = "if";
-        protected String cmp;
-        private final Queue<Object> left = new LinkedList<>();
-        private final Queue<Object> right = new LinkedList<>();
-        protected String err = null;
-        public boolean valid = true;
-
-        public IfInstruction(String expression, List<LinkedHashMap<String, VariableDefinition>> vars) {
-            super(-1);
-            String[] comparators = expression.split(" *[<=>] *");
-            if (comparators.length != 2) {
-                this.err = "must be be of format [" + this.name + " operator1 (>|>=|<|<=|==) operator2]";
-                this.valid = false;
-                return;
-            }
-            String cmp = expression.replace(comparators[0], "").replace(comparators[1], "").strip();
-            if (cmp.length() == 1 && "<=>".contains(cmp) || cmp.length() == 2 && cmp.matches("(<=|>=)")) {
-                this.cmp = cmp;
-                Integer[] type = {0, 0};
-                type[0] = this.parseExpression(comparators[0], null, vars, this.left);
-                if (type[0] == null) {
-                    this.valid = false;
-                    return;
-                }
-                type[1] = this.parseExpression(comparators[1], null, vars, this.right);
-                if (type[1] == null) {
-                    this.valid = false;
-                    return;
-                }
-                if (!Objects.equals(type[0], type[1]) && (type[0] == 4 || type[1] == 4) && !"=".equals(this.cmp)) {
-                    this.err = "string type only supports comparison of equality";
-                }
-            }
-            else {
-                this.err = "invalid comparator \"" + cmp + "\"";
-                this.valid = false;
-            }
-        }
-
-        @Override
-        public int execute(AliasedCommand aliasedCommand, CommandContext<ServerCommandSource> context, LinkedHashMap<String, Variable> variables) {
-            Operator l = this.evaluate(this.left, variables);
-            Operator r = this.evaluate(this.right, variables);
-            return l.compare(this.cmp, r) ? -1 : this.jumpTo;
-        }
-
-        @Override
-        public String toString() {
-            return "if [" + this.left + this.cmp + this.right + "] else jmp " + this.jumpTo;
-        }
-
-        @Override
-        public void error(String s) {
-            this.err = s;
-        }
-
-    }
-
-    /**
-     * A JumpInstruction with an extra depth field to tell the compiler not to overwrite other instructions when out of scope.
-     */
-    private static class IfJumpInstruction extends JumpInstruction {
-
-        protected final int depth;
-
-        public IfJumpInstruction(int jumpTo, int depth) {
-            super(jumpTo);
-            this.depth = depth;
-        }
-
-    }
-
-    /**
-     * For all intents and purposes, an IfInstruction, but [elif/else/end] make some exceptions for this
-     */
-    private static class WhileInstruction extends IfInstruction {
-
-        protected int startAddress;
-
-        public WhileInstruction(int startAddress, String expression, List<LinkedHashMap<String, VariableDefinition>> vars) {
-            super(expression, vars);
-            this.startAddress = startAddress;
-            this.name = "while";
-        }
-
-    }
-
-    private static class ReturnInstruction implements Instruction {
-
-        public ReturnInstruction(String expression, List<LinkedHashMap<String, VariableDefinition>> vars) {
-        }
-
-        @Override
-        public int execute(AliasedCommand aliasedCommand, CommandContext<ServerCommandSource> context, LinkedHashMap<String, Variable> variables) {
-            return 0;
-        }
-
-    }
-
-    /**
-     * Logs an error and stores an error message.
-     * @param line line number
-     * @param err specific error mesasge
-     * @return always false, inlined when compiler fails
-     */
-    private boolean compileError(int line, String err) {
-        TechnicalToolbox.log("Failed to compile /{} - line {}: {}", this.alias, line + 1, err);
-        this.status = "Line " + line + ": " + err;
-        return false;
-    }
-
-    /**
      * Attempts to compile the currently stored alias; control flow/assignment are formatted as
      * [statement], everything else that does not match the regex will be interpreted as a command
      * @return false if it fails to compile
@@ -769,7 +108,7 @@ public class AliasedCommand {
     private boolean compile() {
         this.instructions.clear();
         Stack<Instruction> controlFlowStack = new Stack<>();
-        List<LinkedHashMap<String, VariableDefinition>> scope = new ArrayList<>();
+        List<LinkedHashMap<String, Variable.Definition>> scope = new ArrayList<>();
         scope.add(new LinkedHashMap<>(this.argumentDefinitions));
         int address = 0, depth = 0;
         for (int i = 0; i < this.commands.size(); i++) {
@@ -793,7 +132,7 @@ public class AliasedCommand {
                                 if (instr.length != 2) {
                                     return this.compileError(i, "assignment must be of form [let var = (expression)]");
                                 }
-                                AssignmentInstruction e = new AssignmentInstruction(instr[0].strip(), instr[1], scope);
+                                Instruction.AssignmentInstruction e = new Instruction.AssignmentInstruction(instr[0].strip(), instr[1], scope);
                                 if (!e.valid) {
                                     return this.compileError(i, e.err);
                                 }
@@ -804,7 +143,7 @@ public class AliasedCommand {
                                 depth++;
                                 scope.add(new LinkedHashMap<>());
                                 String instr =  c.substring(1, c.length() - 1).replaceFirst("if", "").strip();
-                                IfInstruction instruction = new IfInstruction(instr, scope);
+                                Instruction.IfInstruction instruction = new Instruction.IfInstruction(instr, scope);
                                 if (!instruction.valid) {
                                     return this.compileError(i, instruction.err);
                                 }
@@ -814,15 +153,15 @@ public class AliasedCommand {
                             // sets previous if/elif conditional jump to the current address and creates an IfJump instruction, which will
                             // point to the next [end] block when that gets compiled
                             case "elif" -> {
-                                if (!controlFlowStack.isEmpty() && controlFlowStack.peek() instanceof IfInstruction instruction &&
-                                        !(instruction instanceof WhileInstruction)) {
+                                if (!controlFlowStack.isEmpty() && controlFlowStack.peek() instanceof Instruction.IfInstruction instruction &&
+                                        !(instruction instanceof Instruction.WhileInstruction)) {
                                     instruction.jumpTo = ++address;
                                     controlFlowStack.pop();
-                                    Instruction jumpInstruction = new IfJumpInstruction(-1, depth);
+                                    Instruction jumpInstruction = new Instruction.IfJumpInstruction(-1, depth);
                                     this.instructions.add(jumpInstruction);
                                     controlFlowStack.add(jumpInstruction);
                                     String instr =  c.substring(1, c.length() - 1).replaceFirst("elif", "").strip();
-                                    IfInstruction newInstruction = new IfInstruction(instr, scope);
+                                    Instruction.IfInstruction newInstruction = new Instruction.IfInstruction(instr, scope);
                                     if (!newInstruction.valid) {
                                         return this.compileError(i, newInstruction.err);
                                     }
@@ -838,11 +177,11 @@ public class AliasedCommand {
                             // strictly speaking this does not need an explicit instruction but i was lazy and didn't want to do extra
                             // validation for [end]
                             case "else" -> {
-                                if (!controlFlowStack.isEmpty() && controlFlowStack.peek() instanceof IfInstruction instruction &&
-                                        !(instruction instanceof WhileInstruction)) {
+                                if (!controlFlowStack.isEmpty() && controlFlowStack.peek() instanceof Instruction.IfInstruction instruction &&
+                                        !(instruction instanceof Instruction.WhileInstruction)) {
                                     instruction.jumpTo = address + 1;
                                     controlFlowStack.pop();
-                                    Instruction newInstruction = new JumpInstruction(address);
+                                    Instruction newInstruction = new Instruction.JumpInstruction(address);
                                     this.instructions.add(newInstruction);
                                     controlFlowStack.add(newInstruction);
                                     scope.removeLast();
@@ -857,7 +196,7 @@ public class AliasedCommand {
                                 depth++;
                                 scope.add(new LinkedHashMap<>());
                                 String instr =  c.substring(1, c.length() - 1).replaceFirst("while", "").strip();
-                                WhileInstruction instruction = new WhileInstruction(address, instr, scope);
+                                Instruction.WhileInstruction instruction = new Instruction.WhileInstruction(address, instr, scope);
                                 if (!instruction.valid) {
                                     return this.compileError(i, instruction.err);
                                 }
@@ -871,17 +210,17 @@ public class AliasedCommand {
                                 if (controlFlowStack.isEmpty()) {
                                     return this.compileError(i, "[end] does not enclose any control block");
                                 }
-                                else if (controlFlowStack.peek() instanceof WhileInstruction instruction) {
-                                    this.instructions.add(new JumpInstruction(instruction.startAddress));
+                                else if (controlFlowStack.peek() instanceof Instruction.WhileInstruction instruction) {
+                                    this.instructions.add(new Instruction.JumpInstruction(instruction.startAddress));
                                     instruction.jumpTo = address + 1;
                                     controlFlowStack.pop();
                                 }
-                                else if (controlFlowStack.peek() instanceof JumpInstruction instruction) {
+                                else if (controlFlowStack.peek() instanceof Instruction.JumpInstruction instruction) {
                                     instruction.jumpTo = address--;
                                     controlFlowStack.pop();
                                     // processes all the previous if/elif/else chains, so they correctly skip over elif/else after if
                                     // their condition passes
-                                    while (!controlFlowStack.isEmpty() && controlFlowStack.peek() instanceof IfJumpInstruction instruction1) {
+                                    while (!controlFlowStack.isEmpty() && controlFlowStack.peek() instanceof Instruction.IfJumpInstruction instruction1) {
                                         instruction1.jumpTo = address + 1;
                                         controlFlowStack.pop();
                                     }
@@ -898,22 +237,22 @@ public class AliasedCommand {
                     }
                 }
                 else {
-                    this.instructions.add(new CommandInstruction(cmd));
+                    this.instructions.add(new Instruction.CommandInstruction(cmd));
                 }
                 address++;
             }
         }
         while (!controlFlowStack.isEmpty()) {
             scope.removeLast();
-            if (controlFlowStack.peek() instanceof WhileInstruction instruction) {
-                this.instructions.add(new JumpInstruction(instruction.startAddress));
+            if (controlFlowStack.peek() instanceof Instruction.WhileInstruction instruction) {
+                this.instructions.add(new Instruction.JumpInstruction(instruction.startAddress));
                 instruction.jumpTo = address + 1;
                 controlFlowStack.pop();
             }
-            else if (controlFlowStack.peek() instanceof JumpInstruction instruction) {
+            else if (controlFlowStack.peek() instanceof Instruction.JumpInstruction instruction) {
                 instruction.jumpTo = address--;
                 controlFlowStack.pop();
-                while (!controlFlowStack.isEmpty() && controlFlowStack.peek() instanceof IfJumpInstruction instruction1) {
+                while (!controlFlowStack.isEmpty() && controlFlowStack.peek() instanceof Instruction.IfJumpInstruction instruction1) {
                     instruction1.jumpTo = address + 1;
                     controlFlowStack.pop();
                 }
@@ -930,6 +269,18 @@ public class AliasedCommand {
         }
         */
         return true;
+    }
+
+    /**
+     * Logs an error and stores an error message.
+     * @param line line number
+     * @param err specific error mesasge
+     * @return always false, inlined when compiler fails
+     */
+    private boolean compileError(int line, String err) {
+        TechnicalToolbox.log("Failed to compile /{} - line {}: {}", this.alias, line + 1, err);
+        this.status = "Line " + line + ": " + err;
+        return false;
     }
 
     /**
@@ -964,9 +315,9 @@ public class AliasedCommand {
         // Execution with required arguments
         if (!this.argumentDefinitions.isEmpty()) {
             // the horror
-            VariableDefinition[] vars = this.argumentDefinitions.values().toArray(new VariableDefinition[0]);
+            Variable.Definition[] vars = this.argumentDefinitions.values().toArray(new Variable.Definition[0]);
             for (int i = vars.length - 1; i >= 0; i--) {
-                VariableDefinition def = vars[i];
+                Variable.Definition def = vars[i];
                 List<ArgumentBuilder<ServerCommandSource, ?>> baseNodes = new ArrayList<>();
                 // selection adds each option as its own literal, needs to modify command source to preserve arguments
                 if ("selection".equals(def.typeName)) {
@@ -1023,22 +374,22 @@ public class AliasedCommand {
     }
 
     /**
-     * Executes an alias from start to finish. Configured to interpret {@link AliasedCommand.Instruction}.
+     * Executes an alias from start to finish. Configured to interpret {@link Instruction}.
      * @param context command context
      */
     private int execute(CommandContext<ServerCommandSource> context) {
         LinkedHashMap<String, Variable> variableDefinitions = new LinkedHashMap<>();
-        List<AliasedCommand.Instruction> instructions = List.copyOf(this.instructions);
+        List<Instruction> instructions = List.copyOf(this.instructions);
         AliasedCommandSource source = (AliasedCommandSource) context.getSource();
         source.technicalToolbox$AddToRecursionDepth(1);
         // load arguments locally
-        for (VariableDefinition var : this.argumentDefinitions.values()) {
+        for (Variable.Definition var : this.argumentDefinitions.values()) {
             if ("selection".equals(var.typeName)) {
                 String arg = ((CommandSourceModifier) context.getSource()).technicalToolbox$getSelectorArgument(var.name);
                 variableDefinitions.put(var.name, new Variable(var, arg));
             }
             else {
-                Object arg = context.getArgument(var.name, var.type.clazz);
+                Object arg = context.getArgument(var.name, var.type.clazz());
                 variableDefinitions.put(var.name, new Variable(var, arg));
             }
         }
@@ -1081,7 +432,7 @@ public class AliasedCommand {
      * @param command command to execute
      */
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
-    protected boolean executeCommand(CommandContext<ServerCommandSource> context, String command) {
+    public boolean executeCommand(CommandContext<ServerCommandSource> context, String command) {
         ServerCommandSource source = context.getSource();
         CommandDispatcher<ServerCommandSource> dispatcher = source.getServer().getCommandManager().getDispatcher();
         ((CommandSourceModifier) source).technicalToolbox$setPermissionOverride(true);
@@ -1151,7 +502,7 @@ public class AliasedCommand {
     public MutableText getSyntax() {
         MutableText out = TextUtils.formattable("/").formatted(Formatting.YELLOW);
         out.append(TextUtils.formattable(this.alias).formatted(Formatting.YELLOW)).append(" ");
-        for (VariableDefinition arg : this.argumentDefinitions.values()) {
+        for (Variable.Definition arg : this.argumentDefinitions.values()) {
             out.append(TextUtils.formattable("<").formatted(Formatting.WHITE))
                     .append(TextUtils.formattable(arg.name).formatted(Formatting.AQUA))
                     .append(TextUtils.formattable("> ").formatted(Formatting.WHITE));
@@ -1165,12 +516,12 @@ public class AliasedCommand {
     public MutableText getVerboseSyntax() {
         MutableText out = TextUtils.formattable("/").formatted(Formatting.YELLOW);
         out.append(TextUtils.formattable(this.alias).formatted(Formatting.YELLOW)).append(" ");
-        for (VariableDefinition arg : this.argumentDefinitions.values()) {
+        for (Variable.Definition arg : this.argumentDefinitions.values()) {
             out.append(TextUtils.formattable("<").formatted(Formatting.GREEN))
                     .append(TextUtils.formattable(arg.name).formatted(Formatting.YELLOW))
                     .append(TextUtils.formattable(":").formatted(Formatting.GREEN))
                     .append(TextUtils.formattable(arg.typeName).formatted(Formatting.AQUA));
-            if (arg.type.argc != 0) {
+            if (arg.type.argc() != 0) {
                 out.append(TextUtils.formattable("[").formatted(Formatting.GREEN));
                 for (int i = 0; i < arg.args.length; i++) {
                     out.append(TextUtils.formattable(arg.args[i]).formatted(Formatting.WHITE));
@@ -1183,37 +534,6 @@ public class AliasedCommand {
             out.append(TextUtils.formattable("> ").formatted(Formatting.GREEN));
         }
         return out;
-    }
-
-    /**
-     * Generic range argument type for {@link AliasedCommand#ARGUMENT_TYPES}
-     * @param opt should be a 2-element array of string inputs, parseable as T
-     * @param clazz argument type; generic T is inferred from this
-     * @param parse parsing function mapping opt->T
-     * @param argumentType numeric range argument type provider
-     * @return a matching argument type i.e {@link LongArgumentType#longArg(long, long)}
-     */
-    @SuppressWarnings("unchecked")
-    private static <T extends Number> ArgumentType<T> rangeArgumentType(String[] opt, Class<T> clazz, Function<String, T> parse, BiFunction<T, T, ArgumentType<T>> argumentType) {
-        T min, max;
-        try {
-            min = parse.apply(opt[0]);
-            max = parse.apply(opt[1]);
-            if (((Comparable<T>) min).compareTo(max) > 0) {
-                throw new Exception();
-            }
-        }
-        catch (Exception e) {
-            try {
-                min = (T) clazz.getDeclaredField("MIN_VALUE").get(null);
-                max = (T) clazz.getDeclaredField("MAX_VALUE").get(null);
-            }
-            catch (Exception e2) {
-                min = (T) Integer.valueOf(0);
-                max = (T) Integer.valueOf(0);
-            }
-        }
-        return argumentType.apply(min, max);
     }
 
     /**
@@ -1232,11 +552,11 @@ public class AliasedCommand {
                 return false;
             }
         }
-        if (!ARGUMENT_TYPES.containsKey(argType)) {
+        if (!AliasConstants.ARGUMENT_TYPES.containsKey(argType)) {
             source.sendError(TextUtils.formattable("Not a valid argument type: " + argType));
             return false;
         }
-        this.argumentDefinitions.put(name, new VariableDefinition(name, argType, args));
+        this.argumentDefinitions.put(name, new Variable.Definition(name, argType, args));
         source.sendFeedback(() -> {
             MutableText out = TextUtils.formattable((replace ? "Set" : "Added") + " argument ").append(TextUtils.formattable(name)
                             .formatted(Formatting.GREEN)).append(TextUtils.formattable(" of type ").formatted(Formatting.WHITE))
@@ -1289,12 +609,12 @@ public class AliasedCommand {
         }
         if (this.argumentDefinitions.containsKey(name)) {
             // too lazy to make a modified linked hashmap so just poll in reverse until it can replace the old entry
-            LinkedHashMap<String, VariableDefinition> list = new LinkedHashMap<>();
-            Map.Entry<String, VariableDefinition> tmp;
+            LinkedHashMap<String, Variable.Definition> list = new LinkedHashMap<>();
+            Map.Entry<String, Variable.Definition> tmp;
             while ((tmp = this.argumentDefinitions.pollLastEntry()) != null) {
                 if (name.equals(tmp.getKey())) {
-                    VariableDefinition v = tmp.getValue();
-                    list.put(newName, new VariableDefinition(newName, v.typeName, v.args));
+                    Variable.Definition v = tmp.getValue();
+                    list.put(newName, new Variable.Definition(newName, v.typeName, v.args));
                     break;
                 }
                 else {
@@ -1312,11 +632,11 @@ public class AliasedCommand {
     }
 
     /**
-     * Provides this command's arguments; only used for {@link com.birblett.impl.command.AliasCommand#modifyListArguments(CommandContext, SuggestionsBuilder)}
+     * Provides this command's arguments; only used for {@link AliasCommand#modifyListArguments(CommandContext, SuggestionsBuilder)}
      * @return command arguments, as an ordered collection
      */
     @SuppressWarnings("JavadocReference")
-    public Collection<VariableDefinition> getArguments() {
+    public Collection<Variable.Definition> getArguments() {
         return this.argumentDefinitions.values();
     }
 
@@ -1377,7 +697,7 @@ public class AliasedCommand {
             }
             if (!this.argumentDefinitions.isEmpty()) {
                 bufferedWriter.write("Arguments:");
-                for (VariableDefinition var : this.argumentDefinitions.values()) {
+                for (Variable.Definition var : this.argumentDefinitions.values()) {
                     bufferedWriter.write(" {$" + var.name + ":" + var.typeName);
                     if (var.args.length > 0) {
                         bufferedWriter.write("|");
@@ -1403,17 +723,16 @@ public class AliasedCommand {
     /**
      * Recreates an alias from an alias file. Alias, separator, and permlevel can come in any order and will use defaults
      * if not provided, but commands must come last.
-     * @param server minecraft server, used to get dispatcher
      * @param path path to read from
      * @return whether alias was successfully restored or not; outputs errors if failed
      */
-    public static boolean readFromFile(MinecraftServer server, Path path, boolean global) {
+    public static boolean readFromFile(Path path, boolean global) {
         try (BufferedReader bufferedReader = Files.newBufferedReader(path)) {
             boolean readingCommandState = false, silent = ConfigOptions.ALIAS_DEFAULT_SILENT.val();
             String line, alias = null;
             int permission = ConfigOptions.ALIAS_DEFAULT_PERMISSION.val();
             List<String> commands = new ArrayList<>();
-            List<VariableDefinition> arguments = new ArrayList<>();
+            List<Variable.Definition> arguments = new ArrayList<>();
             while ((line = bufferedReader.readLine()) != null) {
                 if (!readingCommandState) {
                     String[] split = line.split(":");
@@ -1447,11 +766,11 @@ public class AliasedCommand {
                                     String[] temp = arg.split(":");
                                     String name = temp[0];
                                     if (temp.length == 1) {
-                                        arguments.add(new VariableDefinition(name, "string", new String[0]));
+                                        arguments.add(new Variable.Definition(name, "string", new String[0]));
                                     }
                                     else {
                                         temp = temp[1].split("\\|");
-                                        arguments.add(new VariableDefinition(name, temp[0], temp.length > 1 ? temp[1].split(",") :
+                                        arguments.add(new Variable.Definition(name, temp[0], temp.length > 1 ? temp[1].split(",") :
                                                 new String[0]));
                                     }
                                 }
@@ -1476,7 +795,7 @@ public class AliasedCommand {
                 TechnicalToolbox.log(path + ": Missing script body");
                 return false;
             }
-            new AliasedCommand(alias, permission, silent, server.getCommandManager().getDispatcher(), commands, arguments, global);
+            new AliasedCommand(alias, permission, silent, commands, arguments, global);
         }
         catch (IOException e) {
             TechnicalToolbox.warn("Something went wrong reading from file " + path);

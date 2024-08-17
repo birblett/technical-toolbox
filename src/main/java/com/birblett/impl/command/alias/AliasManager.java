@@ -93,7 +93,7 @@ public class AliasManager {
         File[] globalDir = global.listFiles();
         if (globalDir != null) {
             for (File f : globalDir) {
-                if (f.getPath().endsWith(".alias") && AliasedCommand.readFromFile(server, f.toPath(), true)) {
+                if (f.getPath().endsWith(".alias") && AliasedCommand.readFromFile(f.toPath(), true)) {
                     globalCount++;
                 }
             }
@@ -111,7 +111,7 @@ public class AliasManager {
             for (File f : files) {
                 String name = f.getName().substring(0, f.getName().length() - 6);
                 if (f.getPath().endsWith(".alias") && !(AliasManager.ALIASES.containsKey(name) && AliasManager.ALIASES.get(name).global) &&
-                        AliasedCommand.readFromFile(server, f.toPath(), false)) {
+                        AliasedCommand.readFromFile(f.toPath(), false)) {
                     count++;
                 }
             }

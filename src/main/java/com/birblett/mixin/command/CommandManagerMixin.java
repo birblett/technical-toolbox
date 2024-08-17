@@ -1,7 +1,7 @@
 package com.birblett.mixin.command;
 
 import com.birblett.TechnicalToolbox;
-import com.birblett.impl.command.AliasCommand;
+import com.birblett.impl.command.alias.AliasCommand;
 import com.birblett.impl.command.CameraCommand;
 import com.birblett.impl.command.ToolboxCommand;
 import com.birblett.impl.command.alias.AliasManager;

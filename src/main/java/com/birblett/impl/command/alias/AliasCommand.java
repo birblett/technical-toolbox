@@ -1,8 +1,7 @@
-package com.birblett.impl.command;
+package com.birblett.impl.command.alias;
 
 import com.birblett.TechnicalToolbox;
-import com.birblett.impl.command.alias.AliasManager;
-import com.birblett.impl.command.alias.AliasedCommand;
+import com.birblett.impl.command.alias.language.Variable;
 import com.birblett.impl.config.ConfigOptions;
 import com.birblett.util.ServerUtil;
 import com.birblett.util.TextUtils;
@@ -464,7 +463,7 @@ public class AliasCommand {
             if (cmd.global) {
                 return CommandSource.suggestMatching(Collections.emptyList(), builder);
             }
-            Collection<AliasedCommand.VariableDefinition> args = cmd.getArguments();
+            Collection<Variable.Definition> args = cmd.getArguments();
             args.forEach(var -> argString.add(var.name));
         }
         return CommandSource.suggestMatching(argString, builder);
