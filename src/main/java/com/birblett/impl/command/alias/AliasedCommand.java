@@ -45,6 +45,7 @@ public class AliasedCommand {
     private final LinkedHashMap<String, VariableDefinition> argumentDefinitions = new LinkedHashMap<>();
     private int permission;
     private boolean silent;
+    public final boolean global;
     private static final Pattern SAVED_ARGS = Pattern.compile("\\{\\$[^:]+(:[^}]+)?}");
     private static final Pattern STATEMENT = Pattern.compile("\\[.*]");
     private static final Pattern STATEMENT_BEGIN = Pattern.compile("\\[[^\\ ]+");
@@ -72,6 +73,7 @@ public class AliasedCommand {
     }
 
     public AliasedCommand(String alias, String command, CommandDispatcher<ServerCommandSource> dispatcher) {
+        this.global = false;
         this.alias = alias;
         this.commands.add(command);
         this.permission = ConfigOption.ALIAS_DEFAULT_PERMISSION.val();
@@ -80,11 +82,21 @@ public class AliasedCommand {
         this.register(dispatcher);
     }
 
-    private AliasedCommand(String alias, int permission, boolean silent, CommandDispatcher<ServerCommandSource> dispatcher, Collection<String> commands, Collection<VariableDefinition> arguments) {
+    private AliasedCommand(String alias, int permission, boolean silent, CommandDispatcher<ServerCommandSource> dispatcher, Collection<String> commands, Collection<VariableDefinition> arguments, boolean global) {
+        this.global = global;
         this.alias = alias;
         this.commands.addAll(commands);
+        List<String> args = new ArrayList<>();
         for (VariableDefinition var : arguments) {
-            this.argumentDefinitions.put(var.name, var);
+            if (var.name.matches("[a-zA-Z_][a-zA-Z0-9_]*")) {
+                this.argumentDefinitions.put(var.name, var);
+            }
+            else {
+                args.add(var.name);
+            }
+        }
+        if (!args.isEmpty()) {
+            TechnicalToolbox.log("{}: couldn't parse argument(s) {}", alias, args);
         }
         this.permission = permission;
         this.silent = silent;
@@ -339,13 +351,12 @@ public class AliasedCommand {
         HashMap<Class<?>, Integer> TYPE_MAP = new HashMap<>();
         HashMap<String, Integer> TYPE_VALUE_MAP = new HashMap<>();
         HashMap<Integer, String> INV_VALUE_MAP = new HashMap<>();
-        Pattern EXPRESSION_TOKENIZER =
-                Pattern.compile("((?<!\\\\)\".*?(?<!\\\\)\"|[0-9]+[.][0-9]+[fF]?|[0-9]+[fF]?|[()+\\-%*/^]|[a-zA-Z]+)");
+        Pattern TOKEN = Pattern.compile("((?<!\\\\)\".*?(?<!\\\\)\"|[0-9]+[.][0-9]+[fF]?|[0-9]+[fF]?|[()+\\-%*/^]|[a-zA-Z_][a-zA-Z0-9_]*)");
 
         default Integer parseExpression(String expr, Integer type, List<LinkedHashMap<String, VariableDefinition>> vars, Queue<Object> post) {
             int inferredType = type != null ? type : 0;
             Stack<ExpressionOperator> stack = new Stack<>();
-            Matcher m = EXPRESSION_TOKENIZER.matcher(expr);
+            Matcher m = TOKEN.matcher(expr);
             boolean lastOperand = true;
             int depth = 0;
             while (m.find()) {
@@ -1111,6 +1122,20 @@ public class AliasedCommand {
     }
 
     /**
+     * @return simple command syntax - provides argument types alongside names
+     */
+    public MutableText getSyntax() {
+        MutableText out = TextUtils.formattable("/").formatted(Formatting.YELLOW);
+        out.append(TextUtils.formattable(this.alias).formatted(Formatting.YELLOW)).append(" ");
+        for (VariableDefinition arg : this.argumentDefinitions.values()) {
+            out.append(TextUtils.formattable("<").formatted(Formatting.WHITE))
+                    .append(TextUtils.formattable(arg.name).formatted(Formatting.AQUA))
+                    .append(TextUtils.formattable("> ").formatted(Formatting.WHITE));
+        }
+        return out;
+    }
+
+    /**
      * @return verbose command syntax - provides argument types alongside names
      */
     public MutableText getVerboseSyntax() {
@@ -1308,7 +1333,7 @@ public class AliasedCommand {
      * @param context contains the executor to send feedback to
      */
     private int getCommandInfo(CommandContext<ServerCommandSource> context) {
-        context.getSource().sendFeedback(this::getVerboseSyntax, false);
+        context.getSource().sendFeedback(this::getSyntax, false);
         return 0;
     }
 
@@ -1358,7 +1383,7 @@ public class AliasedCommand {
      * @param path path to read from
      * @return whether alias was successfully restored or not; outputs errors if failed
      */
-    public static boolean readFromFile(MinecraftServer server, Path path) {
+    public static boolean readFromFile(MinecraftServer server, Path path, boolean global) {
         try (BufferedReader bufferedReader = Files.newBufferedReader(path)) {
             boolean readingCommandState = false, silent = ConfigOption.ALIAS_DEFAULT_SILENT.val();
             String line, alias = null;
@@ -1370,7 +1395,12 @@ public class AliasedCommand {
                     String[] split = line.split(":");
                     if (split.length >= 2) {
                         switch (split[0].toLowerCase()) {
-                            case "alias" -> alias = line.replaceFirst("(?i)Alias: *", "").strip();
+                            case "alias" -> {
+                                alias = line.replaceFirst("(?i)Alias: *", "").strip();
+                                if (AliasManager.ALIASES.containsKey(alias) && AliasManager.ALIASES.get(alias).global) {
+                                    return false;
+                                }
+                            }
                             case "permission level" -> {
                                 String tmp = line.replaceFirst("(?i)Permission level: *", "").strip();
                                 try {
@@ -1422,7 +1452,7 @@ public class AliasedCommand {
                 TechnicalToolbox.log(path + ": Missing script body");
                 return false;
             }
-            new AliasedCommand(alias, permission, silent, server.getCommandManager().getDispatcher(), commands, arguments);
+            new AliasedCommand(alias, permission, silent, server.getCommandManager().getDispatcher(), commands, arguments, global);
         }
         catch (IOException e) {
             TechnicalToolbox.warn("Something went wrong reading from file " + path);

@@ -37,6 +37,14 @@ public class AliasManager {
         }
         AliasManager.ALIASES.clear();
         this.readAliases(server);
+        for (AliasedCommand aliasedCommand : AliasManager.ALIASES.values()) {
+            try {
+                aliasedCommand.register(server.getCommandSource().getDispatcher());
+            }
+            catch (Exception e) {
+                TechnicalToolbox.log("Something went wrong with compiling alias {}", aliasedCommand.getAlias());
+            }
+        }
     }
 
     /**
@@ -48,6 +56,13 @@ public class AliasManager {
             AliasManager.ALIASES.get((String) key).deregister(server, true);
         }
         AliasManager.ALIASES.clear();
+    }
+
+    /**
+     * @return return .minecraft directory
+     */
+    private Path getMinecraftDirectory(MinecraftServer server) {
+        return server.getPath("config/technical_toolbox");
     }
 
     /**
@@ -73,6 +88,19 @@ public class AliasManager {
     }
 
     public void readAliases(MinecraftServer server) {
+        File global = this.getMinecraftDirectory(server).toFile();
+        int globalCount = 0;
+        File[] globalDir = global.listFiles();
+        if (globalDir != null) {
+            for (File f : globalDir) {
+                if (f.getPath().endsWith(".alias") && AliasedCommand.readFromFile(server, f.toPath(), true)) {
+                    globalCount++;
+                }
+            }
+            if (globalCount > 0) {
+                TechnicalToolbox.log("Loaded " + globalCount + " global aliases");
+            }
+        }
         File directory = new File(this.getDirectory(server).toString());
         if (!directory.isDirectory()){
             return;
@@ -81,7 +109,9 @@ public class AliasManager {
         if ((files = directory.listFiles()) != null) {
             int count = 0;
             for (File f : files) {
-                if (f.getPath().endsWith(".alias") && AliasedCommand.readFromFile(server, f.toPath())) {
+                String name = f.getName().substring(0, f.getName().length() - 6);
+                if (f.getPath().endsWith(".alias") && !(AliasManager.ALIASES.containsKey(name) && AliasManager.ALIASES.get(name).global) &&
+                        AliasedCommand.readFromFile(server, f.toPath(), false)) {
                     count++;
                 }
             }
@@ -104,7 +134,8 @@ public class AliasManager {
         try {
             int removedCount = 0;
             for (File file : FileUtils.listFiles(directory, new String[]{"alias"}, false)) {
-                if (!AliasManager.ALIASES.containsKey(file.getName().substring(0, file.getName().length() - 6))) {
+                String name = file.getName().substring(0, file.getName().length() - 6);
+                if (!AliasManager.ALIASES.containsKey(name) || AliasManager.ALIASES.get(name).global) {
                     removedCount++;
                     Files.move(file.toPath(), recycle.toPath().resolve(file.getName()), StandardCopyOption.REPLACE_EXISTING);
                 }
@@ -129,9 +160,11 @@ public class AliasManager {
         }
         int count = 0;
         for (String key : AliasManager.ALIASES.keySet()) {
-            Path path = this.getAliasPath(server, key);
-            if (AliasManager.ALIASES.get(key).writeToFile(path)) {
-                count++;
+            if (!AliasManager.ALIASES.get(key).global) {
+                Path path = this.getAliasPath(server, key);
+                if (AliasManager.ALIASES.get(key).writeToFile(path)) {
+                    count++;
+                }
             }
         }
         TechnicalToolbox.log("Successfully saved " + count + " aliases");

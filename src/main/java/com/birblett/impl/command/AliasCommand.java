@@ -41,7 +41,7 @@ public class AliasCommand {
                 .then(CommandManager.literal("remove")
                         .requires(source -> source.hasPermissionLevel(4))
                         .then(CommandManager.argument("alias", StringArgumentType.word())
-                                .suggests((context, builder) -> CommandSource.suggestMatching(AliasManager.ALIASES.keySet(), builder))
+                                .suggests(AliasCommand::listAliases)
                                 .executes(AliasCommand::remove)))
                 // reads all alias from file
                 .then(CommandManager.literal("reload")
@@ -56,14 +56,15 @@ public class AliasCommand {
                         .executes(AliasCommand::list))
                 // attemps to compile a specific alias
                 .then(CommandManager.literal("compile")
-                        .requires(source -> !ConfigOption.ALIAS_MODIFY_COMPILE.val())
+                        .requires(source -> true)
                         .then(CommandManager.argument("alias", StringArgumentType.word())
-                        .executes(AliasCommand::compile)))
+                                .suggests(AliasCommand::listAliases)
+                                .executes(AliasCommand::compile)))
                 // modifies an existing alias
                 .then(CommandManager.literal("modify")
                         .requires(source -> source.hasPermissionLevel(4))
                         .then(CommandManager.argument("alias", StringArgumentType.word())
-                                .suggests((context, builder) -> CommandSource.suggestMatching(AliasManager.ALIASES.keySet(), builder))
+                                .suggests(AliasCommand::listAliases)
                                 // add a line to an alias
                                 .then(CommandManager.literal("add")
                                         .then(CommandManager.argument("line", StringArgumentType.greedyString())
@@ -139,11 +140,20 @@ public class AliasCommand {
         return 0;
     }
 
+    private static CompletableFuture<Suggestions> listAliases(CommandContext<ServerCommandSource> context, SuggestionsBuilder builder) {
+        return CommandSource.suggestMatching(AliasManager.ALIASES.keySet(), builder);
+    }
+
     private static int remove(CommandContext<ServerCommandSource> context) {
         String alias = context.getArgument("alias", String.class);
         ServerPlayerEntity player = context.getSource().getPlayer();
         AliasedCommand cmd = AliasManager.ALIASES.get(alias);
         if (cmd != null) {
+            if (cmd.global) {
+                context.getSource().sendError(TextUtils.formattable("Alias \"" + alias + "\" is global and " +
+                        "can't be modified via commands"));
+                return 0;
+            }
             MutableText out = TextUtils.formattable("Removed command alias ").append(TextUtils.formattable(alias)
                     .formatted(Formatting.GREEN));
             cmd.deregister(context.getSource().getServer(), true);
@@ -175,7 +185,9 @@ public class AliasCommand {
         for (AliasedCommand cmd : AliasManager.ALIASES.values().stream().sorted(Comparator.comparing(AliasedCommand::
                 getAlias)).toList()) {
             if (!context.getSource().isExecutedByPlayer() || context.getSource().getPlayer() != null && context.getSource().getPlayer()
-                    .hasPermissionLevel(cmd.getPermission())) {text.append("\n  " + cmd.getAlias() + ": ").append(cmd.getVerboseSyntax());
+                    .hasPermissionLevel(cmd.getPermission())) {text.append("\n  ").append(TextUtils.formattable(cmd.getAlias())
+                    .formatted(cmd.global ? Formatting.AQUA : Formatting.WHITE)).append( TextUtils.formattable(": ")
+                    .formatted(Formatting.WHITE)).append(cmd.getSyntax());
             }
         }
         context.getSource().sendFeedback(() -> text, false);
@@ -186,6 +198,11 @@ public class AliasCommand {
         String alias = context.getArgument("alias", String.class);
         AliasedCommand cmd = AliasManager.ALIASES.get(alias);
         if (cmd != null) {
+            if (cmd.global) {
+                context.getSource().sendError(TextUtils.formattable("Alias \"" + alias + "\" is global and " +
+                        "can't be modified via commands"));
+                return 0;
+            }
             if (ConfigOption.ALIAS_MODIFY_COMPILE.val() && cmd.refresh(context.getSource())) {
                 context.getSource().sendFeedback(() -> TextUtils.formattable("Successfully compiled alias ")
                         .append(TextUtils.formattable(alias).formatted(Formatting.GREEN)), false);
@@ -193,7 +210,7 @@ public class AliasCommand {
             }
             return 0;
         }
-        context.getSource().sendError(TextUtils.formattable("Couldn't find alias \"" + alias));
+        context.getSource().sendError(TextUtils.formattable("Couldn't find alias \"" + alias + "\""));
         return 0;
     }
 
@@ -202,6 +219,11 @@ public class AliasCommand {
         AliasedCommand cmd = AliasManager.ALIASES.get(alias);
         String newName = context.getArgument("name", String.class);
         if (cmd != null) {
+            if (cmd.global) {
+                context.getSource().sendError(TextUtils.formattable("Alias \"" + alias + "\" is global and " +
+                        "can't be modified via commands"));
+                return 0;
+            }
             context.getSource().sendFeedback(() -> TextUtils.formattable("Renamed to ").append(TextUtils.formattable(newName)
                     .formatted(Formatting.GREEN)), false);
             return cmd.rename(context, newName) ? 1 : 0;
@@ -215,6 +237,11 @@ public class AliasCommand {
         AliasedCommand cmd = AliasManager.ALIASES.get(alias);
         String command = context.getArgument("line", String.class);
         if (cmd != null) {
+            if (cmd.global) {
+                context.getSource().sendError(TextUtils.formattable("Alias \"" + alias + "\" is global and " +
+                        "can't be modified via commands"));
+                return 0;
+            }
             cmd.addCommand(command);
             MutableText out = TextUtils.formattable("Added line: \"").append(TextUtils.formattable(command).formatted(Formatting.YELLOW))
                     .append(TextUtils.formattable("\"\n")).append(cmd.getCommandText());
@@ -234,6 +261,11 @@ public class AliasCommand {
         AliasedCommand cmd = AliasManager.ALIASES.get(alias);
         String command = context.getArgument("line", String.class);
         if (cmd != null) {
+            if (cmd.global) {
+                context.getSource().sendError(TextUtils.formattable("Alias \"" + alias + "\" is global and " +
+                        "can't be modified via commands"));
+                return 0;
+            }
             MutableText err = cmd.insert(command, line);
             if (err != null) {
                 context.getSource().sendError(err);
@@ -257,6 +289,9 @@ public class AliasCommand {
         AliasedCommand cmd = AliasManager.ALIASES.get(alias);
         Collection<String> c;
         if (cmd != null && line <= cmd.getCommands().size()) {
+            if (cmd.global) {
+                return CommandSource.suggestMatching(Collections.emptyList(), builder);
+            }
             c = Collections.singleton(cmd.getCommands().get(line - 1));
         }
         else {
@@ -270,6 +305,11 @@ public class AliasCommand {
         int line = context.getArgument("line number", Integer.class);
         AliasedCommand cmd = AliasManager.ALIASES.get(alias);
         if (cmd != null) {
+            if (cmd.global) {
+                context.getSource().sendError(TextUtils.formattable("Alias \"" + alias + "\" is global and " +
+                        "can't be modified via commands"));
+                return 0;
+            }
             MutableText err;
             String command = context.getArgument("line", String.class);
             err = cmd.insert(command, line);
@@ -299,6 +339,11 @@ public class AliasCommand {
         int line = context.getArgument("line number", Integer.class);
         AliasedCommand cmd = AliasManager.ALIASES.get(alias);
         if (cmd != null) {
+            if (cmd.global) {
+                context.getSource().sendError(TextUtils.formattable("Alias \"" + alias + "\" is global and " +
+                        "can't be modified via commands"));
+                return 0;
+            }
             MutableText err;
             err = cmd.removeCommand(line);
             if (err != null) {
@@ -322,6 +367,11 @@ public class AliasCommand {
         int permissionLevel = context.getArgument("permission level", Integer.class);
         AliasedCommand cmd = AliasManager.ALIASES.get(alias);
         if (cmd != null) {
+            if (cmd.global) {
+                context.getSource().sendError(TextUtils.formattable("Alias \"" + alias + "\" is global and " +
+                        "can't be modified via commands"));
+                return 0;
+            }
             cmd.setPermission(permissionLevel);
             context.getSource().sendFeedback(() -> TextUtils.formattable("Permission level for alias ").append(TextUtils
                             .formattable(alias).formatted(Formatting.GREEN)).append(TextUtils.formattable(" set" + " to ")
@@ -337,6 +387,11 @@ public class AliasCommand {
         boolean silent = context.getArgument("silent execution", Boolean.class);
         AliasedCommand cmd = AliasManager.ALIASES.get(alias);
         if (cmd != null) {
+            if (cmd.global) {
+                context.getSource().sendError(TextUtils.formattable("Alias \"" + alias + "\" is global and " +
+                        "can't be modified via commands"));
+                return 0;
+            }
             cmd.setSilent(silent);
             context.getSource().sendFeedback(() -> TextUtils.formattable("Alias ").append(
                     TextUtils.formattable(alias).formatted(Formatting.GREEN)).append(TextUtils.formattable(" set to " + (silent ?
@@ -352,7 +407,9 @@ public class AliasCommand {
         String alias = context.getArgument("alias", String.class);
         AliasedCommand cmd = AliasManager.ALIASES.get(alias);
         if (cmd != null) {
-            MutableText out = cmd.getCommandText();
+            MutableText out = TextUtils.formattable("Alias ").append(TextUtils.formattable(alias).formatted(cmd.global ? Formatting.AQUA
+                    : Formatting.GREEN).append(TextUtils.formattable(cmd.global ? " (global):\n" : ":\n").formatted(Formatting.WHITE)));
+            out.append(cmd.getCommandText());
             out.append(TextUtils.formattable("\nPermission level: ").append(TextUtils.formattable(String.valueOf(cmd.getPermission()))
                     .formatted(Formatting.GREEN)));
             if (cmd.hasArguments()) {
@@ -369,7 +426,17 @@ public class AliasCommand {
         String alias = context.getArgument("alias", String.class);
         AliasedCommand cmd = AliasManager.ALIASES.get(alias);
         if (cmd != null) {
+            if (cmd.global) {
+                context.getSource().sendError(TextUtils.formattable("Alias \"" + alias + "\" is global and " +
+                        "can't be modified via commands"));
+                return 0;
+            }
             String name = context.getArgument("argument", String.class);
+            if (!name.matches("[a-zA-Z_][a-zA-Z0-9_]*")) {
+                context.getSource().sendError(TextUtils.formattable("Arguments can only contain letters, numbers, and underscores, and "
+                        + "must begin with a letter or underscore"));
+                return 0;
+            }
             String[] stringArgs = new String[args.length];
             if ("selection".equals(argType)) {
                 String selectionArgs = context.getArgument("comma_separated_selection", String.class);
@@ -395,6 +462,9 @@ public class AliasCommand {
         AliasedCommand cmd = AliasManager.ALIASES.get(alias);
         List<String> argString = new ArrayList<>();
         if (cmd != null) {
+            if (cmd.global) {
+                return CommandSource.suggestMatching(Collections.emptyList(), builder);
+            }
             Collection<AliasedCommand.VariableDefinition> args = cmd.getArguments();
             args.forEach(var -> argString.add(var.name));
         }
@@ -405,6 +475,11 @@ public class AliasCommand {
         String alias = context.getArgument("alias", String.class);
         AliasedCommand cmd = AliasManager.ALIASES.get(alias);
         if (cmd != null) {
+            if (cmd.global) {
+                context.getSource().sendError(TextUtils.formattable("Alias \"" + alias + "\" is global and " +
+                        "can't be modified via commands"));
+                return 0;
+            }
             String name = context.getArgument("argument", String.class);
             return cmd.removeArgument(context.getSource(), name) ? 0 : 1;
         }
@@ -416,6 +491,11 @@ public class AliasCommand {
         String alias = context.getArgument("alias", String.class);
         AliasedCommand cmd = AliasManager.ALIASES.get(alias);
         if (cmd != null) {
+            if (cmd.global) {
+                context.getSource().sendError(TextUtils.formattable("Alias \"" + alias + "\" is global and " +
+                        "can't be modified via commands"));
+                return 0;
+            }
             String argument = context.getArgument("argument", String.class);
             String name = context.getArgument("newArgument", String.class);
             return cmd.renameArgument(context.getSource(), argument, name) ? 0 : 1;
