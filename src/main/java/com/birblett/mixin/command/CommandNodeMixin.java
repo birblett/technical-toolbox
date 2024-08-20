@@ -1,6 +1,6 @@
 package com.birblett.mixin.command;
 
-import com.birblett.lib.command.CommandNodeModifier;
+import com.birblett.accessor.command.CommandNodeModifier;
 import com.mojang.brigadier.tree.ArgumentCommandNode;
 import com.mojang.brigadier.tree.CommandNode;
 import com.mojang.brigadier.tree.LiteralCommandNode;

@@ -1,6 +1,6 @@
 package com.birblett.mixin.command.delay;
 
-import com.birblett.lib.command.delay.AliasedCommandSource;
+import com.birblett.accessor.command.delay.AliasedCommandSource;
 import net.minecraft.server.command.ServerCommandSource;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;

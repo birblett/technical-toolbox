@@ -1,4 +1,4 @@
-package com.birblett.lib.command.delay;
+package com.birblett.accessor.command.delay;
 
 public interface AliasedCommandSource {
 

@@ -1,4 +1,4 @@
-package com.birblett.lib.command.delay;
+package com.birblett.accessor.command.delay;
 
 import com.birblett.impl.command.delay.CommandEvent;
 import net.minecraft.server.command.ServerCommandSource;

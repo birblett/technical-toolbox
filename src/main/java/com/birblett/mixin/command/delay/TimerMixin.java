@@ -1,7 +1,7 @@
 package com.birblett.mixin.command.delay;
 
 import com.birblett.impl.command.delay.CommandEvent;
-import com.birblett.lib.command.delay.CommandScheduler;
+import com.birblett.accessor.command.delay.CommandScheduler;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.world.timer.Timer;

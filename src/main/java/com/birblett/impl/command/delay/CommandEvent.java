@@ -1,6 +1,6 @@
 package com.birblett.impl.command.delay;
 
-import com.birblett.lib.command.CommandSourceModifier;
+import com.birblett.accessor.command.CommandSourceModifier;
 import com.birblett.util.TextUtils;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;

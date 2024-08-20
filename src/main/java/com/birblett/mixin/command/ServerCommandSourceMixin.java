@@ -1,7 +1,7 @@
 package com.birblett.mixin.command;
 
 import com.birblett.impl.command.alias.language.Operator;
-import com.birblett.lib.command.CommandSourceModifier;
+import com.birblett.accessor.command.CommandSourceModifier;
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;

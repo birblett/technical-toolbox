@@ -11,6 +11,8 @@
     "command.camera.ServerPlayNetworkHandlerMixin",
     "command.delay.ServerCommandSourceMixin",
     "command.delay.TimerMixin",
+    "command.stat.ServerPlayerEntityMixin",
+    "command.stat.ServerScoreboardMixin",
     "config.MinecraftServerMixin",
     "feature.AnvilScreenHandlerMixin",
     "feature.BulbBlockMixin",

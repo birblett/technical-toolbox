@@ -1,6 +1,7 @@
 package com.birblett.mixin.command;
 
 import com.birblett.TechnicalToolbox;
+import com.birblett.impl.StatCommand;
 import com.birblett.impl.command.alias.AliasCommand;
 import com.birblett.impl.command.CameraCommand;
 import com.birblett.impl.command.ToolboxCommand;
@@ -32,6 +33,7 @@ public class CommandManagerMixin {
         AliasCommand.register(this.dispatcher);
         CameraCommand.register(this.dispatcher);
         DelayCommand.register(this.dispatcher);
+        StatCommand.register(this.dispatcher);
         for (AliasedCommand aliasedCommand : AliasManager.ALIASES.values()) {
             try {
                 aliasedCommand.register(this.dispatcher);

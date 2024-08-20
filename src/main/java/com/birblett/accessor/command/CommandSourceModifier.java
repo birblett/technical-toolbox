@@ -1,4 +1,4 @@
-package com.birblett.lib.command;
+package com.birblett.accessor.command;
 
 import com.birblett.impl.command.alias.language.Operator;
 

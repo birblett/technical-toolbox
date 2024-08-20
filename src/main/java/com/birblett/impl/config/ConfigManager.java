@@ -1,15 +1,14 @@
 package com.birblett.impl.config;
 
 import com.birblett.TechnicalToolbox;
+import com.birblett.util.ServerUtil;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.text.Text;
-import net.minecraft.util.WorldSavePath;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -18,6 +17,9 @@ import java.util.LinkedHashMap;
  * Handles writing and reading of configuration options, with methods called on server start and close
  */
 public class ConfigManager {
+
+    private static final String CONFIG_DIRECTORY = "technical_toolbox";
+    private static final String CONFIG_PATH = "technical_toolbox/toolbox.conf";
 
     public final LinkedHashMap<String, ConfigOption<?>> configMap = new LinkedHashMap<>();
 
@@ -29,13 +31,6 @@ public class ConfigManager {
 
     public Collection<String> getAllConfigOptions() {
         return this.configMap.keySet();
-    }
-
-    /**
-     * @return path to config file
-     */
-    private Path getFile(MinecraftServer server) {
-        return server.getSavePath(WorldSavePath.ROOT).resolve("toolbox.conf");
     }
 
     /**
@@ -57,18 +52,18 @@ public class ConfigManager {
      * Loads configs from storage into memory.
      */
     public void readConfigs(MinecraftServer server) {
-        try (BufferedReader bufferedReader = Files.newBufferedReader(this.getFile(server))) {
+        try (BufferedReader bufferedReader = Files.newBufferedReader(ServerUtil.getLocalPath(server, CONFIG_PATH))) {
             String line;
             int lineCount = 0;
             int options = 0;
-            HashSet<ConfigOption> configOptions = new HashSet<>(this.configMap.values());
+            HashSet<ConfigOption<?>> configOptions = new HashSet<>(this.configMap.values());
             while ((line = bufferedReader.readLine()) != null) {
                 lineCount++;
                 String[] split = line.split(":", 2);
                 if (split.length == 0) {
                     continue;
                 }
-                if (split.length != 2 && split[0].length() != 0) {
+                if (split.length != 2 && !split[0].isEmpty()) {
                     TechnicalToolbox.log("Improperly separated config option on line " +
                             lineCount + " ('"+ line + "')");
                     continue;
@@ -94,18 +89,19 @@ public class ConfigManager {
             if (configMap.size() - options > 0) {
                 TechnicalToolbox.log((configMap.size() - options) + " configuration options were not " +
                         "specified, using defaults");
-                for (ConfigOption configOption : configOptions) {
+                for (ConfigOption<?> configOption : configOptions) {
                     configOption.setFromString(configOption.getDefaultValue(), server);
                 }
             }
         }
         catch (IOException e) {
             TechnicalToolbox.warn("Configuration file 'toolbox.conf' was not found, using defaults");
-            try {
-                BufferedWriter bufferedWriter = Files.newBufferedWriter(this.getFile(server));
-                bufferedWriter.write("");
-            } catch (IOException ex) {
-                TechnicalToolbox.error("Failed to generate configuration file `toolbox.conf`");
+            if (ServerUtil.createDirectoryIfNotPresent(ServerUtil.getLocalPath(server, CONFIG_DIRECTORY).toFile())) {
+                try (BufferedWriter bufferedWriter = Files.newBufferedWriter(ServerUtil.getLocalPath(server, CONFIG_PATH))) {
+                    bufferedWriter.write("");
+                } catch (IOException ex) {
+                    TechnicalToolbox.error("Failed to generate configuration file `toolbox.conf`");
+                }
             }
         }
     }
@@ -114,21 +110,23 @@ public class ConfigManager {
      * Writes configs to storage.
      */
     public void writeConfigs(MinecraftServer server) {
-        try (BufferedWriter bufferedWriter = Files.newBufferedWriter(this.getFile(server))) {
-            int options = 0;
-            for (ConfigOption c : ConfigOption.OPTIONS) {
-                if (!ConfigOptions.CONFIG_WRITE_ONLY_CHANGES.val() || !c.getWriteable().equals(c.getDefaultValue())) {
-                    bufferedWriter.write(c.getName() + ": " + c.getWriteable() + "\n");
-                    if (c.hasLineBreak()) {
-                        bufferedWriter.write("\n");
+        if (ServerUtil.createDirectoryIfNotPresent(ServerUtil.getLocalPath(server, CONFIG_DIRECTORY).toFile())) {
+            try (BufferedWriter bufferedWriter = Files.newBufferedWriter(ServerUtil.getLocalPath(server, CONFIG_PATH))) {
+                int options = 0;
+                for (ConfigOption<?> c : ConfigOption.OPTIONS) {
+                    if (!ConfigOptions.CONFIG_WRITE_ONLY_CHANGES.val() || !c.getWriteable().equals(c.getDefaultValue())) {
+                        bufferedWriter.write(c.getName() + ": " + c.getWriteable() + "\n");
+                        if (c.hasLineBreak()) {
+                            bufferedWriter.write("\n");
+                        }
+                        options++;
                     }
-                    options++;
                 }
+                TechnicalToolbox.log("Wrote " + options + " configuration options to 'toolbox.conf'");
             }
-            TechnicalToolbox.log("Wrote " + options + " configuration options to 'toolbox.conf'");
-        }
-        catch (IOException e) {
-            TechnicalToolbox.error("Failed to write to file 'toolbox.conf', configurations will not be saved");
+            catch (IOException e) {
+                TechnicalToolbox.error("Failed to write to file 'toolbox.conf', configurations will not be saved");
+            }
         }
     }
 

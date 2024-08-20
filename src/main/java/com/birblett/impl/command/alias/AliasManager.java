@@ -2,10 +2,10 @@ package com.birblett.impl.command.alias;
 
 import com.birblett.TechnicalToolbox;
 import com.birblett.impl.config.ConfigOptions;
+import com.birblett.util.ServerUtil;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.WorldSavePath;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -23,6 +23,9 @@ import java.util.Map;
 public class AliasManager {
 
     public static final Map<String, AliasedCommand> ALIASES = new HashMap<>();
+    public static final String GLOBAL_PATH = "technical_toolbox/config/aliases";
+    public static final String ALIAS_PATH = "technical_toolbox/aliases";
+    public static final String RECYCLE_PATH = "technical_toolbox/aliases/recycle";
 
     public AliasManager() {
     }
@@ -59,13 +62,6 @@ public class AliasManager {
     }
 
     /**
-     * @return return .minecraft directory
-     */
-    private Path getMinecraftDirectory(MinecraftServer server) {
-        return server.getPath("config/technical_toolbox");
-    }
-
-    /**
      * @return relative path to toolbox_aliases folder
      */
     private Path getDirectory(MinecraftServer server) {
@@ -88,7 +84,8 @@ public class AliasManager {
     }
 
     public void readAliases(MinecraftServer server) {
-        File global = this.getMinecraftDirectory(server).toFile();
+        File global = ServerUtil.getMinecraftPath(server, GLOBAL_PATH).toFile();
+        ServerUtil.createDirectoryIfNotPresent(global);
         int globalCount = 0;
         File[] globalDir = global.listFiles();
         if (globalDir != null) {
@@ -101,8 +98,9 @@ public class AliasManager {
                 TechnicalToolbox.log("Loaded " + globalCount + " global aliases");
             }
         }
-        File directory = new File(this.getDirectory(server).toString());
-        if (!directory.isDirectory()){
+        File directory = ServerUtil.getLocalPath(server, ALIAS_PATH).toFile();
+        if (!ServerUtil.createDirectoryIfNotPresent(directory)){
+            TechnicalToolbox.log("Failed to create {} directory, aliases will not be saved", ALIAS_PATH);
             return;
         }
         File[] files;
@@ -126,10 +124,13 @@ public class AliasManager {
      * Writes all aliases to storage.
      */
     public void writeAliases(MinecraftServer server) {
-        File directory = new File(this.getDirectory(server).toString());
-        File recycle = new File(this.getRecycleDirectory(server).toString());
-        if (!(this.createDirectoryIfNotPresent(directory) && this.createDirectoryIfNotPresent(recycle))) {
-            return;
+        File directory = ServerUtil.getLocalPath(server, ALIAS_PATH).toFile();
+        File recycle = ServerUtil.getLocalPath(server, RECYCLE_PATH).toFile();
+        if (!ServerUtil.createDirectoryIfNotPresent(directory)) {
+            TechnicalToolbox.log("Failed to create {} directory, aliases will not be saved", directory);
+        }
+        if (!ServerUtil.createDirectoryIfNotPresent(recycle)) {
+            TechnicalToolbox.log("Failed to create {} directory, aliases will not be saved", recycle);
         }
         try {
             int removedCount = 0;
@@ -161,24 +162,13 @@ public class AliasManager {
         int count = 0;
         for (String key : AliasManager.ALIASES.keySet()) {
             if (!AliasManager.ALIASES.get(key).global) {
-                Path path = this.getAliasPath(server, key);
+                Path path = ServerUtil.getLocalPath(server, ALIAS_PATH + "/" + key + ".alias");
                 if (AliasManager.ALIASES.get(key).writeToFile(path)) {
                     count++;
                 }
             }
         }
         TechnicalToolbox.log("Successfully saved " + count + " aliases");
-    }
-
-    private boolean createDirectoryIfNotPresent(File directory) {
-        if (!directory.isDirectory()){
-            TechnicalToolbox.log("{} not found, creating an empty directory", StringUtils.capitalize(directory.getName()));
-            if (!directory.mkdir()) {
-                TechnicalToolbox.warn("Failed to create directory, please report");
-                return false;
-            }
-        }
-        return true;
     }
 
 }
