@@ -73,7 +73,7 @@ public class AliasedCommand {
             }
         }
         if (!args.isEmpty()) {
-            TechnicalToolbox.log("{}: couldn't parse argument(s) {}", alias, args);
+            TechnicalToolbox.error("{}: couldn't parse argument(s) {}", alias, args);
         }
         this.permission = permission;
         this.silent = silent;
@@ -301,7 +301,7 @@ public class AliasedCommand {
      * @return always false, inlined when compiler fails
      */
     private boolean compileError(int line, String err) {
-        TechnicalToolbox.log("Failed to compile /{} - line {}: {}", this.alias, line + 1, err);
+        TechnicalToolbox.error("Failed to compile /{} - line {}: {}", this.alias, line + 1, err);
         this.status = "Line " + line + ": " + err;
         return false;
     }
@@ -772,7 +772,7 @@ public class AliasedCommand {
                                 try {
                                     permission = Integer.parseInt(tmp);
                                 } catch (NumberFormatException e) {
-                                    TechnicalToolbox.log(path + ": Couldn't parse \"" + tmp + "\" as int");
+                                    TechnicalToolbox.error(path + ": Couldn't parse \"" + tmp + "\" as int");
                                     return false;
                                 }
                             }
@@ -811,11 +811,11 @@ public class AliasedCommand {
                 }
             }
             if (alias == null) {
-                TechnicalToolbox.log(path + ": Alias not specified in file");
+                TechnicalToolbox.error(path + ": Alias not specified in file");
                 return false;
             }
             if (commands.isEmpty()) {
-                TechnicalToolbox.log(path + ": Missing script body");
+                TechnicalToolbox.error(path + ": Missing script body");
                 return false;
             }
             new AliasedCommand(alias, permission, silent, commands, arguments, global);

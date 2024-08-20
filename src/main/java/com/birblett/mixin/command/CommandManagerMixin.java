@@ -39,7 +39,7 @@ public class CommandManagerMixin {
                 aliasedCommand.register(this.dispatcher);
             }
             catch (Exception e) {
-                TechnicalToolbox.log("Something went wrong with compiling alias {}", aliasedCommand.getAlias());
+                TechnicalToolbox.error("Something went wrong with compiling alias {}", aliasedCommand.getAlias());
             }
         }
     }

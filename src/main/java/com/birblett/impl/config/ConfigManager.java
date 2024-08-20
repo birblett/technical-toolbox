@@ -64,7 +64,7 @@ public class ConfigManager {
                     continue;
                 }
                 if (split.length != 2 && !split[0].isEmpty()) {
-                    TechnicalToolbox.log("Improperly separated config option on line " +
+                    TechnicalToolbox.error("Improperly separated config option on line " +
                             lineCount + " ('"+ line + "')");
                     continue;
                 }
@@ -72,13 +72,13 @@ public class ConfigManager {
                     String name = split[0].strip();
                     String value = split[1].strip();
                     if (!this.configMap.containsKey(name)) {
-                        TechnicalToolbox.log("Option '" + name + "' does not exist");
+                        TechnicalToolbox.error("Option '" + name + "' does not exist");
                         continue;
                     }
                     Text out = configMap.get(name).setFromString(value, server);
                     configOptions.remove(configMap.get(name));
                     if (out != null) {
-                        TechnicalToolbox.log(out.getContent().toString());
+                        TechnicalToolbox.error(out.getContent().toString());
                         continue;
                     }
                     options++;

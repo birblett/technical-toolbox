@@ -45,7 +45,7 @@ public class AliasManager {
                 aliasedCommand.register(server.getCommandSource().getDispatcher());
             }
             catch (Exception e) {
-                TechnicalToolbox.log("Something went wrong with compiling alias {}", aliasedCommand.getAlias());
+                TechnicalToolbox.error("Something went wrong with compiling alias {}", aliasedCommand.getAlias());
             }
         }
     }
@@ -100,7 +100,7 @@ public class AliasManager {
         }
         File directory = ServerUtil.getLocalPath(server, ALIAS_PATH).toFile();
         if (!ServerUtil.createDirectoryIfNotPresent(directory)){
-            TechnicalToolbox.log("Failed to create {} directory, aliases will not be saved", ALIAS_PATH);
+            TechnicalToolbox.error("Failed to create {} directory, aliases will not be saved", ALIAS_PATH);
             return;
         }
         File[] files;
@@ -127,10 +127,10 @@ public class AliasManager {
         File directory = ServerUtil.getLocalPath(server, ALIAS_PATH).toFile();
         File recycle = ServerUtil.getLocalPath(server, RECYCLE_PATH).toFile();
         if (!ServerUtil.createDirectoryIfNotPresent(directory)) {
-            TechnicalToolbox.log("Failed to create {} directory, aliases will not be saved", directory);
+            TechnicalToolbox.error("Failed to create {} directory, aliases will not be saved", directory);
         }
         if (!ServerUtil.createDirectoryIfNotPresent(recycle)) {
-            TechnicalToolbox.log("Failed to create {} directory, aliases will not be saved", recycle);
+            TechnicalToolbox.error("Failed to create {} directory, aliases will not be saved", recycle);
         }
         try {
             int removedCount = 0;
@@ -157,7 +157,7 @@ public class AliasManager {
                 }
             }
         } catch (IOException e) {
-            TechnicalToolbox.warn("Failed to clean alias directory, please report");
+            TechnicalToolbox.error("Failed to clean alias directory, please report");
         }
         int count = 0;
         for (String key : AliasManager.ALIASES.keySet()) {

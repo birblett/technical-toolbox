@@ -72,7 +72,7 @@ public class ServerUtil {
                 }
             }
             catch (NullPointerException e) {
-                TechnicalToolbox.log("Failed to update command tree, please report");
+                TechnicalToolbox.error("Failed to update command tree, please report");
             }
         }));
     }

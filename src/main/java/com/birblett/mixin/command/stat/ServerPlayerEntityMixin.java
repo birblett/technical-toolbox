@@ -22,7 +22,6 @@ public class ServerPlayerEntityMixin implements StatTracker {
     @Override
     public void technicalToolbox$UpdateSlot(ScoreboardDisplaySlot slot, ScoreboardObjective objective) {
         this.trackedStats.put(slot, objective);
-        TechnicalToolbox.log("{} {}", slot, objective);
     }
 
     @Override

@@ -172,7 +172,7 @@ public class AliasCommand {
                 aliasedCommand.register(context.getSource().getDispatcher());
             }
             catch (Exception e) {
-                TechnicalToolbox.log("Something went wrong with compiling alias {}", aliasedCommand.getAlias());
+                TechnicalToolbox.error("Something went wrong with compiling alias {}", aliasedCommand.getAlias());
             }
         }
         context.getSource().sendFeedback(() -> TextUtils.formattable("Reloaded aliases from disk"), false);
