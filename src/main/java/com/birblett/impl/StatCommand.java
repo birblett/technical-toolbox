@@ -73,13 +73,14 @@ public class StatCommand {
         dispatcher.register((CommandManager.literal("stat")
                 .then(CommandManager.literal("track")
                         .requires(ServerCommandSource::isExecutedByPlayer)
-                        .then(CommandManager.argument("stat", ScoreboardCriterionArgumentType.scoreboardCriterion())
-                                .suggests((context, builder) ->ScoreboardCriterionArgumentType.scoreboardCriterion()
-                                        .listSuggestions(context, builder))
-                                .then(CommandManager.argument("slot", ScoreboardSlotArgumentType.scoreboardSlot())
-                                        .suggests((context, builder) -> CommandSource.suggestMatching(Arrays.stream(
-                                                ScoreboardDisplaySlot.values()).map(ScoreboardDisplaySlot::asString), builder))
-                                        .executes(StatCommand::addAndTrackStat))))));
+                        .then(CommandManager.literal("criterion")
+                            .then(CommandManager.argument("stat", ScoreboardCriterionArgumentType.scoreboardCriterion())
+                                    .suggests((context, builder) ->ScoreboardCriterionArgumentType.scoreboardCriterion()
+                                            .listSuggestions(context, builder))
+                                    .then(CommandManager.argument("slot", ScoreboardSlotArgumentType.scoreboardSlot())
+                                            .suggests((context, builder) -> CommandSource.suggestMatching(Arrays.stream(
+                                                    ScoreboardDisplaySlot.values()).map(ScoreboardDisplaySlot::asString), builder))
+                                            .executes(StatCommand::addAndTrackStat)))))));
     }
 
     /**
@@ -109,7 +110,6 @@ public class StatCommand {
                     }
                     else if (Registries.ITEM.get(Identifier.of(split2[0], split2[1])) != Items.AIR) {
                         translatableStat = "item." + translatableStat.split(":")[1];
-                        TechnicalToolbox.log("FROG");
                     }
                     else {
                         translatableStat = "stat." + translatableStat.split(":")[1];
@@ -206,10 +206,14 @@ public class StatCommand {
                         TechnicalToolbox.error("Failed to fetch stats while importing stats for objective {}", statName);
                         return;
                     }
-                    ScoreAccess score = scoreboard.getOrCreateScore(ScoreHolder.fromProfile(profile), objective, true);
+                    ScoreHolder scoreHolder = ScoreHolder.fromProfile(profile);
+                    ScoreAccess score = scoreboard.getOrCreateScore(scoreHolder, objective, true);
                     int playerScore = new ServerStatHandler(server, file).getStat(stat);
                     if (playerScore != 0) {
-                    score.setScore(playerScore);
+                        score.setScore(playerScore);
+                    }
+                    else {
+                        scoreboard.removeScore(scoreHolder, objective);
                     }
                 }
             }
