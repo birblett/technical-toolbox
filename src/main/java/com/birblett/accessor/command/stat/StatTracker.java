@@ -7,5 +7,6 @@ public interface StatTracker {
 
     void technicalToolbox$UpdateSlot(ScoreboardDisplaySlot slot, ScoreboardObjective objective);
     boolean technicalToolbox$HasObjective(ScoreboardObjective objective);
+    boolean technicalToolbox$HasDisplayedObjective(ScoreboardObjective objective);
     ScoreboardDisplaySlot technicalToolbox$GetObjectiveSlot(ScoreboardObjective objective);
 }

@@ -72,9 +72,9 @@ public class ToolboxCommand {
                 return 0;
             }
             else {
-                context.getSource().sendFeedback(() -> TextUtils
-                        .formattable("Successfully set value ").append(TextUtils.formattable(value).setStyle(Style.EMPTY
-                                .withColor(Formatting.GREEN))).append(TextUtils.formattable(" for option " + option)), true);
+                context.getSource().sendFeedback(() -> TextUtils.formattable("Successfully set value ").append(
+                        TextUtils.formattable(value).setStyle(Style.EMPTY.withColor(Formatting.GREEN))).append(
+                                TextUtils.formattable(" for option " + option)), true);
                 if (ConfigOptions.CONFIG_WRITE_ON_CHANGE.val()) {
                     TechnicalToolbox.CONFIG_MANAGER.writeConfigs(context.getSource().getServer());
                 }

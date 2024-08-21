@@ -60,7 +60,7 @@ public class ServerScoreboardMixin {
     @Inject(method = "updateScore", at = @At(value = "INVOKE", target = "Lnet/minecraft/scoreboard/ServerScoreboard;runUpdateListeners()V"))
     private void updateSubscribedScores(ScoreHolder scoreHolder, ScoreboardObjective objective, ScoreboardScore score, CallbackInfo ci) {
         for (ServerPlayerEntity player : this.server.getPlayerManager().getPlayerList()) {
-            if (((StatTracker) player).technicalToolbox$HasObjective(objective)) {
+            if (((StatTracker) player).technicalToolbox$HasDisplayedObjective(objective)) {
                 player.networkHandler.sendPacket(new ScoreboardScoreUpdateS2CPacket(scoreHolder.getNameForScoreboard(), objective.getName(),
                         score.getScore(), Optional.ofNullable(score.getDisplayText()), Optional.ofNullable(score.getNumberFormat())));
             }
