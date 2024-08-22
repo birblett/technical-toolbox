@@ -1,8 +1,10 @@
 package com.birblett.mixin.command.stat;
 
 import com.birblett.accessor.command.stat.StatTracker;
+import com.birblett.impl.command.stat.TrackedStatManager;
 import net.minecraft.scoreboard.ScoreboardDisplaySlot;
 import net.minecraft.scoreboard.ScoreboardObjective;
+import net.minecraft.scoreboard.ServerScoreboard;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.stat.Stat;
 import org.spongepowered.asm.mixin.Mixin;
@@ -20,6 +22,11 @@ public class ServerPlayerEntityMixin implements StatTracker {
 
     @Unique private final HashMap<ScoreboardDisplaySlot, ScoreboardObjective> trackedStats = new HashMap<>();
     @Unique private final Set<ScoreboardObjective> initializedStats = new HashSet<>();
+
+    @Override
+    public void technicalToolbox$UpdateObjective(ScoreboardObjective objective) {
+        this.initializedStats.add(objective);
+    }
 
     @Override
     public void technicalToolbox$UpdateSlot(ScoreboardDisplaySlot slot, ScoreboardObjective objective) {
@@ -49,8 +56,9 @@ public class ServerPlayerEntityMixin implements StatTracker {
 
     @Inject(method = "increaseStat", at = @At("HEAD"))
     private void statIncreaseHook(Stat<?> stat, int amount, CallbackInfo ci) {
-        if (!"minecraft:total_world_time".equals(stat.getValue().toString())) {
-            //TechnicalToolbox.log("{}", stat.getName());
+        ServerPlayerEntity player = (ServerPlayerEntity) (Object) this;
+        if (player.getScoreboard() instanceof ServerScoreboard scoreboard) {
+            TrackedStatManager.informListeners(scoreboard, player, stat, amount);
         }
     }
 }

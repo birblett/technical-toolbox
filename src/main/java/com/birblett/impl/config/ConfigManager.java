@@ -18,8 +18,7 @@ import java.util.LinkedHashMap;
  */
 public class ConfigManager {
 
-    private static final String CONFIG_DIRECTORY = "technical_toolbox";
-    private static final String CONFIG_PATH = "technical_toolbox/toolbox.conf";
+    private static final String CONFIG_PATH = "toolbox.conf";
 
     public final LinkedHashMap<String, ConfigOption<?>> configMap = new LinkedHashMap<>();
 
@@ -52,7 +51,7 @@ public class ConfigManager {
      * Loads configs from storage into memory.
      */
     public void readConfigs(MinecraftServer server) {
-        try (BufferedReader bufferedReader = Files.newBufferedReader(ServerUtil.getLocalPath(server, CONFIG_PATH))) {
+        try (BufferedReader bufferedReader = Files.newBufferedReader(ServerUtil.getToolboxPath(server, CONFIG_PATH))) {
             String line;
             int lineCount = 0;
             int options = 0;
@@ -96,8 +95,8 @@ public class ConfigManager {
         }
         catch (IOException e) {
             TechnicalToolbox.warn("Configuration file 'toolbox.conf' was not found, using defaults");
-            if (ServerUtil.createDirectoryIfNotPresent(ServerUtil.getLocalPath(server, CONFIG_DIRECTORY).toFile())) {
-                try (BufferedWriter bufferedWriter = Files.newBufferedWriter(ServerUtil.getLocalPath(server, CONFIG_PATH))) {
+            if (ServerUtil.createDirectoryIfNotPresent(ServerUtil.getToolboxPath(server, "").toFile())) {
+                try (BufferedWriter bufferedWriter = Files.newBufferedWriter(ServerUtil.getToolboxPath(server, CONFIG_PATH))) {
                     bufferedWriter.write("");
                 } catch (IOException ex) {
                     TechnicalToolbox.error("Failed to generate configuration file `toolbox.conf`");
@@ -110,8 +109,8 @@ public class ConfigManager {
      * Writes configs to storage.
      */
     public void writeConfigs(MinecraftServer server) {
-        if (ServerUtil.createDirectoryIfNotPresent(ServerUtil.getLocalPath(server, CONFIG_DIRECTORY).toFile())) {
-            try (BufferedWriter bufferedWriter = Files.newBufferedWriter(ServerUtil.getLocalPath(server, CONFIG_PATH))) {
+        if (ServerUtil.createDirectoryIfNotPresent(ServerUtil.getToolboxPath(server, "").toFile())) {
+            try (BufferedWriter bufferedWriter = Files.newBufferedWriter(ServerUtil.getToolboxPath(server, CONFIG_PATH))) {
                 int options = 0;
                 for (ConfigOption<?> c : ConfigOption.OPTIONS) {
                     if (!ConfigOptions.CONFIG_WRITE_ONLY_CHANGES.val() || !c.getWriteable().equals(c.getDefaultValue())) {

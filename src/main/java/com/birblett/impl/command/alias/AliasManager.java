@@ -23,9 +23,9 @@ import java.util.Map;
 public class AliasManager {
 
     public static final Map<String, AliasedCommand> ALIASES = new HashMap<>();
-    public static final String GLOBAL_PATH = "technical_toolbox/config/aliases";
-    public static final String ALIAS_PATH = "technical_toolbox/aliases";
-    public static final String RECYCLE_PATH = "technical_toolbox/aliases/recycle";
+    public static final String GLOBAL_PATH = "config/aliases";
+    public static final String ALIAS_PATH = "aliases";
+    public static final String RECYCLE_PATH = "aliases/recycle";
 
     public AliasManager() {
     }
@@ -84,7 +84,7 @@ public class AliasManager {
     }
 
     public void readAliases(MinecraftServer server) {
-        File global = ServerUtil.getMinecraftPath(server, GLOBAL_PATH).toFile();
+        File global = ServerUtil.getGlobalToolboxPath(server, GLOBAL_PATH).toFile();
         ServerUtil.createDirectoryIfNotPresent(global);
         int globalCount = 0;
         File[] globalDir = global.listFiles();
@@ -98,7 +98,7 @@ public class AliasManager {
                 TechnicalToolbox.log("Loaded " + globalCount + " global aliases");
             }
         }
-        File directory = ServerUtil.getLocalPath(server, ALIAS_PATH).toFile();
+        File directory = ServerUtil.getToolboxPath(server, ALIAS_PATH).toFile();
         if (!ServerUtil.createDirectoryIfNotPresent(directory)){
             TechnicalToolbox.error("Failed to create {} directory, aliases will not be saved", ALIAS_PATH);
             return;
@@ -124,8 +124,8 @@ public class AliasManager {
      * Writes all aliases to storage.
      */
     public void writeAliases(MinecraftServer server) {
-        File directory = ServerUtil.getLocalPath(server, ALIAS_PATH).toFile();
-        File recycle = ServerUtil.getLocalPath(server, RECYCLE_PATH).toFile();
+        File directory = ServerUtil.getToolboxPath(server, ALIAS_PATH).toFile();
+        File recycle = ServerUtil.getToolboxPath(server, RECYCLE_PATH).toFile();
         if (!ServerUtil.createDirectoryIfNotPresent(directory)) {
             TechnicalToolbox.error("Failed to create {} directory, aliases will not be saved", directory);
         }
@@ -162,7 +162,7 @@ public class AliasManager {
         int count = 0;
         for (String key : AliasManager.ALIASES.keySet()) {
             if (!AliasManager.ALIASES.get(key).global) {
-                Path path = ServerUtil.getLocalPath(server, ALIAS_PATH + "/" + key + ".alias");
+                Path path = ServerUtil.getToolboxPath(server, ALIAS_PATH + "/" + key + ".alias");
                 if (AliasManager.ALIASES.get(key).writeToFile(path)) {
                     count++;
                 }

@@ -710,7 +710,7 @@ public class AliasedCommand {
      * @return whether alias was written successfully or not
      */
     public boolean writeToFile(Path path) {
-        try (BufferedWriter bufferedWriter = Files.newBufferedWriter(path, StandardOpenOption.TRUNCATE_EXISTING)) {
+        try (BufferedWriter bufferedWriter = Files.newBufferedWriter(path)) {
             bufferedWriter.write("Alias: " + this.alias + "\n");
             if (this.permission != ConfigOptions.ALIAS_DEFAULT_PERMISSION.val()) {
                 bufferedWriter.write("Permission level: " + this.permission + "\n");

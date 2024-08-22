@@ -5,6 +5,7 @@ import com.birblett.accessor.command.CommandSourceModifier;
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
+import net.minecraft.scoreboard.ScoreboardCriterion;
 import net.minecraft.server.command.CommandOutput;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.text.Text;
@@ -13,6 +14,7 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 
 import java.util.HashMap;
+import java.util.HashSet;
 
 /**
  * Allows for command aliases to override permission level checks on use and also enable/disable feedback
@@ -23,6 +25,7 @@ public class ServerCommandSourceMixin implements CommandSourceModifier {
     @Unique private boolean overridePermissions = false;
     @Unique private boolean shutUp = false;
     @Unique private final HashMap<String, String> selectorMap = new HashMap<>();
+    @Unique private final HashSet<ScoreboardCriterion> criteria = new HashSet<>();
     @Unique private Operator ret = null;
 
     @Override
@@ -53,6 +56,16 @@ public class ServerCommandSourceMixin implements CommandSourceModifier {
     @Override
     public Operator technicalToolbox$getReturnValue() {
         return this.ret;
+    }
+
+    @Override
+    public void technicalToolbox$addCriterion(ScoreboardCriterion criterion) {
+        this.criteria.add(criterion);
+    }
+
+    @Override
+    public HashSet<ScoreboardCriterion> technicalToolbox$getCriteria(ScoreboardCriterion criterion) {
+        return this.criteria;
     }
 
     @ModifyReturnValue(method = "hasPermissionLevel", at = @At("RETURN"))
