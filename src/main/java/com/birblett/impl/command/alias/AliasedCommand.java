@@ -1,10 +1,12 @@
 package com.birblett.impl.command.alias;
 
 import com.birblett.TechnicalToolbox;
-import com.birblett.impl.command.alias.language.*;
-import com.birblett.impl.config.ConfigOptions;
 import com.birblett.accessor.command.CommandSourceModifier;
 import com.birblett.accessor.command.delay.AliasedCommandSource;
+import com.birblett.impl.command.alias.language.AliasConstants;
+import com.birblett.impl.command.alias.language.Instruction;
+import com.birblett.impl.command.alias.language.Variable;
+import com.birblett.impl.config.ConfigOptions;
 import com.birblett.util.ServerUtil;
 import com.birblett.util.TextUtils;
 import com.mojang.brigadier.CommandDispatcher;
@@ -24,7 +26,6 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;

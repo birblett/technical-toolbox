@@ -1,11 +1,7 @@
 package com.birblett.impl.command.stat;
 
 import com.birblett.accessor.command.stat.StatTracker;
-import com.birblett.util.ServerUtil;
 import com.birblett.util.TextUtils;
-import com.mojang.authlib.GameProfile;
-import com.mojang.authlib.minecraft.MinecraftSessionService;
-import com.mojang.authlib.yggdrasil.ProfileResult;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
@@ -23,21 +19,15 @@ import net.minecraft.network.packet.s2c.play.ScoreboardObjectiveUpdateS2CPacket;
 import net.minecraft.network.packet.s2c.play.ScoreboardScoreUpdateS2CPacket;
 import net.minecraft.registry.Registries;
 import net.minecraft.scoreboard.*;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.stat.ServerStatHandler;
-import net.minecraft.stat.Stat;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.UserCache;
-import org.apache.commons.io.FileUtils;
 
-import java.io.File;
-import java.util.*;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -178,6 +168,7 @@ public class StatCommand {
         if (stat != null) {
             ScoreboardCriterion criterion = context.getArgument("criterion", ScoreboardCriterion.class);
             stat.addCriteria(criterion);
+            TrackedStatManager.refreshAggregate(context.getSource().getServer(), stat);
             context.getSource().sendFeedback(() -> TextUtils.formattable("Aggregate ").append(TextUtils.formattable(name)
                     .formatted(Formatting.GREEN)).append(TextUtils.formattable(" is now tracking stat ").formatted(Formatting.WHITE)
                     .append(TextUtils.formattable(criterion.getName()).formatted(Formatting.AQUA))), false);

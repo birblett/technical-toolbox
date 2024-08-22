@@ -1,8 +1,8 @@
 package com.birblett.mixin.command.camera;
 
 
-import com.birblett.impl.config.ConfigOptions;
 import com.birblett.accessor.command.camera.CameraInterface;
+import com.birblett.impl.config.ConfigOptions;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerChunkLoadingManager;
 import org.spongepowered.asm.mixin.Mixin;

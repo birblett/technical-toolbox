@@ -1,7 +1,5 @@
 package com.birblett.impl.command.alias.language;
 
-import com.birblett.TechnicalToolbox;
-
 /**
  * The basic interface for operators in expressions - essentially a data container.
  * getValue returns raw data, operation specifies how it interfaces with other

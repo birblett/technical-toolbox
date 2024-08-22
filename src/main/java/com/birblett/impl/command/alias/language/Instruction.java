@@ -1,7 +1,7 @@
 package com.birblett.impl.command.alias.language;
 
-import com.birblett.impl.command.alias.AliasedCommand;
 import com.birblett.accessor.command.CommandSourceModifier;
+import com.birblett.impl.command.alias.AliasedCommand;
 import com.mojang.brigadier.context.CommandContext;
 import net.minecraft.server.command.ServerCommandSource;
 

@@ -1,6 +1,5 @@
 package com.birblett.mixin.command.stat;
 
-import com.birblett.TechnicalToolbox;
 import com.birblett.impl.command.stat.TrackedStatManager;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;

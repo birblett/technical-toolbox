@@ -1,13 +1,13 @@
 package com.birblett.mixin.command;
 
 import com.birblett.TechnicalToolbox;
-import com.birblett.impl.command.stat.StatCommand;
-import com.birblett.impl.command.alias.AliasCommand;
 import com.birblett.impl.command.CameraCommand;
 import com.birblett.impl.command.ToolboxCommand;
+import com.birblett.impl.command.alias.AliasCommand;
 import com.birblett.impl.command.alias.AliasManager;
 import com.birblett.impl.command.alias.AliasedCommand;
 import com.birblett.impl.command.delay.DelayCommand;
+import com.birblett.impl.command.stat.StatCommand;
 import com.mojang.brigadier.CommandDispatcher;
 import net.minecraft.command.CommandRegistryAccess;
 import net.minecraft.server.command.CommandManager;

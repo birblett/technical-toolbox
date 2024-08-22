@@ -1,8 +1,8 @@
 package com.birblett.impl.command.delay;
 
-import com.birblett.impl.config.ConfigOptions;
 import com.birblett.accessor.command.delay.AliasedCommandSource;
 import com.birblett.accessor.command.delay.CommandScheduler;
+import com.birblett.impl.config.ConfigOptions;
 import com.birblett.util.TextUtils;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.BoolArgumentType;

@@ -27,26 +27,23 @@ SOFTWARE.
 package com.birblett.impl.command.stat;
 
 import com.birblett.TechnicalToolbox;
-import com.birblett.impl.config.ConfigOption;
 import com.birblett.util.ServerUtil;
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.minecraft.MinecraftSessionService;
 import com.mojang.authlib.yggdrasil.ProfileResult;
-import com.mojang.brigadier.context.CommandContext;
 import net.minecraft.scoreboard.*;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.stat.ServerStatHandler;
 import net.minecraft.stat.Stat;
 import net.minecraft.text.Text;
 import net.minecraft.util.UserCache;
 import org.apache.commons.io.FileUtils;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.nio.file.Files;
-import java.nio.file.StandardOpenOption;
 import java.util.*;
 
 public class TrackedStatManager {
@@ -166,7 +163,7 @@ public class TrackedStatManager {
                 ScoreboardCriterion.RenderType.INTEGER, true, null);
         scoreboard.addScoreboardObjective(objective);
         if (criterion != ScoreboardCriterion.DUMMY) {
-            TrackedStatManager.importStats(server, scoreboard, objective);
+            TrackedStatManager.importStat(server, objective);
         }
         TrackedStatManager.addTrackedObjective(objective);
         return objective;
@@ -176,14 +173,15 @@ public class TrackedStatManager {
      * Stat importer, modified from
      * <a href="https://github.com/qixils/scoreboard-stats-import">qixils' stat importer</a>
      */
-    private static void importStats(MinecraftServer server, Scoreboard scoreboard, ScoreboardObjective objective) {
+    private static void importStat(MinecraftServer server, ScoreboardObjective objective) {
         ScoreboardCriterion criterion = objective.getCriterion();
-        if (criterion instanceof Stat<?> stat) {
+        Scoreboard scoreboard = server.getScoreboard();
+        if (criterion instanceof Stat<?>) {
             Map<GameProfile, ServerStatHandler> profiles = TrackedStatManager.getStatistics(server);
             for (GameProfile profile : profiles.keySet()) {
                 ScoreHolder scoreHolder = ScoreHolder.fromProfile(profile);
                 ScoreAccess score = scoreboard.getOrCreateScore(scoreHolder, objective, true);
-                int playerScore = profiles.get(profile).getStat(stat);
+                int playerScore = TrackedStatManager.getCriterionValue(profiles.get(profile), criterion);
                 if (playerScore != 0) {
                     score.setScore(playerScore);
                 }
@@ -194,12 +192,48 @@ public class TrackedStatManager {
         }
     }
 
+    /**
+     * Stat importer, modified to handle aggregates
+     * <a href="https://github.com/qixils/scoreboard-stats-import">qixils' stat importer</a>
+     */
+    public static void refreshAggregate(MinecraftServer server, AggregateStatWrapper aggregateStat) {
+        ScoreboardObjective objective = aggregateStat.objective;
+        Scoreboard scoreboard = server.getScoreboard();
+        Map<GameProfile, ServerStatHandler> profiles = TrackedStatManager.getStatistics(server);
+        for (GameProfile profile : profiles.keySet()) {
+            ScoreHolder scoreHolder = ScoreHolder.fromProfile(profile);
+            ScoreAccess score = scoreboard.getOrCreateScore(scoreHolder, objective, true);
+            int totalScore = 0;
+            for (ScoreboardCriterion criterion : aggregateStat.criteria) {
+                totalScore += TrackedStatManager.getCriterionValue(profiles.get(profile), criterion);
+            }
+            if (totalScore != 0) {
+                score.setScore(totalScore);
+            }
+            else {
+                scoreboard.removeScore(scoreHolder, objective);
+            }
+        }
+    }
+
+    private static int getCriterionValue(@Nullable ServerStatHandler statHandler, ScoreboardCriterion criterion) {
+        if (statHandler != null && criterion instanceof Stat<?> stat) {
+            return statHandler.getStat(stat);
+        }
+        return 0;
+    }
+
+
+    /**
+     * Stat importer, modified from
+     * <a href="https://github.com/qixils/scoreboard-stats-import">qixils' stat importer</a>
+     */
     private static Map<GameProfile, ServerStatHandler> getStatistics(MinecraftServer server) {
         UserCache userCache = server.getUserCache();
         HashMap<GameProfile, ServerStatHandler> profiles = new HashMap<>();
         if (userCache != null) {
             MinecraftSessionService sessionService = server.getSessionService();
-            for (File file : FileUtils.listFiles(ServerUtil.getToolboxPath(server, "stats").toFile(), new String[]{"json"},
+            for (File file : FileUtils.listFiles(ServerUtil.getWorldPath(server, "stats").toFile(), new String[]{"json"},
                     false)) {
                 String name = file.getName();
                 UUID uuid = UUID.fromString(name.substring(0, name.length() - 5));
@@ -216,48 +250,65 @@ public class TrackedStatManager {
     }
 
     public static void loadTrackedStats(MinecraftServer server) {
+        TRACKED_AGGREGATORS.clear();
+        TRACKED_MODIFIED_STATS.clear();
+        TRACKED_STATS.clear();
         ServerUtil.getToolboxPath(server, "").toFile().mkdirs();
-        if (ServerUtil.getToolboxPath(server, "tracked_stats.conf").toFile().isFile()) {
-            try (BufferedReader bufferedWriter = Files.newBufferedReader(ServerUtil.getToolboxPath(server, "tracked_stats.conf"))) {
+        if (ServerUtil.getToolboxPath(server, "aggregates.conf").toFile().isFile()) {
+            int i = 0;
+            try (BufferedReader bufferedWriter = Files.newBufferedReader(ServerUtil.getToolboxPath(server, "aggregates.conf"))) {
                 String line;
                 while ((line = bufferedWriter.readLine()) != null) {
-                    String[] entry = line.split(": ", 2);
-                    if (entry.length < 1) {
-                        TechnicalToolbox.log("Invalid line \"{}\": expects format \"objective_name display_json: stats...\"");
-                        continue;
-                    }
-                    String[] objectiveStrings = entry[0].split(" ", 2);
-                    if (objectiveStrings.length != 2) {
-                        TechnicalToolbox.log("Invalid line \"{}\": expects format \"objective_name display_json: stats...\"");
-                        continue;
-                    }
-                    String name = TRACKED_AGGREGATE_PREFIX + objectiveStrings[0];
-                    ScoreboardObjective objective = server.getScoreboard().getNullableObjective(name);
-                    if (objective == null) {
-                        objective = TrackedStatManager.createNewObjective(server, name, ScoreboardCriterion.DUMMY,
-                                Text.Serialization.fromJson(objectiveStrings[1], server.getRegistryManager()));
-                    }
-                    AggregateStatWrapper stat = AggregateStatWrapper.create(objective);
-                    for (String st : entry[1].split(" ")) {
-                        ScoreboardCriterion.getOrCreateStatCriterion(st).ifPresentOrElse(stat::addCriteria, () ->
-                                TechnicalToolbox.warn("No such criterion \"{}\"", st));
+                    if (!line.isEmpty()) {
+                        String[] entry = line.split(": ", 2);
+                        if (entry.length < 1) {
+                            TechnicalToolbox.log("Invalid line \"{}\": expects format \"objective_name display_json: stats...\"");
+                            continue;
+                        }
+                        String[] objectiveStrings = entry[0].split(" ", 2);
+                        if (objectiveStrings.length != 2) {
+                            TechnicalToolbox.log("Invalid line \"{}\": expects format \"objective_name display_json: stats...\"");
+                            continue;
+                        }
+                        String name = TRACKED_AGGREGATE_PREFIX + objectiveStrings[0];
+                        ScoreboardObjective objective = server.getScoreboard().getNullableObjective(name);
+                        if (objective == null) {
+                            objective = TrackedStatManager.createNewObjective(server, name, ScoreboardCriterion.DUMMY,
+                                    Text.Serialization.fromJson(objectiveStrings[1], server.getRegistryManager()));
+                        }
+                        AggregateStatWrapper stat = AggregateStatWrapper.create(objective);
+                        TRACKED_AGGREGATORS.add(stat);
+                        if (entry.length == 2) {
+                            for (String st : entry[1].split(" ")) {
+                                if (!st.isEmpty()) {
+                                    ScoreboardCriterion.getOrCreateStatCriterion(st).ifPresentOrElse(stat::addCriteria, () ->
+                                            TechnicalToolbox.warn("No such criterion \"{}\"", st));
+                                }
+                            }
+                            TrackedStatManager.refreshAggregate(server, stat);
+                        }
+                        i++;
                     }
                 }
-            } catch (Exception e) {
-                TechnicalToolbox.error("Something went wrong reading from tracked_stats.conf");
+            }
+            catch (Exception e) {
+                TechnicalToolbox.error("Something went wrong reading from aggregates.conf");
                 return;
             }
-            TechnicalToolbox.log("Loaded tracked stats");
+            if (i > 0) {
+                TechnicalToolbox.log("Loaded {} aggregate stats", i);
+            }
         }
         else {
-            TechnicalToolbox.log("No tracked stats loaded: tracked_stats.conf does not exist");
+            TechnicalToolbox.log("No aggregate stats loaded: aggregates.conf does not exist");
         }
     }
 
     public static void saveTrackedStats(MinecraftServer server) {
         ServerUtil.getToolboxPath(server, "").toFile().mkdirs();
-        try (BufferedWriter bufferedWriter = Files.newBufferedWriter(ServerUtil.getToolboxPath(server, "tracked_stats.conf"))) {
+        try (BufferedWriter bufferedWriter = Files.newBufferedWriter(ServerUtil.getToolboxPath(server, "aggregates.conf"))) {
             for (AggregateStatWrapper stat : TRACKED_AGGREGATORS) {
+                TechnicalToolbox.log("{}", stat.objective.getName());
                 bufferedWriter.write(stat.objective.getName().replaceFirst(TRACKED_AGGREGATE_PREFIX, "") + " " +
                         Text.Serialization.toJsonString(stat.objective.getDisplayName(), server.getRegistryManager()) +  ": ");
                 for (ScoreboardCriterion criterion : stat.criteria) {
@@ -267,11 +318,8 @@ public class TrackedStatManager {
             }
         }
         catch (Exception e) {
-            TechnicalToolbox.error("Something went wrong creating tracked_stats.conf");
+            TechnicalToolbox.error("Something went wrong creating aggregates.conf");
         }
-        TRACKED_AGGREGATORS.clear();
-        TRACKED_MODIFIED_STATS.clear();
-        TRACKED_STATS.clear();
     }
 
 }

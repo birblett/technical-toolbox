@@ -22,6 +22,14 @@ public class ServerUtil {
      * @param path a relative path to a file
      * @return path to a file on within the current world folder
      */
+    public static Path getWorldPath(MinecraftServer server, String path) {
+        return server.getSavePath(WorldSavePath.ROOT).resolve(path);
+    }
+
+    /**
+     * @param path a relative path to a file
+     * @return path to a file on within the current world folder's technical toolbox folder
+     */
     public static Path getToolboxPath(MinecraftServer server, String path) {
         return server.getSavePath(WorldSavePath.ROOT).resolve("technical_toolbox/" + path);
     }

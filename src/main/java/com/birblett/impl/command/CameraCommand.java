@@ -1,7 +1,7 @@
 package com.birblett.impl.command;
 
-import com.birblett.impl.config.ConfigOptions;
 import com.birblett.accessor.command.camera.CameraInterface;
+import com.birblett.impl.config.ConfigOptions;
 import com.birblett.util.TextUtils;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.context.CommandContext;
