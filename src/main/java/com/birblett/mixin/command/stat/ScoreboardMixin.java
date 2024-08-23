@@ -14,6 +14,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(Scoreboard.class)
 public class ScoreboardMixin {
 
+    @Inject(method = "removeObjective", at = @At(value = "INVOKE", target = "Lnet/minecraft/scoreboard/ScoreboardDisplaySlot;values()[Lnet/minecraft/scoreboard/ScoreboardDisplaySlot;"))
+    private void removeTracked(ScoreboardObjective objective, CallbackInfo ci) {
+        TrackedStatManager.maybeRemoveScore(objective);
+    }
+
     @Inject(method = "readNbt", at = @At(value = "INVOKE", target = "Lnet/minecraft/scoreboard/Scoreboard;getScores(Ljava/lang/String;)Lnet/minecraft/scoreboard/Scores;"))
     private void getAllScores(NbtList list, RegistryWrapper.WrapperLookup registries, CallbackInfo ci, @Local ScoreboardObjective scoreboardObjective) {
         TrackedStatManager.addTrackedObjective(scoreboardObjective);

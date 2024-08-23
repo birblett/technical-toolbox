@@ -48,104 +48,58 @@ import java.util.*;
 
 public class TrackedStatManager {
 
-    public static HashSet<AggregateStatWrapper> TRACKED_AGGREGATORS = new HashSet<>();
-    public static HashSet<ScoreboardObjective> TRACKED_MODIFIED_STATS = new HashSet<>();
+    public static HashSet<CompoundStat> TRACKED_COMPOUNDS = new HashSet<>();
     public static HashSet<ScoreboardObjective> TRACKED_STATS = new HashSet<>();
-    public static HashMap<ScoreboardCriterion, HashSet<ScoreboardObjective>> CRITERION_LISTENERS = new HashMap<>();
-    public static String TRACKED_AGGREGATE_PREFIX = "technical_toolbox.tracked_aggregators.";
-    public static String TRACKED_MODIFIED_PREFIX = "technical_toolbox.modified_stats.";
+    public static HashMap<ScoreboardCriterion, HashSet<CompoundStat>> CRITERION_LISTENERS = new HashMap<>();
+    public static String COMPOUND_STAT_PREFIX = "technical_toolbox.compound_stats.";
     public static String TRACKED_STAT_PREFIX = "technical_toolbox.tracked_stats.";
+    public static final String COMPOUND_FILE_NAME = "compound_stats.conf";
     private static final Map<UUID, GameProfile> PROFILE_CACHE = new HashMap<>();
 
-    public static Collection<String> getAggregateNames() {
+    public static Collection<String> getCompoundNames() {
         ArrayList<String> list = new ArrayList<>();
-        for (AggregateStatWrapper stat : TRACKED_AGGREGATORS) {
-            list.add(stat.objective.getName().replaceFirst(TRACKED_AGGREGATE_PREFIX, ""));
+        for (CompoundStat stat : TRACKED_COMPOUNDS) {
+            list.add(stat.objective.getName().replaceFirst(COMPOUND_STAT_PREFIX, ""));
         }
         return list;
     }
 
-    public static AggregateStatWrapper getAggregate(String name) {
-        for (AggregateStatWrapper stat : TRACKED_AGGREGATORS) {
-            if ((TRACKED_AGGREGATE_PREFIX + name).equals(stat.objective.getName())) {
+    public static CompoundStat getCompoundStat(String name) {
+        for (CompoundStat stat : TRACKED_COMPOUNDS) {
+            if ((COMPOUND_STAT_PREFIX + name).equals(stat.objective.getName())) {
                 return stat;
             }
         }
         return null;
     }
 
-    public interface StatListener {
-
-    }
-
-    public static class AggregateStatWrapper {
-
-        public final ScoreboardObjective objective;
-        public final HashSet<ScoreboardCriterion> criteria;
-
-        public AggregateStatWrapper( ScoreboardObjective objective, HashSet<ScoreboardCriterion> criteria) {
-            this.objective = objective;
-            this.criteria = criteria;
-        }
-
-        public static AggregateStatWrapper create(ScoreboardObjective objective) {
-            return new AggregateStatWrapper(objective, new HashSet<>());
-        }
-
-        public void addCriteria(ScoreboardCriterion criterion) {
-            this.criteria.add(criterion);
-            TrackedStatManager.beginListening(criterion, this.objective);
-        }
-
-        public void removeCriteria(ScoreboardCriterion criterion) {
-            this.criteria.remove(criterion);
-            TrackedStatManager.stopListening(criterion, this.objective);
-        }
-
-        public void deregisterAll() {
-            for (ScoreboardCriterion criterion : this.criteria) {
-                if (CRITERION_LISTENERS.containsKey(criterion)) {
-                    TrackedStatManager.stopListening(criterion, this.objective);
-                }
+    public static void maybeRemoveScore(Object obj) {
+        if (!TRACKED_COMPOUNDS.removeIf(compound -> compound.equals(obj))) {
+            if (obj instanceof ScoreboardObjective objective) {
+                TRACKED_STATS.remove(objective);
             }
         }
-
-        public void registerAll() {
-            for (ScoreboardCriterion criterion : this.criteria) {
-                if (CRITERION_LISTENERS.containsKey(criterion)) {
-                    TrackedStatManager.beginListening(criterion, this.objective);
-                }
-            }
-        }
-
     }
 
     public static void addTrackedObjective(ScoreboardObjective objective) {
         String name = objective.getName();
-        if (name.startsWith(TRACKED_AGGREGATE_PREFIX)) {
-            TRACKED_AGGREGATORS.add(AggregateStatWrapper.create(objective));
-        }
-        else if (name.startsWith(TRACKED_MODIFIED_PREFIX)) {
-            TRACKED_MODIFIED_STATS.add(objective);
-        }
-        else if (name.startsWith(TRACKED_STAT_PREFIX)) {
+        if (name.startsWith(TRACKED_STAT_PREFIX)) {
             TRACKED_STATS.add(objective);
         }
     }
 
-    public static void beginListening(ScoreboardCriterion criterion, ScoreboardObjective listener) {
+    public static void beginListening(ScoreboardCriterion criterion, CompoundStat listener) {
         CRITERION_LISTENERS.computeIfAbsent(criterion, k -> new HashSet<>()).add(listener);
     }
 
-    public static void stopListening(ScoreboardCriterion criterion, ScoreboardObjective listener) {
+    public static void stopListening(ScoreboardCriterion criterion, CompoundStat listener) {
         CRITERION_LISTENERS.computeIfAbsent(criterion, k -> new HashSet<>()).remove(listener);
     }
 
-    public static void informListeners(ServerScoreboard scoreboard, ScoreHolder scoreHolder, ScoreboardCriterion criterion, int delta) {
+    public static void informListeners(ServerScoreboard scoreboard, ScoreHolder scoreHolder, ScoreboardCriterion criterion, int delta, int score) {
         if (CRITERION_LISTENERS.get(criterion) != null) {
-            for (ScoreboardObjective listener : CRITERION_LISTENERS.get(criterion)) {
-                ScoreAccess access = scoreboard.getOrCreateScore(scoreHolder, listener, true);
-                access.incrementScore(delta);
+            for (CompoundStat listener : CRITERION_LISTENERS.get(criterion)) {
+                listener.updateScore(scoreboard, scoreHolder, delta, score);
             }
         }
     }
@@ -163,7 +117,7 @@ public class TrackedStatManager {
                 ScoreboardCriterion.RenderType.INTEGER, true, null);
         scoreboard.addScoreboardObjective(objective);
         if (criterion != ScoreboardCriterion.DUMMY) {
-            TrackedStatManager.importStat(server, objective);
+            TrackedStatManager.refreshStat(server, objective, null);
         }
         TrackedStatManager.addTrackedObjective(objective);
         return objective;
@@ -173,11 +127,14 @@ public class TrackedStatManager {
      * Stat importer, modified from
      * <a href="https://github.com/qixils/scoreboard-stats-import">qixils' stat importer</a>
      */
-    private static void importStat(MinecraftServer server, ScoreboardObjective objective) {
+    public static void refreshStat(MinecraftServer server, ScoreboardObjective objective, Map<GameProfile, ServerStatHandler> profiles) {
         ScoreboardCriterion criterion = objective.getCriterion();
         Scoreboard scoreboard = server.getScoreboard();
         if (criterion instanceof Stat<?>) {
-            Map<GameProfile, ServerStatHandler> profiles = TrackedStatManager.getStatistics(server);
+            if (profiles == null) {
+                server.getPlayerManager().saveAllPlayerData();
+                profiles = TrackedStatManager.getStatistics(server);
+            }
             for (GameProfile profile : profiles.keySet()) {
                 ScoreHolder scoreHolder = ScoreHolder.fromProfile(profile);
                 ScoreAccess score = scoreboard.getOrCreateScore(scoreHolder, objective, true);
@@ -193,25 +150,27 @@ public class TrackedStatManager {
     }
 
     /**
-     * Stat importer, modified to handle aggregates
+     * Stat importer, modified to handle compound stats
      * <a href="https://github.com/qixils/scoreboard-stats-import">qixils' stat importer</a>
      */
-    public static void refreshAggregate(MinecraftServer server, AggregateStatWrapper aggregateStat) {
-        ScoreboardObjective objective = aggregateStat.objective;
+    public static void refreshCompound(MinecraftServer server, CompoundStat compound, Map<GameProfile, ServerStatHandler> profiles) {
+        compound.clearScores();
         Scoreboard scoreboard = server.getScoreboard();
-        Map<GameProfile, ServerStatHandler> profiles = TrackedStatManager.getStatistics(server);
+        if (profiles == null) {
+            server.getPlayerManager().saveAllPlayerData();
+            profiles = TrackedStatManager.getStatistics(server);
+        }
         for (GameProfile profile : profiles.keySet()) {
             ScoreHolder scoreHolder = ScoreHolder.fromProfile(profile);
-            ScoreAccess score = scoreboard.getOrCreateScore(scoreHolder, objective, true);
             int totalScore = 0;
-            for (ScoreboardCriterion criterion : aggregateStat.criteria) {
+            for (ScoreboardCriterion criterion : compound.criteria) {
                 totalScore += TrackedStatManager.getCriterionValue(profiles.get(profile), criterion);
             }
             if (totalScore != 0) {
-                score.setScore(totalScore);
+                compound.setScore(scoreboard, scoreHolder, totalScore);
             }
             else {
-                scoreboard.removeScore(scoreHolder, objective);
+                compound.removeScore(scoreboard, scoreHolder);
             }
         }
     }
@@ -223,12 +182,11 @@ public class TrackedStatManager {
         return 0;
     }
 
-
     /**
      * Stat importer, modified from
      * <a href="https://github.com/qixils/scoreboard-stats-import">qixils' stat importer</a>
      */
-    private static Map<GameProfile, ServerStatHandler> getStatistics(MinecraftServer server) {
+    public static Map<GameProfile, ServerStatHandler> getStatistics(MinecraftServer server) {
         UserCache userCache = server.getUserCache();
         HashMap<GameProfile, ServerStatHandler> profiles = new HashMap<>();
         if (userCache != null) {
@@ -250,75 +208,53 @@ public class TrackedStatManager {
     }
 
     public static void loadTrackedStats(MinecraftServer server) {
-        TRACKED_AGGREGATORS.clear();
-        TRACKED_MODIFIED_STATS.clear();
+        TRACKED_COMPOUNDS.clear();
         TRACKED_STATS.clear();
         ServerUtil.getToolboxPath(server, "").toFile().mkdirs();
-        if (ServerUtil.getToolboxPath(server, "aggregates.conf").toFile().isFile()) {
-            int i = 0;
-            try (BufferedReader bufferedWriter = Files.newBufferedReader(ServerUtil.getToolboxPath(server, "aggregates.conf"))) {
+        if (ServerUtil.getToolboxPath(server, COMPOUND_FILE_NAME).toFile().isFile()) {
+            int i = 0, j = i;
+            try (BufferedReader bufferedWriter = Files.newBufferedReader(ServerUtil.getToolboxPath(server, COMPOUND_FILE_NAME))) {
                 String line;
                 while ((line = bufferedWriter.readLine()) != null) {
                     if (!line.isEmpty()) {
-                        String[] entry = line.split(": ", 2);
-                        if (entry.length < 1) {
-                            TechnicalToolbox.log("Invalid line \"{}\": expects format \"objective_name display_json: stats...\"");
-                            continue;
-                        }
-                        String[] objectiveStrings = entry[0].split(" ", 2);
-                        if (objectiveStrings.length != 2) {
-                            TechnicalToolbox.log("Invalid line \"{}\": expects format \"objective_name display_json: stats...\"");
-                            continue;
-                        }
-                        String name = TRACKED_AGGREGATE_PREFIX + objectiveStrings[0];
-                        ScoreboardObjective objective = server.getScoreboard().getNullableObjective(name);
-                        if (objective == null) {
-                            objective = TrackedStatManager.createNewObjective(server, name, ScoreboardCriterion.DUMMY,
-                                    Text.Serialization.fromJson(objectiveStrings[1], server.getRegistryManager()));
-                        }
-                        AggregateStatWrapper stat = AggregateStatWrapper.create(objective);
-                        TRACKED_AGGREGATORS.add(stat);
-                        if (entry.length == 2) {
-                            for (String st : entry[1].split(" ")) {
-                                if (!st.isEmpty()) {
-                                    ScoreboardCriterion.getOrCreateStatCriterion(st).ifPresentOrElse(stat::addCriteria, () ->
-                                            TechnicalToolbox.warn("No such criterion \"{}\"", st));
-                                }
+                        try {
+                            CompoundStat stat = CompoundStat.deserialize(server, line, i);
+                            if (stat != null) {
+                                TRACKED_COMPOUNDS.add(stat);
+                                TrackedStatManager.refreshCompound(server, stat, null);
+                                j++;
                             }
-                            TrackedStatManager.refreshAggregate(server, stat);
                         }
-                        i++;
+                        catch (Exception e) {
+                            TechnicalToolbox.error("Something went wrong parsing compound stat at line {}", i);
+                        }
                     }
+                    i++;
                 }
             }
             catch (Exception e) {
-                TechnicalToolbox.error("Something went wrong reading from aggregates.conf");
+                TechnicalToolbox.error("Something went wrong reading from {}", COMPOUND_FILE_NAME);
                 return;
             }
-            if (i > 0) {
-                TechnicalToolbox.log("Loaded {} aggregate stats", i);
+            if (j > 0) {
+                TechnicalToolbox.log("Loaded {} compound stats", j);
             }
         }
         else {
-            TechnicalToolbox.log("No aggregate stats loaded: aggregates.conf does not exist");
+            TechnicalToolbox.log("No compound stats loaded: {} does not exist", COMPOUND_FILE_NAME);
         }
     }
 
     public static void saveTrackedStats(MinecraftServer server) {
         ServerUtil.getToolboxPath(server, "").toFile().mkdirs();
-        try (BufferedWriter bufferedWriter = Files.newBufferedWriter(ServerUtil.getToolboxPath(server, "aggregates.conf"))) {
-            for (AggregateStatWrapper stat : TRACKED_AGGREGATORS) {
-                TechnicalToolbox.log("{}", stat.objective.getName());
-                bufferedWriter.write(stat.objective.getName().replaceFirst(TRACKED_AGGREGATE_PREFIX, "") + " " +
-                        Text.Serialization.toJsonString(stat.objective.getDisplayName(), server.getRegistryManager()) +  ": ");
-                for (ScoreboardCriterion criterion : stat.criteria) {
-                    bufferedWriter.write(criterion.getName() + " ");
-                }
+        try (BufferedWriter bufferedWriter = Files.newBufferedWriter(ServerUtil.getToolboxPath(server, COMPOUND_FILE_NAME))) {
+            for (CompoundStat stat : TRACKED_COMPOUNDS) {
+                bufferedWriter.write(stat.serialize(server));
                 bufferedWriter.write("\n");
             }
         }
         catch (Exception e) {
-            TechnicalToolbox.error("Something went wrong creating aggregates.conf");
+            TechnicalToolbox.error("Something went wrong creating {}", COMPOUND_FILE_NAME);
         }
     }
 

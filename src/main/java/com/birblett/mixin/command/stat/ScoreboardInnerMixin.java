@@ -20,7 +20,7 @@ public class ScoreboardInnerMixin {
     private void scoreSetHook(ScoreboardScore scoreboardScore, int score, Operation<Void> original) {
         if (this.field_47548 instanceof ServerScoreboard scoreboard) {
             TrackedStatManager.informListeners(scoreboard, this.field_47547, this.field_47546.getCriterion(),
-                    score - scoreboardScore.getScore());
+                    score - scoreboardScore.getScore(), score);
         }
         original.call(scoreboardScore, score);
     }

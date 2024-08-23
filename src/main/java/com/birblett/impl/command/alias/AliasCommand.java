@@ -476,7 +476,9 @@ public class AliasCommand {
                 return CommandSource.suggestMatching(Collections.emptyList(), builder);
             }
             Collection<Variable.Definition> args = cmd.getArguments();
-            args.forEach(var -> argString.add(var.name));
+            for (Variable.Definition var : args) {
+                argString.add(var.name);
+            }
         }
         return CommandSource.suggestMatching(argString, builder);
     }

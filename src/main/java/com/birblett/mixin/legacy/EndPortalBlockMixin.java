@@ -24,10 +24,12 @@ public class EndPortalBlockMixin {
             int i = spawnPos.getX();
             int j = spawnPos.getY() - 2;
             int k = spawnPos.getZ();
-            BlockPos.iterate(i - 2, j + 1, k - 2, i + 2, j + 3, k + 2).forEach(pos ->
-                    world.toServerWorld().setBlockState(pos, Blocks.AIR.getDefaultState()));
-            BlockPos.iterate(i - 2, j, k - 2, i + 2, j, k + 2).forEach(pos -> world
-                    .toServerWorld().setBlockState(pos, Blocks.OBSIDIAN.getDefaultState()));
+            for (BlockPos pos : BlockPos.iterate(i - 2, j + 1, k - 2, i + 2, j + 3, k + 2)) {
+                world.toServerWorld().setBlockState(pos, Blocks.AIR.getDefaultState());
+            }
+            for (BlockPos pos : BlockPos.iterate(i - 2, j, k - 2, i + 2, j, k + 2)) {
+                world.toServerWorld().setBlockState(pos, Blocks.OBSIDIAN.getDefaultState());
+            }
         }
         else {
             original.call(world, blockPos, breakBlocks);

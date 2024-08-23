@@ -58,7 +58,7 @@ public class ServerPlayerEntityMixin implements StatTracker {
     private void statIncreaseHook(Stat<?> stat, int amount, CallbackInfo ci) {
         ServerPlayerEntity player = (ServerPlayerEntity) (Object) this;
         if (player.getScoreboard() instanceof ServerScoreboard scoreboard) {
-            TrackedStatManager.informListeners(scoreboard, player, stat, amount);
+            TrackedStatManager.informListeners(scoreboard, player, stat, amount, player.getStatHandler().getStat(stat));
         }
     }
 }
