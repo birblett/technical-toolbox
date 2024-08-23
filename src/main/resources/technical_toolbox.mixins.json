@@ -3,6 +3,7 @@
   "package": "com.birblett.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
+    "MinecraftServerMixin",
     "command.CommandManagerMixin",
     "command.CommandNodeMixin",
     "command.ServerCommandSourceMixin",
@@ -15,7 +16,6 @@
     "command.stat.ScoreboardMixin",
     "command.stat.ServerPlayerEntityMixin",
     "command.stat.ServerScoreboardMixin",
-    "config.MinecraftServerMixin",
     "feature.AnvilScreenHandlerMixin",
     "feature.BulbBlockMixin",
     "feature.CrafterBlockMixin",

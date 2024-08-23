@@ -6,7 +6,6 @@ import com.birblett.accessor.command.delay.AliasedCommandSource;
 import com.birblett.impl.command.alias.language.AliasConstants;
 import com.birblett.impl.command.alias.language.Instruction;
 import com.birblett.impl.command.alias.language.Variable;
-import com.birblett.impl.config.ConfigOption;
 import com.birblett.impl.config.ConfigOptions;
 import com.birblett.util.ServerUtil;
 import com.birblett.util.TextUtils;

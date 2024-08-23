@@ -1,11 +1,9 @@
 package com.birblett.impl.command.alias;
 
 import com.birblett.TechnicalToolbox;
-import com.birblett.impl.config.ConfigOption;
 import com.birblett.impl.config.ConfigOptions;
 import com.birblett.util.ServerUtil;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.util.WorldSavePath;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
@@ -24,7 +22,6 @@ import java.util.Map;
 public class AliasManager {
 
     public static final Map<String, AliasedCommand> ALIASES = new HashMap<>();
-    public static final String GLOBAL_PATH = "config/aliases";
     public static final String ALIAS_PATH = "aliases";
     public static final String RECYCLE_PATH = "aliases/recycle";
 

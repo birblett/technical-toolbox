@@ -122,7 +122,7 @@ public class CompoundStat {
      * Returns a string representation of the compound stat as [name] [displayName] [modifier]: [tracked criteria]...
      */
     public String serialize(MinecraftServer server) {
-        StringBuilder s = new StringBuilder(this.objective.getName().replaceFirst(TrackedStatManager.COMPOUND_STAT_PREFIX, ""));
+        StringBuilder s = new StringBuilder(this.objective.getName().replaceFirst(TrackedStatManager.COMPOUND_STAT_REGEX, ""));
         s.append(" ").append(Text.Serialization.toJsonString(this.objective.getDisplayName(), server.getRegistryManager())).append(" ")
                 .append(this.mode ? "*" : "/").append(this.modifier).append(": ");
         for (ScoreboardCriterion criterion : this.criteria) {

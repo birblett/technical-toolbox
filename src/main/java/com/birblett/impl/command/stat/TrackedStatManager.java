@@ -57,6 +57,7 @@ public class TrackedStatManager {
     public static HashSet<ScoreboardObjective> TRACKED_STATS = new HashSet<>();
     public static HashMap<ScoreboardCriterion, HashSet<CompoundStat>> CRITERION_LISTENERS = new HashMap<>();
     public static String COMPOUND_STAT_PREFIX = "technical_toolbox.compound_stats.";
+    public static String COMPOUND_STAT_REGEX = "technical_toolbox\\.compound_stats\\.";
     public static String TRACKED_STAT_PREFIX = "technical_toolbox.tracked_stats.";
     public static final String COMPOUND_FILE_NAME = "compound_stats.conf";
     private static final Map<UUID, GameProfile> PROFILE_CACHE = new HashMap<>();
@@ -67,7 +68,7 @@ public class TrackedStatManager {
     public static Collection<String> getCompoundNames() {
         ArrayList<String> list = new ArrayList<>();
         for (CompoundStat stat : TRACKED_COMPOUNDS) {
-            list.add(stat.objective.getName().replaceFirst(COMPOUND_STAT_PREFIX, ""));
+            list.add(stat.objective.getName().replaceFirst(COMPOUND_STAT_REGEX, ""));
         }
         return list;
     }
@@ -241,7 +242,6 @@ public class TrackedStatManager {
      */
     public static void loadTrackedStats(MinecraftServer server, Path path, boolean global) {
         path.toFile().mkdirs();
-        TechnicalToolbox.log("{}", path);
         if (path.resolve(COMPOUND_FILE_NAME).toFile().isFile()) {
             int i = 0, j = i;
             try (BufferedReader bufferedWriter = Files.newBufferedReader(path.resolve(COMPOUND_FILE_NAME))) {
