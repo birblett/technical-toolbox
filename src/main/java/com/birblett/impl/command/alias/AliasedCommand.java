@@ -38,7 +38,6 @@ import java.util.regex.Pattern;
 public class AliasedCommand {
 
     private String alias;
-    private boolean compiled = false;
     private final List<String> commands = new ArrayList<>();
     private final List<Instruction> instructions = new ArrayList<>();
     private final LinkedHashMap<String, Variable.Definition> argumentDefinitions = new LinkedHashMap<>();
@@ -331,7 +330,7 @@ public class AliasedCommand {
             AliasManager.ALIASES.put(this.alias, this);
         }
         // Compile first, if compilation fails then it does nothing
-        if (!(this.compiled = this.compile())) {
+        if (!this.compile()) {
             return false;
         }
         this.status = "Compiled successfully";
