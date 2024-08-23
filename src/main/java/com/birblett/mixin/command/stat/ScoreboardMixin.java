@@ -11,6 +11,9 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+/**
+ * Handles tracked stat removal and processes all objectives on world load to track if matching prefix.
+ */
 @Mixin(Scoreboard.class)
 public class ScoreboardMixin {
 

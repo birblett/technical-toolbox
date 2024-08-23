@@ -6,6 +6,7 @@ import com.birblett.accessor.command.delay.AliasedCommandSource;
 import com.birblett.impl.command.alias.language.AliasConstants;
 import com.birblett.impl.command.alias.language.Instruction;
 import com.birblett.impl.command.alias.language.Variable;
+import com.birblett.impl.config.ConfigOption;
 import com.birblett.impl.config.ConfigOptions;
 import com.birblett.util.ServerUtil;
 import com.birblett.util.TextUtils;
@@ -561,8 +562,7 @@ public class AliasedCommand {
     }
 
     /**
-     * Adds an argument, failing if it already exists.
-     * @param source command source to send feedback to
+     * Adds an argument, failing if it already exists, and recompiles afterward if auto-compilation is enabled.
      * @param replace whether the argument should replace the old one
      * @param name name of the argument
      * @param argType argument type
@@ -602,8 +602,7 @@ public class AliasedCommand {
     }
 
     /**
-     * Removes an argument with the specified name
-     * @param source source to send feedback to
+     * Removes an argument with the specified name, and recompiles afterward if auto-compilation is enabled.
      * @param name name of argument
      * @return true if successful, false if not
      */
@@ -612,7 +611,9 @@ public class AliasedCommand {
             this.argumentDefinitions.remove(name);
             source.sendFeedback(() -> TextUtils.formattable("Removed argument ").append(TextUtils.formattable(name)
                     .formatted(Formatting.GREEN)), false);
-            this.refresh(source);
+            if (ConfigOptions.ALIAS_MODIFY_COMPILE.val()) {
+                this.refresh(source);
+            }
             return true;
         }
         source.sendError(TextUtils.formattable("Argument \"" + name + "\" not found"));
@@ -620,8 +621,7 @@ public class AliasedCommand {
     }
 
     /**
-     * Renames an argument
-     * @param source command source to send feedback to
+     * Renames an argument, and recompiles afterward if auto-compilation is enabled.
      * @param name target argument
      * @param newName name to rename to
      * @return true if successful, false otherwise
@@ -648,7 +648,9 @@ public class AliasedCommand {
             this.argumentDefinitions.putAll(list.reversed());
             source.sendFeedback(() -> TextUtils.formattable("Renamed argument to ").append(TextUtils.formattable(newName)
                     .formatted(Formatting.GREEN)), false);
-            this.refresh(source);
+            if (ConfigOptions.ALIAS_MODIFY_COMPILE.val()) {
+                this.refresh(source);
+            }
             return true;
         }
         source.sendError(TextUtils.formattable("Argument \"" + name + "\" not found"));
@@ -673,7 +675,6 @@ public class AliasedCommand {
 
     /**
      * Deregisters and attempts to re-register this alias with the provided command source's server.
-     * @param source command user; error messages sent if failed to re-register
      */
     public boolean refresh(ServerCommandSource source) {
         this.deregister(source.getServer(), false);
@@ -697,8 +698,7 @@ public class AliasedCommand {
     }
 
     /**
-     * Display command syntax to the executor
-     * @param context contains the executor to send feedback to
+     * Displays basic command syntax.
      */
     private int getCommandInfo(CommandContext<ServerCommandSource> context) {
         context.getSource().sendFeedback(this::getSyntax, false);
@@ -707,7 +707,7 @@ public class AliasedCommand {
 
     /**
      * Writes alias, permission level, separator (if applicable)
-     * @param path filepath to write to
+     * @param path path to write to
      * @return whether alias was written successfully or not
      */
     public boolean writeToFile(Path path) {

@@ -63,27 +63,8 @@ public class AliasManager {
     }
 
     /**
-     * @return relative path to toolbox_aliases folder
+     * Read all aliases from storage and compile + register them.
      */
-    private Path getDirectory(MinecraftServer server) {
-        return server.getSavePath(WorldSavePath.ROOT).resolve("toolbox_aliases");
-    }
-
-    /**
-     * @return relative path to toolbox_aliases folder
-     */
-    private Path getRecycleDirectory(MinecraftServer server) {
-        return server.getSavePath(WorldSavePath.ROOT).resolve("toolbox_aliases/recycle");
-    }
-
-    /**
-     * @param name alias name
-     * @return qualified name of an alias file specified by the name
-     */
-    private Path getAliasPath(MinecraftServer server, String name) {
-        return this.getDirectory(server).resolve(name + ".alias");
-    }
-
     public void readAliases(MinecraftServer server) {
         File global = ServerUtil.getGlobalToolboxPath(server, GLOBAL_PATH).toFile();
         ServerUtil.createDirectoryIfNotPresent(global);

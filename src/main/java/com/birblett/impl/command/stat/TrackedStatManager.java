@@ -46,6 +46,9 @@ import java.io.File;
 import java.nio.file.Files;
 import java.util.*;
 
+/**
+ * Manages all tracked stats and compound stats.
+ */
 public class TrackedStatManager {
 
     public static HashSet<CompoundStat> TRACKED_COMPOUNDS = new HashSet<>();
@@ -56,6 +59,9 @@ public class TrackedStatManager {
     public static final String COMPOUND_FILE_NAME = "compound_stats.conf";
     private static final Map<UUID, GameProfile> PROFILE_CACHE = new HashMap<>();
 
+    /**
+     * Get all compound stat names, without the prefix.
+     */
     public static Collection<String> getCompoundNames() {
         ArrayList<String> list = new ArrayList<>();
         for (CompoundStat stat : TRACKED_COMPOUNDS) {
@@ -64,15 +70,21 @@ public class TrackedStatManager {
         return list;
     }
 
+    /**
+     * Gets a compound stat by name.
+     */
     public static CompoundStat getCompoundStat(String name) {
         for (CompoundStat stat : TRACKED_COMPOUNDS) {
-            if ((COMPOUND_STAT_PREFIX + name).equals(stat.objective.getName())) {
+            if (stat.equals(COMPOUND_STAT_PREFIX + name)) {
                 return stat;
             }
         }
         return null;
     }
 
+    /**
+     * Untracks a compound stat or an objective, does nothing otherwise.
+     */
     public static void maybeRemoveScore(Object obj) {
         if (!TRACKED_COMPOUNDS.removeIf(compound -> compound.equals(obj))) {
             if (obj instanceof ScoreboardObjective objective) {
@@ -81,6 +93,9 @@ public class TrackedStatManager {
         }
     }
 
+    /**
+     * Adds an objective to be tracked if its name matches the tracked objective format.
+     */
     public static void addTrackedObjective(ScoreboardObjective objective) {
         String name = objective.getName();
         if (name.startsWith(TRACKED_STAT_PREFIX)) {
@@ -88,14 +103,23 @@ public class TrackedStatManager {
         }
     }
 
+    /**
+     * Adds a listener to a criterion.
+     */
     public static void beginListening(ScoreboardCriterion criterion, CompoundStat listener) {
         CRITERION_LISTENERS.computeIfAbsent(criterion, k -> new HashSet<>()).add(listener);
     }
 
+    /**
+     * Removes a listener from a criterion.
+     */
     public static void stopListening(ScoreboardCriterion criterion, CompoundStat listener) {
         CRITERION_LISTENERS.computeIfAbsent(criterion, k -> new HashSet<>()).remove(listener);
     }
 
+    /**
+     * Event hook for when criterion values are updated.
+     */
     public static void informListeners(ServerScoreboard scoreboard, ScoreHolder scoreHolder, ScoreboardCriterion criterion, int delta, int score) {
         if (CRITERION_LISTENERS.get(criterion) != null) {
             for (CompoundStat listener : CRITERION_LISTENERS.get(criterion)) {
@@ -175,6 +199,9 @@ public class TrackedStatManager {
         }
     }
 
+    /**
+     * Gets the value associated with a criterion.
+     */
     private static int getCriterionValue(@Nullable ServerStatHandler statHandler, ScoreboardCriterion criterion) {
         if (statHandler != null && criterion instanceof Stat<?> stat) {
             return statHandler.getStat(stat);
@@ -207,6 +234,9 @@ public class TrackedStatManager {
         return profiles;
     }
 
+    /**
+     * Deserializes all tracked compound stats from compound_stats.conf.
+     */
     public static void loadTrackedStats(MinecraftServer server) {
         TRACKED_COMPOUNDS.clear();
         TRACKED_STATS.clear();
@@ -245,6 +275,9 @@ public class TrackedStatManager {
         }
     }
 
+    /**
+     * Serializes all tracked compound stats and saves to compound_stats.conf.
+     */
     public static void saveTrackedStats(MinecraftServer server) {
         ServerUtil.getToolboxPath(server, "").toFile().mkdirs();
         try (BufferedWriter bufferedWriter = Files.newBufferedWriter(ServerUtil.getToolboxPath(server, COMPOUND_FILE_NAME))) {

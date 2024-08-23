@@ -115,6 +115,9 @@ public class AliasCommand {
                                 .executes(AliasCommand::modifyInfo)))));
     }
 
+    /**
+     * Registers an alias with a single command.
+     */
     private static int add(CommandContext<ServerCommandSource> context) {
         String alias = context.getArgument("alias", String.class);
         ServerPlayerEntity player = context.getSource().getPlayer();
@@ -138,10 +141,16 @@ public class AliasCommand {
         return 0;
     }
 
+    /**
+     * Lists all current aliases as suggestions.
+     */
     private static CompletableFuture<Suggestions> listAliases(CommandContext<ServerCommandSource> context, SuggestionsBuilder builder) {
         return CommandSource.suggestMatching(AliasManager.ALIASES.keySet(), builder);
     }
 
+    /**
+     * Removes an alias, if it exists.
+     */
     private static int remove(CommandContext<ServerCommandSource> context) {
         String alias = context.getArgument("alias", String.class);
         ServerPlayerEntity player = context.getSource().getPlayer();
@@ -165,6 +174,9 @@ public class AliasCommand {
         return 0;
     }
 
+    /**
+     * Overwrites the all current aliases from storage.
+     */
     private static int reload(CommandContext<ServerCommandSource> context) {
         TechnicalToolbox.ALIAS_MANAGER.readAliases(context.getSource().getServer());
         for (AliasedCommand aliasedCommand : AliasManager.ALIASES.values()) {
@@ -180,12 +192,18 @@ public class AliasCommand {
         return 0;
     }
 
+    /**
+     * Saves all aliases in memory.
+     */
     private static int save(CommandContext<ServerCommandSource> context) {
         TechnicalToolbox.ALIAS_MANAGER.writeAliases(context.getSource().getServer());
         context.getSource().sendFeedback(() -> TextUtils.formattable("Wrote aliases to disk"), false);
         return 1;
     }
 
+    /**
+     * Lists aliases in alphabetical order.
+     */
     private static int list(CommandContext<ServerCommandSource> context) {
         MutableText text = TextUtils.formattable("Aliases:");
         for (AliasedCommand cmd : AliasManager.ALIASES.values().stream().sorted(Comparator.comparing(AliasedCommand::
@@ -200,6 +218,9 @@ public class AliasCommand {
         return 1;
     }
 
+    /**
+     * Forcefully compiles an alias. Mostly useful if auto-compilation is disabled.
+     */
     private static int compile(CommandContext<ServerCommandSource> context) {
         String alias = context.getArgument("alias", String.class);
         AliasedCommand cmd = AliasManager.ALIASES.get(alias);
@@ -209,7 +230,7 @@ public class AliasCommand {
                         "can't be modified via commands"));
                 return 0;
             }
-            if (ConfigOptions.ALIAS_MODIFY_COMPILE.val() && cmd.refresh(context.getSource())) {
+            if (cmd.refresh(context.getSource())) {
                 context.getSource().sendFeedback(() -> TextUtils.formattable("Successfully compiled alias ")
                         .append(TextUtils.formattable(alias).formatted(Formatting.GREEN)), false);
                 return 1;
@@ -220,6 +241,9 @@ public class AliasCommand {
         return 0;
     }
 
+    /**
+     * Renames an existing alias, if not global.
+     */
     private static int modifyRename(CommandContext<ServerCommandSource> context) {
         String alias = context.getArgument("alias", String.class);
         AliasedCommand cmd = AliasManager.ALIASES.get(alias);
@@ -238,6 +262,9 @@ public class AliasCommand {
         return 0;
     }
 
+    /**
+     * Adds a line to the end of an alias and compiles afterward if auto-compilation is enabled.
+     */
     private static int modifyAdd(CommandContext<ServerCommandSource> context) {
         String alias = context.getArgument("alias", String.class);
         AliasedCommand cmd = AliasManager.ALIASES.get(alias);
@@ -261,6 +288,9 @@ public class AliasCommand {
         return 0;
     }
 
+    /**
+     * Inserts a line at a specified position in an alias afterward if auto-compilation is enabled.
+     */
     private static int modifyInsert(CommandContext<ServerCommandSource> context) {
         String alias = context.getArgument("alias", String.class);
         int line = context.getArgument("line number", Integer.class);
@@ -289,6 +319,9 @@ public class AliasCommand {
         return 0;
     }
 
+    /**
+     * Lists the current line as a suggestion when modifying an alias.
+     */
     private static CompletableFuture<Suggestions> modifyLineSuggestion(CommandContext<ServerCommandSource> context, SuggestionsBuilder builder) {
         String alias = context.getArgument("alias", String.class);
         int line = context.getArgument("line number", Integer.class);
@@ -306,6 +339,9 @@ public class AliasCommand {
         return CommandSource.suggestMatching(c, builder);
     }
 
+    /**
+     * Replaces an existing line in an alias and compiles afterward if auto-compilation is enabled.
+     */
     private static int modifySet(CommandContext<ServerCommandSource> context) {
         String alias = context.getArgument("alias", String.class);
         int line = context.getArgument("line number", Integer.class);
@@ -314,6 +350,10 @@ public class AliasCommand {
             if (cmd.global) {
                 context.getSource().sendError(TextUtils.formattable("Alias \"" + alias + "\" is global and " +
                         "can't be modified via commands"));
+                return 0;
+            }
+            if (line >= cmd.getCommands().size()) {
+                context.getSource().sendError(TextUtils.formattable("Index \"" + line + "\" is out of bounds"));
                 return 0;
             }
             MutableText err;
@@ -340,6 +380,9 @@ public class AliasCommand {
         return 0;
     }
 
+    /**
+     * Removes a line from an alias and compiles afterward if auto-compilation is enabled.
+     */
     private static int modifyRemove(CommandContext<ServerCommandSource> context) {
         String alias = context.getArgument("alias", String.class);
         int line = context.getArgument("line number", Integer.class);
@@ -351,7 +394,7 @@ public class AliasCommand {
                 return 0;
             }
             if (line >= cmd.getCommands().size()) {
-                context.getSource().sendError(TextUtils.formattable("Out of bounds line index: " + line));
+                context.getSource().sendError(TextUtils.formattable("Index \"" + line + "\" is out of bounds"));
                 return 0;
             }
             MutableText err;
@@ -372,6 +415,9 @@ public class AliasCommand {
         return 0;
     }
 
+    /**
+     * Sets the minimum permission level requires to execute an alias.
+     */
     private static int modifyPermission(CommandContext<ServerCommandSource> context) {
         String alias = context.getArgument("alias", String.class);
         int permissionLevel = context.getArgument("permission level", Integer.class);
@@ -392,6 +438,9 @@ public class AliasCommand {
         return 0;
     }
 
+    /**
+     * Sets whether an alias should execute silently (not sending feedback to the source) or not.
+     */
     private static int modifySilent(CommandContext<ServerCommandSource> context) {
         String alias = context.getArgument("alias", String.class);
         boolean silent = context.getArgument("silent execution", Boolean.class);
@@ -413,6 +462,9 @@ public class AliasCommand {
         return 0;
     }
 
+    /**
+     * Returns the relevant info corresponding to an alias (name, global status, permission, silent, etc.)
+     */
     private static int modifyInfo(CommandContext<ServerCommandSource> context) {
         String alias = context.getArgument("alias", String.class);
         AliasedCommand cmd = AliasManager.ALIASES.get(alias);
@@ -432,6 +484,13 @@ public class AliasCommand {
         return 0;
     }
 
+    /**
+     * Can be used to add or modify an argument.
+     * @param argType argument type, must correspond to one of the fixed argument types
+     * @param replace whether the new argument should replace an existing one or not
+     * @param clazz type of the argument; will be used in verification and casting
+     * @param args provided arguments for the argument type, if applicable
+     */
     private static int modifyArgumentSet(CommandContext<ServerCommandSource> context, String argType, boolean replace, Class<?> clazz, String... args) {
         String alias = context.getArgument("alias", String.class);
         AliasedCommand cmd = AliasManager.ALIASES.get(alias);
@@ -467,6 +526,9 @@ public class AliasCommand {
         return 0;
     }
 
+    /**
+     * Lists existing arguments for an alias.
+     */
     private static CompletableFuture<Suggestions> modifyListArguments(CommandContext<ServerCommandSource> context, SuggestionsBuilder builder) {
         String alias = context.getArgument("alias", String.class);
         AliasedCommand cmd = AliasManager.ALIASES.get(alias);
@@ -483,6 +545,9 @@ public class AliasCommand {
         return CommandSource.suggestMatching(argString, builder);
     }
 
+    /**
+     * Removes an argument from an alias and recompiles if auto-compilation is enabled.
+     */
     private static int modifyArgumentRemove(CommandContext<ServerCommandSource> context) {
         String alias = context.getArgument("alias", String.class);
         AliasedCommand cmd = AliasManager.ALIASES.get(alias);
@@ -499,6 +564,9 @@ public class AliasCommand {
         return 0;
     }
 
+    /**
+     * Renames an argument in an alias and recompiles if auto-compilation is enabled.
+     */
     private static int modifyArgumentRename(CommandContext<ServerCommandSource> context) {
         String alias = context.getArgument("alias", String.class);
         AliasedCommand cmd = AliasManager.ALIASES.get(alias);
@@ -516,6 +584,9 @@ public class AliasCommand {
         return 0;
     }
 
+    /**
+     * Build the command tree for adding/setting arguments using literals.
+     */
     private static LiteralArgumentBuilder<ServerCommandSource> addOrSetArguments(String literalName, boolean replace) {
         return CommandManager.literal(literalName)
                 .then(CommandManager.argument("argument", StringArgumentType.word())

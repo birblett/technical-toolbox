@@ -37,6 +37,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * /stat command for tracking stats individually.
+ */
 public class StatCommand {
 
     private static final Pattern CAMELCASE_WORD = Pattern.compile("[A-Z]?[a-z]+|:");

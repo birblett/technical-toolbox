@@ -9,6 +9,9 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 
+/**
+ * Stat change hook for compound stats.
+ */
 @Mixin(targets = "net/minecraft/scoreboard/Scoreboard$1")
 public class ScoreboardInnerMixin {
 

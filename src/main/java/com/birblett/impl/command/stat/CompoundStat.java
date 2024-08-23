@@ -11,6 +11,10 @@ import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * Compound stat class; can aggregate values from multiple different criteria and apply a multiplier or divisor to the value
+ * before updating the scoreboard.
+ */
 public class CompoundStat {
 
     private static final Pattern SERIALIZE_HEADER = Pattern.compile("(?<!\\\\)\".*(?<!\\\\)\"|(?<!\\\\)\\{.*(?<!\\\\)}|[^ :]+|:");
@@ -29,30 +33,56 @@ public class CompoundStat {
         this.scoresMap.clear();
     }
 
+    /**
+     * Starts tracking a criterion.
+     */
     public void addCriteria(ScoreboardCriterion criterion) {
         this.criteria.add(criterion);
         TrackedStatManager.beginListening(criterion, this);
     }
 
+    /**
+     * Removes a tracked criterion.
+     */
     public void removeCriteria(ScoreboardCriterion criterion) {
         this.criteria.remove(criterion);
         TrackedStatManager.stopListening(criterion, this);
     }
 
+    /**
+     * Sets the numeric value of the modifier to apply.
+     */
     public void setModifier(double modifier) {
         this.modifier = modifier;
     }
 
+    /**
+     * Sets execution mode to multiply or divide
+     * @param mode boolean value corresponds to multiply if true, divide otherwise
+     */
     public void setMode(boolean mode) {
         this.mode = mode;
     }
 
+    /**
+     * Sets a score to the provided value.
+     * @param scoreboard scoreboard to update
+     * @param scoreHolder scoreholder to update
+     * @param score value to set score to
+     */
     public void setScore(Scoreboard scoreboard, ScoreHolder scoreHolder, int score) {
         this.scoresMap.put(scoreHolder, (long) score);
         ScoreAccess access = scoreboard.getOrCreateScore(scoreHolder, this.objective, true);
         access.setScore((int) (this.mode ? this.scoresMap.get(scoreHolder) * modifier : this.scoresMap.get(scoreHolder) / modifier));
     }
 
+    /**
+     * Updates a scoreholder's entry for this compound stat with a delta
+     * @param scoreboard scoreboard to update
+     * @param scoreHolder scoreholder to update
+     * @param delta change to previous score
+     * @param score value to set score to, if applicalbe
+     */
     public void updateScore(Scoreboard scoreboard, ScoreHolder scoreHolder, int delta, int score) {
         this.scoresMap.put(scoreHolder, this.scoresMap.getOrDefault(scoreHolder, (long) score) + delta);
         ScoreAccess access = scoreboard.getOrCreateScore(scoreHolder, this.objective, true);
@@ -62,23 +92,33 @@ public class CompoundStat {
         }
     }
 
+    /**
+     * Removes a scoreholder's entry for this compound stat.
+     */
     public void removeScore(Scoreboard scoreboard, ScoreHolder scoreHolder) {
         this.scoresMap.remove(scoreHolder);
         scoreboard.removeScore(scoreHolder, objective);
         scoreboard.onScoreHolderRemoved(scoreHolder);
     }
 
+    /**
+     * Allows comparison to scoreboard objectives and strings.
+     */
+    @Override
     public boolean equals(Object obj) {
         if (obj instanceof com.birblett.impl.command.stat.CompoundStat) {
             return this == obj;
-        } else if (obj instanceof ScoreboardObjective) {
-            return this.objective == obj;
-        } else if (obj instanceof String) {
-            return this.objective.getName().equals(obj);
+        } else if (obj instanceof ScoreboardObjective objective) {
+            return this.objective == objective;
+        } else if (obj instanceof String str) {
+            return this.objective.getName().equals(str);
         }
         return false;
     }
 
+    /**
+     * Returns a string representation of the compound stat as [name] [displayName] [modifier]: [tracked criteria]...
+     */
     public String serialize(MinecraftServer server) {
         StringBuilder s = new StringBuilder(this.objective.getName().replaceFirst(TrackedStatManager.COMPOUND_STAT_PREFIX, ""));
         s.append(" ").append(Text.Serialization.toJsonString(this.objective.getDisplayName(), server.getRegistryManager())).append(" ")
@@ -89,6 +129,12 @@ public class CompoundStat {
         return s.toString();
     }
 
+    /**
+     * Returns a compound stat from its string representation, if possible
+     * @param string a valid string representation of a compound stat
+     * @param line the line number, used for errors
+     * @return a compound stat if deserialized correctly, otherwise null
+     */
     public static CompoundStat deserialize(MinecraftServer server, String string, int line) {
         string = string.strip();
         String name = null;
@@ -107,7 +153,7 @@ public class CompoundStat {
                 switch (i) {
                     case 0 -> {
                         if (!found.matches("[a-zA-Z0-9.\\-_+]+")) {
-                            TechnicalToolbox.error("Error at line {}: name must match the character set [a-zA-Z0-9.-_+]", i);
+                            TechnicalToolbox.error("Error at line {}: name must match the character set [a-zA-Z0-9.-_+]", line);
                             return null;
                         }
                         name = found;
@@ -121,7 +167,7 @@ public class CompoundStat {
                     }
                     case 2 -> {
                         if (!found.matches("[/*][0-9]+(\\.[0-9]+)?")) {
-                            TechnicalToolbox.error("Error at line {}: third argument expected to be modifier [* or /][num]", i);
+                            TechnicalToolbox.error("Error at line {}: third argument expected to be modifier [* or /][num]", line);
                             return null;
                         }
                         if (found.charAt(0) == '/') {
@@ -131,13 +177,13 @@ public class CompoundStat {
                             modifier = Double.parseDouble(found.substring(1));
                         }
                         catch (Exception e) {
-                            TechnicalToolbox.error("Something went wrong with parsing \"{}\" at line {}", found, i);
+                            TechnicalToolbox.error("Something went wrong with parsing \"{}\" at line {}", found, line);
                             return null;
                         }
                     }
                     case 3 -> {
                         if (!found.matches(":")) {
-                            TechnicalToolbox.error("Expected 3 max arguments at line {}", i);
+                            TechnicalToolbox.error("Expected 3 max arguments at line {}", line);
                             return null;
                         }
                     }
@@ -145,11 +191,11 @@ public class CompoundStat {
                 i++;
             }
             if (name == null) {
-                TechnicalToolbox.error("No name provided for compound stat at line {}", i);
+                TechnicalToolbox.error("No name provided for compound stat at line {}", line);
                 return null;
             }
             if (text == null) {
-                TechnicalToolbox.error("No display text provided for compound stat at line {}", i);
+                TechnicalToolbox.error("No display text provided for compound stat at line {}", line);
                 return null;
             }
             name = TrackedStatManager.COMPOUND_STAT_PREFIX + name;

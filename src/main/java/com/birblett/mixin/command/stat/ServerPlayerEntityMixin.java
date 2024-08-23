@@ -17,6 +17,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 
+/**
+ * Stat increase hook for players, and also tracks individual player stat tracking preferences.
+ */
 @Mixin(ServerPlayerEntity.class)
 public class ServerPlayerEntityMixin implements StatTracker {
 
