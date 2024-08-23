@@ -106,7 +106,7 @@ public class CompoundStat {
                 }
                 switch (i) {
                     case 0 -> {
-                        if (!found.matches("[a-zA-Z0-9.\\-_+]")) {
+                        if (!found.matches("[a-zA-Z0-9.\\-_+]+")) {
                             TechnicalToolbox.error("Error at line {}: name must match the character set [a-zA-Z0-9.-_+]", i);
                             return null;
                         }

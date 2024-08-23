@@ -1,6 +1,7 @@
 package com.birblett.impl.command.alias;
 
 import com.birblett.TechnicalToolbox;
+import com.birblett.impl.config.ConfigOption;
 import com.birblett.impl.config.ConfigOptions;
 import com.birblett.util.ServerUtil;
 import net.minecraft.server.MinecraftServer;
@@ -147,10 +148,9 @@ public class AliasManager {
             File[] files = recycle.listFiles((dir, name) -> name.endsWith(".alias"));
             if (ConfigOptions.ALIAS_RECYCLE_BIN_SIZE.val() != -1 && files != null) {
                 Arrays.sort(files, Comparator.comparingLong(File::lastModified));
-                int removed = 0;
-                while (files.length > ConfigOptions.ALIAS_RECYCLE_BIN_SIZE.val()) {
-                    files = Arrays.copyOfRange(files, 1, files.length);
-                    removed++;
+                int removed = files.length - ConfigOptions.ALIAS_RECYCLE_BIN_SIZE.val();
+                for (int i = 0; i < removed; i++) {
+                    Files.deleteIfExists(files[i].toPath());
                 }
                 if (removed > 0) {
                     TechnicalToolbox.log("Removed {} old alias{} from the recycle bin", removed, removed > 1 ? "es" : "");
