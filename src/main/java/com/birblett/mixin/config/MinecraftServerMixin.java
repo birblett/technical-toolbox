@@ -2,6 +2,8 @@ package com.birblett.mixin.config;
 
 import com.birblett.TechnicalToolbox;
 import com.birblett.impl.command.stat.TrackedStatManager;
+import com.birblett.util.ServerUtil;
+import net.minecraft.scoreboard.ScoreboardObjective;
 import net.minecraft.server.MinecraftServer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -23,7 +25,13 @@ public class MinecraftServerMixin {
         MinecraftServer server = (MinecraftServer) (Object) this;
         TechnicalToolbox.CONFIG_MANAGER.onServerOpen(server);
         TechnicalToolbox.ALIAS_MANAGER.onServerOpen(server);
-        TrackedStatManager.loadTrackedStats(server);
+        TrackedStatManager.TRACKED_COMPOUNDS.clear();
+        TrackedStatManager.TRACKED_STATS.clear();
+        TrackedStatManager.loadTrackedStats(server, ServerUtil.getGlobalToolboxPath(server, ""), true);
+        TrackedStatManager.loadTrackedStats(server, ServerUtil.getToolboxPath(server, ""), false);
+        for (ScoreboardObjective objective : server.getScoreboard().getObjectives()) {
+            if (objective.getName().startsWith(TrackedStatManager.COMPOUND_STAT_PREFIX) && TrackedStatManager.getCompoundStat(objective.getName().replaceFirst(TrackedStatManager.COMPOUND_STAT_PREFIX, "")) != null)
+        }
     }
 
     @Inject(method = "shutdown", at = @At("HEAD"))

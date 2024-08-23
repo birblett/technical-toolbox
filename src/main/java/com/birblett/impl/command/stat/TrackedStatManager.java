@@ -45,6 +45,7 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 
 /**
@@ -238,19 +239,19 @@ public class TrackedStatManager {
     /**
      * Deserializes all tracked compound stats from compound_stats.conf.
      */
-    public static void loadTrackedStats(MinecraftServer server) {
-        TRACKED_COMPOUNDS.clear();
-        TRACKED_STATS.clear();
-        ServerUtil.getToolboxPath(server, "").toFile().mkdirs();
-        if (ServerUtil.getToolboxPath(server, COMPOUND_FILE_NAME).toFile().isFile()) {
+    public static void loadTrackedStats(MinecraftServer server, Path path, boolean global) {
+        path.toFile().mkdirs();
+        TechnicalToolbox.log("{}", path);
+        if (path.resolve(COMPOUND_FILE_NAME).toFile().isFile()) {
             int i = 0, j = i;
-            try (BufferedReader bufferedWriter = Files.newBufferedReader(ServerUtil.getToolboxPath(server, COMPOUND_FILE_NAME))) {
+            try (BufferedReader bufferedWriter = Files.newBufferedReader(path.resolve(COMPOUND_FILE_NAME))) {
                 String line;
                 while ((line = bufferedWriter.readLine()) != null) {
                     if (!line.isEmpty()) {
                         try {
                             CompoundStat stat = CompoundStat.deserialize(server, line, i);
                             if (stat != null) {
+                                stat.isGlobal = global;
                                 TRACKED_COMPOUNDS.add(stat);
                                 TrackedStatManager.refreshCompound(server, stat, null);
                                 j++;
@@ -264,15 +265,15 @@ public class TrackedStatManager {
                 }
             }
             catch (Exception e) {
-                TechnicalToolbox.error("Something went wrong reading from {}", COMPOUND_FILE_NAME);
+                TechnicalToolbox.error("Something went wrong reading from {}{}", global ? "global stat file " : "", COMPOUND_FILE_NAME);
                 return;
             }
             if (j > 0) {
-                TechnicalToolbox.log("Loaded {} compound stats", j);
+                TechnicalToolbox.log("Loaded {} {}compound stats", j, global ? "global " : "");
             }
         }
         else {
-            TechnicalToolbox.log("No compound stats loaded: {} does not exist", COMPOUND_FILE_NAME);
+            TechnicalToolbox.log("No {}compound stats loaded: {} does not exist", global ? "global " : "", COMPOUND_FILE_NAME);
         }
     }
 
@@ -283,8 +284,10 @@ public class TrackedStatManager {
         ServerUtil.getToolboxPath(server, "").toFile().mkdirs();
         try (BufferedWriter bufferedWriter = Files.newBufferedWriter(ServerUtil.getToolboxPath(server, COMPOUND_FILE_NAME))) {
             for (CompoundStat stat : TRACKED_COMPOUNDS) {
-                bufferedWriter.write(stat.serialize(server));
-                bufferedWriter.write("\n");
+                if (!stat.isGlobal) {
+                    bufferedWriter.write(stat.serialize(server));
+                    bufferedWriter.write("\n");
+                }
             }
         }
         catch (Exception e) {

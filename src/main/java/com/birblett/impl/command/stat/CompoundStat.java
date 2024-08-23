@@ -20,6 +20,7 @@ public class CompoundStat {
     private static final Pattern SERIALIZE_HEADER = Pattern.compile("(?<!\\\\)\".*(?<!\\\\)\"|(?<!\\\\)\\{.*(?<!\\\\)}|[^ :]+|:");
     public final ScoreboardObjective objective;
     public final HashSet<ScoreboardCriterion> criteria;
+    public boolean isGlobal;
     private final HashMap<ScoreHolder, Long> scoresMap = new HashMap<>();
     private double modifier = 1;
     private boolean mode = true;
@@ -27,6 +28,7 @@ public class CompoundStat {
     public CompoundStat(ScoreboardObjective objective, HashSet<ScoreboardCriterion> criteria) {
         this.objective = objective;
         this.criteria = criteria;
+        this.isGlobal = false;
     }
 
     public void clearScores() {
@@ -198,10 +200,14 @@ public class CompoundStat {
                 TechnicalToolbox.error("No display text provided for compound stat at line {}", line);
                 return null;
             }
-            name = TrackedStatManager.COMPOUND_STAT_PREFIX + name;
-            ScoreboardObjective objective = server.getScoreboard().getNullableObjective(name);
+            if (TrackedStatManager.getCompoundStat(name) != null) {
+                TechnicalToolbox.error("Compound stat for {} already exists", name);
+                return null;
+            }
+            String objectiveName = TrackedStatManager.COMPOUND_STAT_PREFIX + name;
+            ScoreboardObjective objective = server.getScoreboard().getNullableObjective(objectiveName);
             if (objective == null) {
-                objective = TrackedStatManager.createNewObjective(server, name, ScoreboardCriterion.DUMMY, text);
+                objective = TrackedStatManager.createNewObjective(server, objectiveName, ScoreboardCriterion.DUMMY, text);
             }
             CompoundStat stat = new CompoundStat(objective, new HashSet<>());
             stat.setModifier(modifier);

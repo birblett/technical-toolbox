@@ -66,7 +66,7 @@ public class AliasManager {
      * Read all aliases from storage and compile + register them.
      */
     public void readAliases(MinecraftServer server) {
-        File global = ServerUtil.getGlobalToolboxPath(server, GLOBAL_PATH).toFile();
+        File global = ServerUtil.getGlobalToolboxPath(server, ALIAS_PATH).toFile();
         ServerUtil.createDirectoryIfNotPresent(global);
         int globalCount = 0;
         File[] globalDir = global.listFiles();

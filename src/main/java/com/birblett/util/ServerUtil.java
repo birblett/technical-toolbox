@@ -39,7 +39,7 @@ public class ServerUtil {
      * @return return .minecraft/[path] directory
      */
     public static Path getGlobalToolboxPath(MinecraftServer server, String path) {
-        return server.getPath("technical_toolbox/" + path);
+        return server.getPath("config/technical_toolbox/" + path);
     }
 
     /**
