@@ -27,6 +27,7 @@ SOFTWARE.
 package com.birblett.impl.command.stat;
 
 import com.birblett.TechnicalToolbox;
+import com.birblett.impl.config.ConfigOptions;
 import com.birblett.util.ServerUtil;
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.minecraft.MinecraftSessionService;
@@ -140,7 +141,7 @@ public class TrackedStatManager {
         ScoreboardObjective objective = scoreboard.addObjective(name, criterion, text,
                 ScoreboardCriterion.RenderType.INTEGER, true, null);
         scoreboard.addScoreboardObjective(objective);
-        if (criterion != ScoreboardCriterion.DUMMY) {
+        if (criterion != ScoreboardCriterion.DUMMY && ConfigOptions.STAT_MODIFY_REFRESH.val()) {
             TrackedStatManager.refreshStat(server, objective, null);
         }
         TrackedStatManager.addTrackedObjective(objective);

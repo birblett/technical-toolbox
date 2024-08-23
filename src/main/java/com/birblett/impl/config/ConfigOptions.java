@@ -16,8 +16,7 @@ public class ConfigOptions {
             "0", "4");
     public static final ConfigOption<Boolean> CONFIG_WRITE_ON_CHANGE = ConfigOption.boolConfig(
             "configWriteOnChange", false,
-            "If enabled, changing configurations will also write to storage.",
-            "false", "true");
+            "If enabled, changing configurations will also write to storage.");
     public static final ConfigOption<Boolean> CONFIG_WRITE_ONLY_CHANGES = ConfigOption.boolConfig(
             "configWriteOnlyChanges", true,
             "If enabled, only changed configurations will be written to storage.",
@@ -29,8 +28,7 @@ public class ConfigOptions {
             "0", "4");
     public static final ConfigOption<Boolean> ALIAS_DEFAULT_SILENT = ConfigOption.boolConfig(
             "aliasDefaultSilent", false,
-            "Whether aliases default to sending feedback or not.",
-            "true", "false");
+            "Whether aliases default to sending feedback or not.");
     public static final ConfigOption<Integer> ALIAS_INSTRUCTION_LIMIT = ConfigOption.intConfig(
             "aliasInstructionLimit", 50000,
             "Maximum number of instructions (not lines) that an alias can execute. " +
@@ -44,8 +42,7 @@ public class ConfigOptions {
     public static final ConfigOption<Boolean> ALIAS_MODIFY_COMPILE = ConfigOption.boolConfig(
             "aliasCompileOnModification", true,
             "Whether aliases should be compiled whenever they are modified. When false, " +
-                    "they can instead be compiled with /alias compile.",
-            "true", "false");
+                    "they can instead be compiled with /alias compile.");
     public static final ConfigOption<Integer> ALIAS_RECYCLE_BIN_SIZE = ConfigOption.intConfig(
             "aliasRecycleBinSize", 20,
             "Size of the recycle bin for old or unused alias files. Older files are " +
@@ -76,16 +73,13 @@ public class ConfigOptions {
     };
     public static final ConfigOption<Boolean> CAMERA_GENERATES_CHUNKS = ConfigOption.boolConfig(
             "cameraGeneratesChunks", false,
-            "Whether players in camera mode should generate chunks or not",
-            "true", "false");
+            "Whether players in camera mode should generate chunks or not");
     public static final ConfigOption<Boolean> CAMERA_CAN_SPECTATE = ConfigOption.boolConfig(
             "cameraCanSpectate", false,
-            "Whether players in camera mode can spectate other players",
-            "true", "false");
+            "Whether players in camera mode can spectate other players");
     public static final ConfigOption<Boolean> CAMERA_CAN_TELEPORT = ConfigOption.boolConfig(
             "cameraCanTeleport", false,
-            "Whether players in camera mode can teleport to other players",
-            "true", "false");
+            "Whether players in camera mode can teleport to other players");
     public static final ConfigOption<String> CAMERA_CONSOLE_LOGGING = new ConfigOption<>(
             "cameraConsoleLogging", "none",
             "The level of logging for camera mode usage by players. Accepts values \"none\", \"command\", " +
@@ -127,6 +121,24 @@ public class ConfigOptions {
             return out.getRight();
         }
     };
+    public static final ConfigOption<Integer> STAT_MODIFY_PERMISSION_LEVEL = ConfigOption.intConfig(
+            "statModifyPermissionLevel", 4,
+            "Permission level required to use the /stat modify command.",
+            0, 4,
+            "0", "4");
+    public static final ConfigOption<Boolean> STAT_MODIFY_REFRESH = ConfigOption.boolConfig(
+            "statRefreshOnModify", true,
+            "Whether stats will always refresh their scoreboard values on modfication or not.");
+    public static final ConfigOption<Integer> STAT_REFRESH_PERMISSION_LEVEL = ConfigOption.intConfig(
+            "statRefreshPermissionLevel", 4,
+            "Permission level required to use the /stat refresh command.",
+            0, 4,
+            "0", "4");
+    public static final ConfigOption<Integer> STAT_TRACK_PERMISSION_LEVEL = ConfigOption.intConfig(
+            "statTrackPermissionLevel", 0,
+            "Permission level required to use the /stat track command.",
+            0, 4, true,
+            "0", "4");
     public static final ConfigOption<Integer> FEATURE_COPPER_BULB_DELAY = ConfigOption.intConfig(
             "featureCopperBulbDelay", 0,
             "Gameticks of copper bulb delay when powered",
@@ -134,8 +146,7 @@ public class ConfigOptions {
             "0", "1");
     public static final ConfigOption<Boolean> FEATURE_COPPER_BULB_NO_POWERED_UPDATES = ConfigOption.boolConfig(
             "featureCopperBulbNoPoweredUpdates", false,
-            "Prevents power/depower (specifically the powered state) of copper bulbs from sending block updates.",
-            "true", "false");
+            "Prevents power/depower (specifically the powered state) of copper bulbs from sending block updates.");
     public static final ConfigOption<Integer> FEATURE_CRAFTER_COOLDOWN = ConfigOption.intConfig(
             "featureCrafterCooldown", 4,
             "Gameticks of crafter cooldown, will be instant if set to 0.",
@@ -162,31 +173,24 @@ public class ConfigOptions {
             "100.0", String.valueOf(Integer.MAX_VALUE));
     public static final ConfigOption<Boolean> LEGACY_BAD_OMEN = ConfigOption.boolConfig(
             "legacyBadOmen", false,
-            "Whether pre-1.21 bad omen/raid mechanics should be used.",
-            "true", "false");
+            "Whether pre-1.21 bad omen/raid mechanics should be used.");
     public static final ConfigOption<Boolean> LEGACY_END_CRYSTAL_COLLISION = ConfigOption.boolConfig(
             "legacyEndCrystalCollision", false,
-            "End crystals won't check for collision in their tick method.",
-            "true", "false");
+            "End crystals won't check for collision in their tick method.");
     public static final ConfigOption<Boolean> LEGACY_END_CRYSTAL_FIRE_DAMAGE = ConfigOption.boolConfig(
             "legacyEndCrystalFireDamage", false,
-            "Allow end crystals to take fire damage.",
-            "true", "false");
+            "Allow end crystals to take fire damage.");
     public static final ConfigOption<Boolean> LEGACY_END_PLATFORM = ConfigOption.boolConfig(
             "legacyEndPlatform", false,
-            "Re-enables pre-1.21 end portal logic.",
-            "true", "false");
+            "Re-enables pre-1.21 end portal logic.");
     public static final ConfigOption<Boolean> LEGACY_POI_PROPERTY_CHECK = ConfigOption.boolConfig(
             "legacyDisablePoiPropertyCheck", false,
-            "Disables portal POI HORIZONTAL_AXIS property check.",
-            "true", "false");
+            "Disables portal POI HORIZONTAL_AXIS property check.");
     public static final ConfigOption<Boolean> LEGACY_PROTECTION_COMPATIBILITY = ConfigOption.boolConfig(
             "legacyProtectionCompatibility", false,
-            "Makes all protection types compatible with each other.",
-            "true", "false");
+            "Makes all protection types compatible with each other.");
     public static final ConfigOption<Boolean> LEGACY_TRAPDOOR_UPDATE_SKIPPING = ConfigOption.boolConfig(
             "legacyTrapdoorUpdateSkipping", false,
-            "Whether update skipping should be allowed.",
-            "true", "false");
+            "Whether update skipping should be allowed.");
 
 }

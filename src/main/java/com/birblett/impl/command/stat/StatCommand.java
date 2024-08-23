@@ -1,6 +1,7 @@
 package com.birblett.impl.command.stat;
 
 import com.birblett.accessor.command.stat.StatTracker;
+import com.birblett.impl.config.ConfigOptions;
 import com.birblett.util.TextUtils;
 import com.mojang.authlib.GameProfile;
 import com.mojang.brigadier.CommandDispatcher;
@@ -47,6 +48,7 @@ public class StatCommand {
     public static void register(CommandDispatcher<ServerCommandSource> dispatcher, CommandRegistryAccess commandRegistryAccess) {
         dispatcher.register((CommandManager.literal("stat")
                 .then(CommandManager.literal("track")
+                        .requires(source -> source.hasPermissionLevel(ConfigOptions.STAT_TRACK_PERMISSION_LEVEL.val()))
                         .requires(ServerCommandSource::isExecutedByPlayer)
                         .then(CommandManager.literal("criterion")
                                 .then(CommandManager.argument("criterion", ScoreboardCriterionArgumentType.scoreboardCriterion())
@@ -66,7 +68,7 @@ public class StatCommand {
                                         .then(CommandManager.literal("sidebar")
                                                 .executes(context -> StatCommand.trackCompound(context, ScoreboardDisplaySlot.SIDEBAR))))))
                 .then(CommandManager.literal("compound")
-                        .requires(source -> source.hasPermissionLevel(4))
+                        .requires(source -> source.hasPermissionLevel(ConfigOptions.STAT_MODIFY_PERMISSION_LEVEL.val()))
                         .then(CommandManager.literal("add")
                                 .then(CommandManager.argument("name", StringArgumentType.word())
                                         .then(CommandManager.argument("displayName", TextArgumentType.text(commandRegistryAccess))
@@ -93,7 +95,7 @@ public class StatCommand {
                                                         .suggests(StatCommand::getCriterionSuggestions)
                                                         .executes(StatCommand::removeCompoundCriterion))))))
                 .then(CommandManager.literal("refresh")
-                        .requires(source -> source.hasPermissionLevel(4))
+                        .requires(source -> source.hasPermissionLevel(ConfigOptions.STAT_REFRESH_PERMISSION_LEVEL.val()))
                         .executes(StatCommand::refreshStats))));
     }
 
@@ -198,7 +200,9 @@ public class StatCommand {
         if (stat != null) {
             ScoreboardCriterion criterion = context.getArgument("criterion", ScoreboardCriterion.class);
             stat.addCriteria(criterion);
-            TrackedStatManager.refreshCompound(context.getSource().getServer(), stat, null);
+            if (ConfigOptions.STAT_MODIFY_REFRESH.val()) {
+                TrackedStatManager.refreshCompound(context.getSource().getServer(), stat, null);
+            }
             context.getSource().sendFeedback(() -> TextUtils.formattable("Compound stat ").append(TextUtils.formattable(name)
                     .formatted(Formatting.GREEN)).append(TextUtils.formattable(" is now tracking stat ").formatted(Formatting.WHITE)
                     .append(TextUtils.formattable(criterion.getName()).formatted(Formatting.AQUA))), false);
@@ -233,7 +237,9 @@ public class StatCommand {
             ScoreboardCriterion.getOrCreateStatCriterion(criterionName).ifPresentOrElse(criterion -> {
                 if (stat.criteria.contains(criterion)) {
                     stat.removeCriteria(criterion);
-                    TrackedStatManager.refreshCompound(context.getSource().getServer(), stat, null);
+                    if (ConfigOptions.STAT_MODIFY_REFRESH.val()) {
+                        TrackedStatManager.refreshCompound(context.getSource().getServer(), stat, null);
+                    }
                     context.getSource().sendFeedback(() -> TextUtils.formattable("Compound stat ").append(TextUtils.formattable(name)
                                     .formatted(Formatting.GREEN)).append(TextUtils.formattable(" is no longer tracking tracking stat ")
                                     .formatted(Formatting.WHITE).append(TextUtils.formattable(criterion.getName()).formatted(Formatting.YELLOW))),
@@ -301,7 +307,9 @@ public class StatCommand {
         if (stat != null) {
             double modifier = context.getArgument("modifier", Double.class);
             stat.setModifier(modifier);
-            TrackedStatManager.refreshCompound(context.getSource().getServer(), stat, null);
+            if (ConfigOptions.STAT_MODIFY_REFRESH.val()) {
+                TrackedStatManager.refreshCompound(context.getSource().getServer(), stat, null);
+            }
             context.getSource().sendFeedback(() -> TextUtils.formattable("Set modifier for compound stat ")
                     .append(TextUtils.formattable(name).formatted(Formatting.GREEN)).append(TextUtils.formattable(" to ")
                             .formatted(Formatting.WHITE).append(TextUtils.formattable(String.valueOf(modifier))
@@ -319,7 +327,9 @@ public class StatCommand {
         CompoundStat stat = TrackedStatManager.getCompoundStat(name);
         if (stat != null) {
             stat.setMode(mode);
-            TrackedStatManager.refreshCompound(context.getSource().getServer(), stat, null);
+            if (ConfigOptions.STAT_MODIFY_REFRESH.val()) {
+                TrackedStatManager.refreshCompound(context.getSource().getServer(), stat, null);
+            }
             context.getSource().sendFeedback(() -> TextUtils.formattable("Set mode for compound stat ")
                     .append(TextUtils.formattable(name).formatted(Formatting.GREEN)).append(TextUtils.formattable(" to ")
                             .formatted(Formatting.WHITE).append(TextUtils.formattable(mode ? "multiply" : "divide")

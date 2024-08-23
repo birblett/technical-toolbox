@@ -94,8 +94,8 @@ public class ConfigOption<T> {
         };
     }
 
-    public static ConfigOption<Boolean> boolConfig(String name, boolean defaultValue, String desc, String... suggestions) {
-        return boolConfig(name, defaultValue, desc, false, suggestions);
+    public static ConfigOption<Boolean> boolConfig(String name, boolean defaultValue, String desc) {
+        return boolConfig(name, defaultValue, desc, false, "true", "false");
     }
 
     public static ConfigOption<Integer> intConfig(String name, int defaultValue, String desc, int min, int max, boolean hasLineBreak, String... suggestions) {
