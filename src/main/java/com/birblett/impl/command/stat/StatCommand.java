@@ -1,5 +1,6 @@
 package com.birblett.impl.command.stat;
 
+import com.birblett.TechnicalToolbox;
 import com.birblett.accessor.command.stat.StatTracker;
 import com.birblett.impl.config.ConfigOptions;
 import com.birblett.util.TextUtils;
@@ -51,6 +52,14 @@ public class StatCommand {
                 .then(CommandManager.literal("track")
                         .requires(source -> source.hasPermissionLevel(ConfigOptions.STAT_TRACK_PERMISSION_LEVEL.val()))
                         .requires(ServerCommandSource::isExecutedByPlayer)
+                        .then(CommandManager.literal("reset")
+                                .then(CommandManager.literal("below_name")
+                                        .executes(context -> StatCommand.resetTracked(context, ScoreboardDisplaySlot.BELOW_NAME)))
+                                .then(CommandManager.literal("list")
+                                        .executes(context -> StatCommand.resetTracked(context, ScoreboardDisplaySlot.LIST)))
+                                .then(CommandManager.literal("sidebar")
+                                        .executes(context -> StatCommand.resetTracked(context, ScoreboardDisplaySlot.SIDEBAR)))
+                                .executes(context -> StatCommand.resetTracked(context, null)))
                         .then(CommandManager.literal("criterion")
                                 .then(CommandManager.argument("criterion", ScoreboardCriterionArgumentType.scoreboardCriterion())
                                         .then(CommandManager.literal("below_name")
@@ -98,6 +107,34 @@ public class StatCommand {
                 .then(CommandManager.literal("refresh")
                         .requires(source -> source.hasPermissionLevel(ConfigOptions.STAT_REFRESH_PERMISSION_LEVEL.val()))
                         .executes(StatCommand::refreshStats))));
+    }
+
+    /**
+     * Clears a display slot for the executor.
+     * @param slot target slot, clears all if null.
+     */
+    private static int resetTracked(CommandContext<ServerCommandSource> context, ScoreboardDisplaySlot slot) {
+        ServerPlayerEntity player = context.getSource().getPlayer();
+        StatTracker tracker = (StatTracker) player;
+        if (tracker != null) {
+            if (slot == null) {
+                tracker.technicalToolbox$StopTracking(ScoreboardDisplaySlot.LIST);
+                tracker.technicalToolbox$StopTracking(ScoreboardDisplaySlot.SIDEBAR);
+                tracker.technicalToolbox$StopTracking(ScoreboardDisplaySlot.BELOW_NAME);
+                context.getSource().sendFeedback(() -> TextUtils.formattable("Reset all tracked objectives"), false);
+            }
+            else {
+                if (tracker.technicalToolbox$StopTracking(slot)) {
+                    context.getSource().sendFeedback(() -> TextUtils.formattable("Stopped tracking objective for display slot " +
+                            slot.name()), false);
+                }
+                else {
+                    context.getSource().sendFeedback(() -> TextUtils.formattable("Display slot " +
+                            slot.name() + " is already empty"), false);
+                }
+            }
+        }
+        return 1;
     }
 
     /**
@@ -363,7 +400,6 @@ public class StatCommand {
 
     /**
      * Sends packets to set the player scoreboard to a specific objective, and update its values
-     * @param player target player
      * @param objective objective to force
      * @param displaySlot display slot to display objective to
      * @param shouldAdd should default to true, but can pass if processed with other logic beforehand
@@ -382,8 +418,8 @@ public class StatCommand {
             if (shouldAdd && !tracker.technicalToolbox$HasObjective(objective)) {
                 player.networkHandler.sendPacket(new ScoreboardObjectiveUpdateS2CPacket(objective,
                         ScoreboardObjectiveUpdateS2CPacket.ADD_MODE));
-                tracker.technicalToolbox$UpdateSlot(displaySlot, objective);
             }
+            tracker.technicalToolbox$UpdateSlot(displaySlot, objective);
             // send display packet and update objective values
             player.networkHandler.sendPacket(new ScoreboardDisplayS2CPacket(displaySlot, objective));
             for (ScoreboardEntry scoreboardEntry : scoreboard.getScoreboardEntries(objective)) {

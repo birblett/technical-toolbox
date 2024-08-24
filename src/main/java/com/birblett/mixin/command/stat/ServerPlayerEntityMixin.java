@@ -2,9 +2,11 @@ package com.birblett.mixin.command.stat;
 
 import com.birblett.accessor.command.stat.StatTracker;
 import com.birblett.impl.command.stat.TrackedStatManager;
+import net.minecraft.network.packet.s2c.play.ScoreboardDisplayS2CPacket;
 import net.minecraft.scoreboard.ScoreboardDisplaySlot;
 import net.minecraft.scoreboard.ScoreboardObjective;
 import net.minecraft.scoreboard.ServerScoreboard;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.stat.Stat;
 import org.spongepowered.asm.mixin.Mixin;
@@ -35,6 +37,15 @@ public class ServerPlayerEntityMixin implements StatTracker {
     public void technicalToolbox$UpdateSlot(ScoreboardDisplaySlot slot, ScoreboardObjective objective) {
         this.trackedStats.put(slot, objective);
         this.initializedStats.add(objective);
+    }
+
+    @Override
+    public boolean technicalToolbox$StopTracking(ScoreboardDisplaySlot slot) {
+        if (this.trackedStats.remove(slot) != null) {
+            ((ServerPlayerEntity) (Object) this).networkHandler.sendPacket(new ScoreboardDisplayS2CPacket(slot, null));
+            return true;
+        }
+        return false;
     }
 
     @Override
