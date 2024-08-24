@@ -1,0 +1,19 @@
+Alias: math
+Arguments: {$op:selection|add,subtract,multiply,divide,power,root} {$first:double} {$second:double}
+Command list:
+[let x = 1]
+[if op = "add"]
+[let x = first + second]
+[elif op = "subtract"]
+[let x = first - second]
+[elif op = "multiply"]
+[let x = first * second]
+[elif op = "divide"]
+[let x = first / second]
+[elif op = "power"]
+[let x = first ^ second]
+[elif op = "root"]
+[let x = first ^ (1 / second)]
+[end]
+[let x = op + " operation on " + first + " and " + second + " equals " + x]
+say {$x}
