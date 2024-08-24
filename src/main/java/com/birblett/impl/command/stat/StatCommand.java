@@ -32,6 +32,7 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -177,9 +178,11 @@ public class StatCommand {
         Text text = context.getArgument("displayName", Text.class);
         ServerScoreboard scoreboard = context.getSource().getServer().getScoreboard();
         if (scoreboard.getNullableObjective(objectiveName) == null) {
+            ScoreboardObjective objective = TrackedStatManager.createNewObjective(context.getSource().getServer(), objectiveName,
+                    ScoreboardCriterion.DUMMY, text);
+            TrackedStatManager.TRACKED_COMPOUNDS.add(new CompoundStat(objective, new HashSet<>()));
             for (ServerPlayerEntity player : context.getSource().getServer().getPlayerManager().getPlayerList()) {
-                ((StatTracker) player).technicalToolbox$UpdateObjective(TrackedStatManager.createNewObjective(context.getSource()
-                        .getServer(), objectiveName, ScoreboardCriterion.DUMMY, text));
+                ((StatTracker) player).technicalToolbox$UpdateObjective(objective);
             }
             context.getSource().sendFeedback(() -> TextUtils.formattable("Created new compound ").append(TextUtils.formattable(name)
                     .formatted(Formatting.GREEN)), false);

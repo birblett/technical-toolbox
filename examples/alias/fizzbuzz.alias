@@ -1,0 +1,15 @@
+Alias: fizzbuzz
+Arguments: {$loops:int}
+Command list:
+[let i = 1]
+[while i - 1 < loops]
+    [let x = i + " "]
+    [if i % 3 = 0]
+        [let x = x + "fizz"]
+    [end]
+    [if i % 5 = 0]
+        [let x = x + "buzz"]
+    [end]
+    say {$x}
+    [let i = i + 1]
+[end]

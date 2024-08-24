@@ -143,10 +143,10 @@ public class TrackedStatManager {
         ScoreboardObjective objective = scoreboard.addObjective(name, criterion, text,
                 ScoreboardCriterion.RenderType.INTEGER, true, null);
         scoreboard.addScoreboardObjective(objective);
+        TrackedStatManager.addTrackedObjective(objective);
         if (criterion != ScoreboardCriterion.DUMMY && ConfigOptions.STAT_MODIFY_REFRESH.val()) {
             TrackedStatManager.refreshStat(server, objective, null);
         }
-        TrackedStatManager.addTrackedObjective(objective);
         return objective;
     }
 
