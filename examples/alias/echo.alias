@@ -1,0 +1,4 @@
+Alias: echo
+Arguments: {$arg1:string}
+Command list:
+say {$arg1}
