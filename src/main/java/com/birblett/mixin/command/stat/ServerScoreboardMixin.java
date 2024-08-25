@@ -1,6 +1,8 @@
 package com.birblett.mixin.command.stat;
 
+import com.birblett.TechnicalToolbox;
 import com.birblett.accessor.command.stat.StatTracker;
+import com.birblett.impl.command.stat.TrackedStatManager;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
@@ -60,7 +62,8 @@ public class ServerScoreboardMixin {
     @Inject(method = "updateScore", at = @At(value = "INVOKE", target = "Lnet/minecraft/scoreboard/ServerScoreboard;runUpdateListeners()V"))
     private void updateSubscribedScores(ScoreHolder scoreHolder, ScoreboardObjective objective, ScoreboardScore score, CallbackInfo ci) {
         for (ServerPlayerEntity player : this.server.getPlayerManager().getPlayerList()) {
-            if (((StatTracker) player).technicalToolbox$HasDisplayedObjective(objective)) {
+            if (TrackedStatManager.whitelistIfEnabled(scoreHolder) && ((StatTracker) player)
+                    .technicalToolbox$HasDisplayedObjective(objective)) {
                 player.networkHandler.sendPacket(new ScoreboardScoreUpdateS2CPacket(scoreHolder.getNameForScoreboard(), objective.getName(),
                         score.getScore(), Optional.ofNullable(score.getDisplayText()), Optional.ofNullable(score.getNumberFormat())));
             }

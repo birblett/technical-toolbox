@@ -23,7 +23,7 @@ public class MinecraftServerMixin {
     @Shadow @Final private ServerScoreboard scoreboard;
     @Unique private boolean configurable = false;
 
-    @Inject(method = "loadWorld", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/MinecraftServer;prepareStartRegion(Lnet/minecraft/server/WorldGenerationProgressListener;)V"))
+    @Inject(method = "loadWorld", at = @At("TAIL"))
     private void serverLoaded(CallbackInfo ci) {
         this.configurable = true;
         MinecraftServer server = (MinecraftServer) (Object) this;

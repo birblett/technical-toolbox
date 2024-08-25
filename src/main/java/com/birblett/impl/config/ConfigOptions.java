@@ -20,7 +20,7 @@ public class ConfigOptions {
     public static final ConfigOption<Boolean> CONFIG_WRITE_ONLY_CHANGES = ConfigOption.boolConfig(
             "configWriteOnlyChanges", true,
             "If enabled, only changed configurations will be written to storage.",
-            true, "false", "true");
+            true);
     public static final ConfigOption<Integer> ALIAS_DEFAULT_PERMISSION = ConfigOption.intConfig(
             "aliasDefaultPermission", 0,
             "Default permission level required to execute aliases.",
@@ -139,6 +139,9 @@ public class ConfigOptions {
             "Permission level required to use the /stat track command.",
             0, 4, true,
             "0", "4");
+    public static final ConfigOption<Boolean> STAT_TRACK_WHITELIST_ONLY = ConfigOption.boolConfig(
+            "statTrackWhitelistOnly", false,
+            "Whether stats will only be tracked for whitelisted players.", true);
     public static final ConfigOption<Integer> FEATURE_COPPER_BULB_DELAY = ConfigOption.intConfig(
             "featureCopperBulbDelay", 0,
             "Gameticks of copper bulb delay when powered",
@@ -154,8 +157,7 @@ public class ConfigOptions {
             "0", "4");
     public static final ConfigOption<Boolean> FEATURE_CRAFTER_QUASI_POWER = ConfigOption.boolConfig(
             "featureCrafterQuasiPower", false,
-            "Whether crafters can be quasi-powered or not.", true,
-            "true", "false");
+            "Whether crafters can be quasi-powered or not.", true);
     public static final ConfigOption<Float> FEATURE_SPEED_LIMIT = ConfigOption.floatConfig(
             "featureSpeedLimit", 100.0f,
             "The velocity threshold after which the server corrects player velocity.",
@@ -174,6 +176,9 @@ public class ConfigOptions {
     public static final ConfigOption<Boolean> LEGACY_BAD_OMEN = ConfigOption.boolConfig(
             "legacyBadOmen", false,
             "Whether pre-1.21 bad omen/raid mechanics should be used.");
+    public static final ConfigOption<Boolean> LEGACY_POI_PROPERTY_CHECK = ConfigOption.boolConfig(
+            "legacyDisablePoiPropertyCheck", false,
+            "Disables portal POI HORIZONTAL_AXIS property check.");
     public static final ConfigOption<Boolean> LEGACY_END_CRYSTAL_COLLISION = ConfigOption.boolConfig(
             "legacyEndCrystalCollision", false,
             "End crystals won't check for collision in their tick method.");
@@ -183,9 +188,6 @@ public class ConfigOptions {
     public static final ConfigOption<Boolean> LEGACY_END_PLATFORM = ConfigOption.boolConfig(
             "legacyEndPlatform", false,
             "Re-enables pre-1.21 end portal logic.");
-    public static final ConfigOption<Boolean> LEGACY_POI_PROPERTY_CHECK = ConfigOption.boolConfig(
-            "legacyDisablePoiPropertyCheck", false,
-            "Disables portal POI HORIZONTAL_AXIS property check.");
     public static final ConfigOption<Boolean> LEGACY_PROTECTION_COMPATIBILITY = ConfigOption.boolConfig(
             "legacyProtectionCompatibility", false,
             "Makes all protection types compatible with each other.");

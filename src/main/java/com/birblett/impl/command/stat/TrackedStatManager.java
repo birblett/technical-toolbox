@@ -34,6 +34,7 @@ import com.mojang.authlib.minecraft.MinecraftSessionService;
 import com.mojang.authlib.yggdrasil.ProfileResult;
 import net.minecraft.scoreboard.*;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.stat.ServerStatHandler;
 import net.minecraft.stat.Stat;
 import net.minecraft.text.Text;
@@ -61,6 +62,7 @@ public class TrackedStatManager {
     public static String TRACKED_STAT_PREFIX = "technical_toolbox.tracked_stats.";
     public static final String COMPOUND_FILE_NAME = "compound_stats.conf";
     private static final Map<UUID, GameProfile> PROFILE_CACHE = new HashMap<>();
+    public static MinecraftServer SERVER = null;
 
     /**
      * Get all compound stat names, without the prefix.
@@ -164,13 +166,18 @@ public class TrackedStatManager {
             }
             for (GameProfile profile : profiles.keySet()) {
                 ScoreHolder scoreHolder = ScoreHolder.fromProfile(profile);
-                ScoreAccess score = scoreboard.getOrCreateScore(scoreHolder, objective, true);
-                int playerScore = TrackedStatManager.getCriterionValue(profiles.get(profile), criterion);
-                if (playerScore != 0) {
-                    score.setScore(playerScore);
+                if (TrackedStatManager.whitelistIfEnabled(profile)) {
+                    ScoreAccess score = scoreboard.getOrCreateScore(scoreHolder, objective, true);
+                    int playerScore = TrackedStatManager.getCriterionValue(profiles.get(profile), criterion);
+                    if (playerScore != 0) {
+                        score.setScore(playerScore);
+                    }
+                    else {
+                        scoreboard.removeScore(scoreHolder, objective);
+                    }
                 }
                 else {
-                    scoreboard.removeScore(scoreHolder, objective);
+                    scoreboard.removeScores(scoreHolder);
                 }
             }
         }
@@ -189,15 +196,20 @@ public class TrackedStatManager {
         }
         for (GameProfile profile : profiles.keySet()) {
             ScoreHolder scoreHolder = ScoreHolder.fromProfile(profile);
-            int totalScore = 0;
-            for (ScoreboardCriterion criterion : compound.criteria) {
-                totalScore += TrackedStatManager.getCriterionValue(profiles.get(profile), criterion);
-            }
-            if (totalScore != 0) {
-                compound.setScore(scoreboard, scoreHolder, totalScore);
+            if (TrackedStatManager.whitelistIfEnabled(profile)) {
+                int totalScore = 0;
+                for (ScoreboardCriterion criterion : compound.criteria) {
+                    totalScore += TrackedStatManager.getCriterionValue(profiles.get(profile), criterion);
+                }
+                if (totalScore != 0) {
+                    compound.setScore(scoreboard, scoreHolder, totalScore);
+                }
+                else {
+                    compound.removeScore(scoreboard, scoreHolder);
+                }
             }
             else {
-                compound.removeScore(scoreboard, scoreHolder);
+                scoreboard.removeScores(scoreHolder);
             }
         }
     }
@@ -231,21 +243,36 @@ public class TrackedStatManager {
                     }
                     return Optional.ofNullable(PROFILE_CACHE.put(uuid, Optional.ofNullable(sessionService.fetchProfile(uuid,
                             false)).map(ProfileResult::profile).orElse(null)));
-                }).ifPresent(profile -> profiles.put(profile, new ServerStatHandler(server, file)));
+                }).ifPresent(profile -> {
+                    profiles.put(profile, new ServerStatHandler(server, file));
+                });
             }
         }
         return profiles;
+    }
+
+    public static boolean whitelistIfEnabled(GameProfile profile) {
+        return SERVER != null && (!ConfigOptions.STAT_TRACK_WHITELIST_ONLY.val() || SERVER.getPlayerManager().isWhitelisted(profile));
+    }
+
+    public static boolean whitelistIfEnabled(ScoreHolder scoreHolder) {
+        if (scoreHolder instanceof ServerPlayerEntity player) {
+            return whitelistIfEnabled(player.getGameProfile());
+        }
+        return !ConfigOptions.STAT_TRACK_WHITELIST_ONLY.val();
     }
 
     /**
      * Deserializes all tracked compound stats from compound_stats.conf.
      */
     public static void loadTrackedStats(MinecraftServer server, Path path, boolean global) {
+        TrackedStatManager.SERVER = server;
         path.toFile().mkdirs();
         if (path.resolve(COMPOUND_FILE_NAME).toFile().isFile()) {
             int i = 0, j = i;
             try (BufferedReader bufferedWriter = Files.newBufferedReader(path.resolve(COMPOUND_FILE_NAME))) {
                 String line;
+                Map<GameProfile, ServerStatHandler> profiles = TrackedStatManager.getStatistics(server);
                 while ((line = bufferedWriter.readLine()) != null) {
                     if (!line.isEmpty()) {
                         try {
@@ -253,7 +280,7 @@ public class TrackedStatManager {
                             if (stat != null) {
                                 stat.isGlobal = global;
                                 TRACKED_COMPOUNDS.add(stat);
-                                TrackedStatManager.refreshCompound(server, stat, null);
+                                TrackedStatManager.refreshCompound(server, stat, profiles);
                                 j++;
                             }
                         }

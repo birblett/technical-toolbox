@@ -21,7 +21,7 @@ public class CompoundStat {
     public final ScoreboardObjective objective;
     public final HashSet<ScoreboardCriterion> criteria;
     public boolean isGlobal;
-    private final HashMap<ScoreHolder, Long> scoresMap = new HashMap<>();
+    private final HashMap<String, Long> scoresMap = new HashMap<>();
     private double modifier = 1;
     private boolean mode = true;
 
@@ -73,9 +73,10 @@ public class CompoundStat {
      * @param score value to set score to
      */
     public void setScore(Scoreboard scoreboard, ScoreHolder scoreHolder, int score) {
-        this.scoresMap.put(scoreHolder, (long) score);
-        ScoreAccess access = scoreboard.getOrCreateScore(scoreHolder, this.objective, true);
-        access.setScore((int) (this.mode ? this.scoresMap.get(scoreHolder) * modifier : this.scoresMap.get(scoreHolder) / modifier));
+        String name = scoreHolder.getNameForScoreboard();
+        this.scoresMap.put(name, (long) score);
+        ScoreAccess access = scoreboard.getOrCreateScore(scoreHolder, this.objective);
+        access.setScore((int) (this.mode ? this.scoresMap.get(name) * modifier : this.scoresMap.get(name) / modifier));
     }
 
     /**
@@ -86,9 +87,10 @@ public class CompoundStat {
      * @param score value to set score to, if applicalbe
      */
     public void updateScore(Scoreboard scoreboard, ScoreHolder scoreHolder, int delta, int score) {
-        this.scoresMap.put(scoreHolder, this.scoresMap.getOrDefault(scoreHolder, (long) score) + delta);
+        String name = scoreHolder.getNameForScoreboard();
+        this.scoresMap.put(name, this.scoresMap.getOrDefault(name, (long) score) + delta);
         ScoreAccess access = scoreboard.getOrCreateScore(scoreHolder, this.objective, true);
-        int newVal = (int) (this.mode ? this.scoresMap.get(scoreHolder) * modifier : this.scoresMap.get(scoreHolder) / modifier);
+        int newVal = (int) (this.mode ? this.scoresMap.get(name) * modifier : this.scoresMap.get(name) / modifier);
         if (newVal != access.getScore()) {
             access.setScore(newVal);
         }
@@ -98,7 +100,7 @@ public class CompoundStat {
      * Removes a scoreholder's entry for this compound stat.
      */
     public void removeScore(Scoreboard scoreboard, ScoreHolder scoreHolder) {
-        this.scoresMap.remove(scoreHolder);
+        this.scoresMap.remove(scoreHolder.getNameForScoreboard());
         scoreboard.removeScore(scoreHolder, objective);
         scoreboard.onScoreHolderRemoved(scoreHolder);
     }
@@ -110,8 +112,8 @@ public class CompoundStat {
     public boolean equals(Object obj) {
         if (obj instanceof com.birblett.impl.command.stat.CompoundStat) {
             return this == obj;
-        } else if (obj instanceof ScoreboardObjective objective) {
-            return this.objective == objective;
+        } else if (obj instanceof ScoreboardObjective scoreboardObjective) {
+            return this.objective == scoreboardObjective;
         } else if (obj instanceof String str) {
             return this.objective.getName().equals(str);
         }
@@ -159,6 +161,10 @@ public class CompoundStat {
                             return null;
                         }
                         name = found;
+                        if (TrackedStatManager.getCompoundStat(name) != null) {
+                            TechnicalToolbox.error("Compound stat for {} already exists", name);
+                            return null;
+                        }
                     }
                     case 1 -> {
                         text = Text.Serialization.fromJson(found, server.getRegistryManager());
@@ -198,10 +204,6 @@ public class CompoundStat {
             }
             if (text == null) {
                 TechnicalToolbox.error("No display text provided for compound stat at line {}", line);
-                return null;
-            }
-            if (TrackedStatManager.getCompoundStat(name) != null) {
-                TechnicalToolbox.error("Compound stat for {} already exists", name);
                 return null;
             }
             String objectiveName = TrackedStatManager.COMPOUND_STAT_PREFIX + name;

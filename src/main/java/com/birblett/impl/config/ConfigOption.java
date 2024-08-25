@@ -83,8 +83,8 @@ public class ConfigOption<T> {
         return String.valueOf(this.val());
     };
 
-    public static ConfigOption<Boolean> boolConfig(String name, boolean defaultValue, String desc, boolean hasLineBreak, String... suggestions) {
-        return new ConfigOption<>(name, defaultValue, desc, hasLineBreak, suggestions) {
+    public static ConfigOption<Boolean> boolConfig(String name, boolean defaultValue, String desc, boolean hasLineBreak) {
+        return new ConfigOption<>(name, defaultValue, desc, hasLineBreak, "true", "false") {
             @Override
             public Text setFromString(String value) {
                 Pair<Boolean, Text> out = getBooleanOption(this.getName(), value, false);
@@ -95,7 +95,7 @@ public class ConfigOption<T> {
     }
 
     public static ConfigOption<Boolean> boolConfig(String name, boolean defaultValue, String desc) {
-        return boolConfig(name, defaultValue, desc, false, "true", "false");
+        return boolConfig(name, defaultValue, desc, false);
     }
 
     public static ConfigOption<Integer> intConfig(String name, int defaultValue, String desc, int min, int max, boolean hasLineBreak, String... suggestions) {
