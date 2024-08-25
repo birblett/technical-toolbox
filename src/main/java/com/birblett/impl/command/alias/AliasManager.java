@@ -34,7 +34,7 @@ public class AliasManager {
      */
     public void onServerOpen(MinecraftServer server) {
         for (String key : AliasManager.ALIASES.keySet()) {
-            AliasManager.ALIASES.get(key).deregister(server, true);
+            AliasManager.ALIASES.get(key).deregister(server, false);
         }
         AliasManager.ALIASES.clear();
         this.readAliases(server);
@@ -54,7 +54,7 @@ public class AliasManager {
     public void onServerClose(MinecraftServer server) {
         this.writeAliases(server);
         for (Object key : AliasManager.ALIASES.keySet().toArray()) {
-            AliasManager.ALIASES.get((String) key).deregister(server, true);
+            AliasManager.ALIASES.get((String) key).deregister(server, false);
         }
         AliasManager.ALIASES.clear();
     }

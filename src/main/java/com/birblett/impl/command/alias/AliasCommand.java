@@ -179,9 +179,8 @@ public class AliasCommand {
      */
     private static int reload(CommandContext<ServerCommandSource> context) {
         for (AliasedCommand alias : AliasManager.ALIASES.values()) {
-            alias.deregister(context.getSource().getServer(), true);
+            alias.deregister(context.getSource().getServer(), false);
         }
-        AliasManager.ALIASES.clear();
         TechnicalToolbox.ALIAS_MANAGER.readAliases(context.getSource().getServer());
         for (AliasedCommand aliasedCommand : AliasManager.ALIASES.values()) {
             try {
