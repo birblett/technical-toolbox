@@ -34,7 +34,6 @@ import com.mojang.authlib.minecraft.MinecraftSessionService;
 import com.mojang.authlib.yggdrasil.ProfileResult;
 import net.minecraft.scoreboard.*;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.stat.ServerStatHandler;
 import net.minecraft.stat.Stat;
 import net.minecraft.text.Text;
@@ -145,7 +144,6 @@ public class TrackedStatManager {
         ScoreboardObjective objective = scoreboard.addObjective(name, criterion, text,
                 ScoreboardCriterion.RenderType.INTEGER, true, null);
         scoreboard.addScoreboardObjective(objective);
-        TrackedStatManager.addTrackedObjective(objective);
         if (criterion != ScoreboardCriterion.DUMMY && ConfigOptions.STAT_MODIFY_REFRESH.val()) {
             TrackedStatManager.refreshStat(server, objective, null);
         }
@@ -166,7 +164,7 @@ public class TrackedStatManager {
             }
             for (GameProfile profile : profiles.keySet()) {
                 ScoreHolder scoreHolder = ScoreHolder.fromProfile(profile);
-                if (TrackedStatManager.whitelistIfEnabled(profile)) {
+                if (TrackedStatManager.whitelistIfEnabled(profile.getName())) {
                     ScoreAccess score = scoreboard.getOrCreateScore(scoreHolder, objective, true);
                     int playerScore = TrackedStatManager.getCriterionValue(profiles.get(profile), criterion);
                     if (playerScore != 0) {
@@ -196,7 +194,7 @@ public class TrackedStatManager {
         }
         for (GameProfile profile : profiles.keySet()) {
             ScoreHolder scoreHolder = ScoreHolder.fromProfile(profile);
-            if (TrackedStatManager.whitelistIfEnabled(profile)) {
+            if (TrackedStatManager.whitelistIfEnabled(profile.getName())) {
                 int totalScore = 0;
                 for (ScoreboardCriterion criterion : compound.criteria) {
                     totalScore += TrackedStatManager.getCriterionValue(profiles.get(profile), criterion);
@@ -251,15 +249,13 @@ public class TrackedStatManager {
         return profiles;
     }
 
-    public static boolean whitelistIfEnabled(GameProfile profile) {
-        return SERVER != null && (!ConfigOptions.STAT_TRACK_WHITELIST_ONLY.val() || SERVER.getPlayerManager().isWhitelisted(profile));
+    public static boolean whitelistIfEnabled(String s) {
+        Set<String> set = Set.of(SERVER.getPlayerManager().getWhitelistedNames());
+        return SERVER != null && (!ConfigOptions.STAT_TRACK_WHITELIST_ONLY.val() || set.contains(s));
     }
 
-    public static boolean whitelistIfEnabled(ScoreHolder scoreHolder) {
-        if (scoreHolder instanceof ServerPlayerEntity player) {
-            return whitelistIfEnabled(player.getGameProfile());
-        }
-        return !ConfigOptions.STAT_TRACK_WHITELIST_ONLY.val();
+    public static boolean whitelistIfEnabled(ScoreHolder s) {
+        return whitelistIfEnabled(s.getNameForScoreboard());
     }
 
     /**

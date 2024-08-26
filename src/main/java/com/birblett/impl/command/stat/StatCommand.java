@@ -191,6 +191,7 @@ public class StatCommand {
                 shouldAdd = false;
             }
             StatCommand.updatePlayerScoreboard(player, objective, scoreboardDisplaySlot, shouldAdd);
+            TrackedStatManager.TRACKED_STATS.add(objective);
         }
         else {
             context.getSource().sendError(TextUtils.formattable("Stat tracking can only be done by players"));
@@ -217,6 +218,7 @@ public class StatCommand {
         if (scoreboard.getNullableObjective(objectiveName) == null) {
             ScoreboardObjective objective = TrackedStatManager.createNewObjective(context.getSource().getServer(), objectiveName,
                     ScoreboardCriterion.DUMMY, text);
+            TrackedStatManager.TRACKED_STATS.add(objective);
             TrackedStatManager.TRACKED_COMPOUNDS.add(new CompoundStat(objective, new HashSet<>()));
             for (ServerPlayerEntity player : context.getSource().getServer().getPlayerManager().getPlayerList()) {
                 ((StatTracker) player).technicalToolbox$UpdateObjective(objective);

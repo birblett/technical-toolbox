@@ -23,14 +23,18 @@ public class MinecraftServerMixin {
     @Shadow @Final private ServerScoreboard scoreboard;
     @Unique private boolean configurable = false;
 
+    @Inject(method = "loadWorld", at = @At("HEAD"))
+    private void resetStatistics(CallbackInfo ci) {
+        TrackedStatManager.TRACKED_COMPOUNDS.clear();
+        TrackedStatManager.TRACKED_STATS.clear();
+    }
+
     @Inject(method = "loadWorld", at = @At("TAIL"))
     private void serverLoaded(CallbackInfo ci) {
         this.configurable = true;
         MinecraftServer server = (MinecraftServer) (Object) this;
         TechnicalToolbox.CONFIG_MANAGER.onServerOpen(server);
         TechnicalToolbox.ALIAS_MANAGER.onServerOpen(server);
-        TrackedStatManager.TRACKED_COMPOUNDS.clear();
-        TrackedStatManager.TRACKED_STATS.clear();
         TrackedStatManager.loadTrackedStats(server, ServerUtil.getGlobalToolboxPath(server, ""), true);
         TrackedStatManager.loadTrackedStats(server, ServerUtil.getToolboxPath(server, ""), false);
         for (ScoreboardObjective objective : scoreboard.getObjectives()) {
@@ -39,6 +43,7 @@ public class MinecraftServerMixin {
                 scoreboard.removeObjective(objective);
             }
         }
+        ServerUtil.refreshCommandTree(server);
     }
 
     @Inject(method = "shutdown", at = @At("HEAD"))
