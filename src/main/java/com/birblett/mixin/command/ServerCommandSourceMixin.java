@@ -63,16 +63,6 @@ public class ServerCommandSourceMixin implements CommandSourceModifier {
         return this.ret;
     }
 
-    @Override
-    public void technicalToolbox$addCriterion(ScoreboardCriterion criterion) {
-        this.criteria.add(criterion);
-    }
-
-    @Override
-    public HashSet<ScoreboardCriterion> technicalToolbox$getCriteria(ScoreboardCriterion criterion) {
-        return this.criteria;
-    }
-
     @ModifyReturnValue(method = "hasPermissionLevel", at = @At("RETURN"))
     private boolean overridePermissionLevelCheck(boolean b) {
         return b || this.overridePermissions;

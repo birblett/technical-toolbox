@@ -39,10 +39,9 @@ public class DelayCommand {
                         .DELAY_COMMAND.val())
                 .requires(source -> source.hasPermissionLevel(4))
                 .then(CommandManager.literal("as")
-                        .requires(ServerCommandSource::isExecutedByPlayer)
                         .then(CommandManager.argument("source", StringArgumentType.string())
-                                .suggests((context, builder) -> CommandSource.suggestMatching(List.of("self", "server"),
-                                        builder))
+                                .suggests((context, builder) -> CommandSource.suggestMatching(context.getSource().isExecutedByPlayer() ?
+                                                List.of("self", "server") : List.of("server"), builder))
                                 .redirect(node, context -> DelayCommand.optionalArgument(context, "source", String.class))))
                 .then(CommandManager.literal("priority")
                         .then(CommandManager.argument("priority", IntegerArgumentType.integer())

@@ -7,7 +7,6 @@ import com.birblett.impl.command.alias.AliasCommand;
 import com.birblett.impl.command.alias.AliasManager;
 import com.birblett.impl.command.alias.AliasedCommand;
 import com.birblett.impl.command.delay.DelayCommand;
-import com.birblett.impl.command.stat.StatCommand;
 import com.mojang.brigadier.CommandDispatcher;
 import net.minecraft.command.CommandRegistryAccess;
 import net.minecraft.server.command.CommandManager;
@@ -35,7 +34,6 @@ public class CommandManagerMixin {
         AliasCommand.register(this.dispatcher);
         CameraCommand.register(this.dispatcher);
         DelayCommand.register(this.dispatcher);
-        StatCommand.register(this.dispatcher, commandRegistryAccess);
         for (AliasedCommand aliasedCommand : AliasManager.ALIASES.values()) {
             try {
                 aliasedCommand.register(this.dispatcher);

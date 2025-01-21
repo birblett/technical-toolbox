@@ -19,8 +19,4 @@ public interface CommandSourceModifier {
 
     Operator technicalToolbox$getReturnValue();
 
-    void technicalToolbox$addCriterion(ScoreboardCriterion criterion);
-
-    HashSet<ScoreboardCriterion> technicalToolbox$getCriteria(ScoreboardCriterion criterion);
-
 }
