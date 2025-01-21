@@ -16,9 +16,15 @@ import java.util.Map;
 @Mixin(CommandNode.class)
 public class CommandNodeMixin<S> implements CommandNodeModifier {
 
-    @Shadow @Final private Map<String, CommandNode<S>> children;
-    @Shadow @Final private Map<String, ArgumentCommandNode<S, ?>> arguments;
-    @Shadow @Final private Map<String, LiteralCommandNode<S>> literals;
+    @Shadow
+    @Final
+    private Map<String, CommandNode<S>> children;
+    @Shadow
+    @Final
+    private Map<String, ArgumentCommandNode<S, ?>> arguments;
+    @Shadow
+    @Final
+    private Map<String, LiteralCommandNode<S>> literals;
 
     @Override
     public void technicalToolbox$RemoveStringInstance(String s) {

@@ -35,8 +35,7 @@ public abstract class BulbBlockMixin extends Block {
             if (ConfigOptions.FEATURE_COPPER_BULB_NO_POWERED_UPDATES.val()) {
                 world.getWorldChunk(pos).setBlockState(pos, state.with(BulbBlock.POWERED, bl), false);
                 world.updateListeners(pos, state, state.with(BulbBlock.POWERED, bl), Block.NOTIFY_ALL_AND_REDRAW);
-            }
-            else {
+            } else {
                 world.setBlockState(pos, state.with(BulbBlock.POWERED, bl), Block.NOTIFY_ALL);
             }
             if (bl) {
@@ -51,7 +50,7 @@ public abstract class BulbBlockMixin extends Block {
         if (world instanceof ServerWorld) {
             ((BulbBlock) (Object) this).update(state, world, pos);
             world.playSound(null, pos, state.cycle(BulbBlock.LIT).get(BulbBlock.LIT) ?
-                    SoundEvents.BLOCK_COPPER_BULB_TURN_ON : SoundEvents.BLOCK_COPPER_BULB_TURN_OFF,
+                            SoundEvents.BLOCK_COPPER_BULB_TURN_ON : SoundEvents.BLOCK_COPPER_BULB_TURN_OFF,
                     SoundCategory.BLOCKS);
             world.setBlockState(pos, state.cycle(BulbBlock.LIT), Block.NOTIFY_ALL);
         }

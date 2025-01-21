@@ -10,10 +10,14 @@ import java.util.HashMap;
 @Mixin(ServerCommandSource.class)
 public class ServerCommandSourceMixin implements AliasedCommandSource {
 
-    @Unique private final HashMap<String, Object> commandOptions = new HashMap<>();
-    @Unique private int instructionCount = 0;
-    @Unique private int recursionCount = 0;
-    @Unique private Object returns = null;
+    @Unique
+    private final HashMap<String, Object> commandOptions = new HashMap<>();
+    @Unique
+    private int instructionCount = 0;
+    @Unique
+    private int recursionCount = 0;
+    @Unique
+    private Object returns = null;
 
     @Override
     public void technicalToolbox$SetOpt(String s, Object value) {

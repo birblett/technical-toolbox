@@ -6,7 +6,9 @@ import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.packet.s2c.play.ScoreboardDisplayS2CPacket;
-import net.minecraft.scoreboard.*;
+import net.minecraft.scoreboard.ScoreboardDisplaySlot;
+import net.minecraft.scoreboard.ScoreboardObjective;
+import net.minecraft.scoreboard.ServerScoreboard;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.stat.ServerStatHandler;
 import net.minecraft.stat.Stat;
@@ -26,8 +28,10 @@ import java.util.Set;
 @Mixin(ServerPlayerEntity.class)
 public class ServerPlayerEntityMixin implements StatTracker {
 
-    @Unique private final HashMap<ScoreboardDisplaySlot, ScoreboardObjective> trackedStats = new HashMap<>();
-    @Unique private final Set<ScoreboardObjective> initializedStats = new HashSet<>();
+    @Unique
+    private final HashMap<ScoreboardDisplaySlot, ScoreboardObjective> trackedStats = new HashMap<>();
+    @Unique
+    private final Set<ScoreboardObjective> initializedStats = new HashSet<>();
 
     @Override
     public void technicalToolbox$UpdateObjective(ScoreboardObjective objective) {

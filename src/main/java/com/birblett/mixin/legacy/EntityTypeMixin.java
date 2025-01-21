@@ -13,7 +13,9 @@ import org.spongepowered.asm.mixin.injection.At;
 @Mixin(EntityType.class)
 public class EntityTypeMixin<T extends Entity> {
 
-    @Shadow @Final public static EntityType<EndCrystalEntity> END_CRYSTAL;
+    @Shadow
+    @Final
+    public static EntityType<EndCrystalEntity> END_CRYSTAL;
 
     @ModifyReturnValue(method = "isFireImmune", at = @At("RETURN"))
     private boolean endCrystalFireImmunity(boolean b) {

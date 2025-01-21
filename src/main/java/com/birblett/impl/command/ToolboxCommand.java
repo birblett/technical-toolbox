@@ -55,7 +55,7 @@ public class ToolboxCommand {
         if (TechnicalToolbox.CONFIG_MANAGER.getAllConfigOptions().contains(tmp)) {
             ConfigOption<?> c = TechnicalToolbox.CONFIG_MANAGER.configMap.get(tmp);
             if (c != null) {
-                suggestions =  c.commandSuggestions();
+                suggestions = c.commandSuggestions();
             }
         }
         return CommandSource.suggestMatching(suggestions, builder);
@@ -70,18 +70,16 @@ public class ToolboxCommand {
             if (out != null) {
                 context.getSource().sendError(out);
                 return 0;
-            }
-            else {
+            } else {
                 context.getSource().sendFeedback(() -> TextUtils.formattable("Successfully set value ").append(
                         TextUtils.formattable(value).setStyle(Style.EMPTY.withColor(Formatting.GREEN))).append(
-                                TextUtils.formattable(" for option " + option)), true);
+                        TextUtils.formattable(" for option " + option)), true);
                 if (ConfigOptions.CONFIG_WRITE_ON_CHANGE.val()) {
                     TechnicalToolbox.CONFIG_MANAGER.writeConfigs(context.getSource().getServer());
                 }
                 return 1;
             }
-        }
-        else {
+        } else {
             context.getSource().sendError(TextUtils.formattable("No config option with name \"" + option + "\""));
             return 0;
         }
@@ -92,8 +90,7 @@ public class ToolboxCommand {
         if (TechnicalToolbox.CONFIG_MANAGER.getAllConfigOptions().contains(option)) {
             ConfigOption<?> c = TechnicalToolbox.CONFIG_MANAGER.configMap.get(option);
             context.getSource().sendFeedback(c::getText, true);
-        }
-        else {
+        } else {
             context.getSource().sendError(TextUtils.formattable("No config option with name \"" + option + "\""));
         }
         return 1;

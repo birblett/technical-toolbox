@@ -17,10 +17,12 @@ import java.util.PriorityQueue;
 @Mixin(Timer.class)
 public class TimerMixin<T> implements CommandScheduler {
 
-    @Unique private final PriorityQueue<CommandEvent> scheduledCommands = new PriorityQueue<>((a, b) -> a.tick() - b
+    @Unique
+    private final PriorityQueue<CommandEvent> scheduledCommands = new PriorityQueue<>((a, b) -> a.tick() - b
             .tick() == 0 ? a.priority() - b.priority() : a.tick() > b.tick() ? 1 : -1);
 
-    @Unique private final HashMap<String, CommandEvent> scheduledCommandMap = new HashMap<>();
+    @Unique
+    private final HashMap<String, CommandEvent> scheduledCommandMap = new HashMap<>();
 
     @Override
     public boolean technicalToolbox$AddCommandEvent(String command, long delay, String id, int priority, boolean silent, ServerCommandSource source) {

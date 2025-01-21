@@ -19,7 +19,7 @@ public class EndCrystalEntityMixin {
             EndCrystalEntity entity = (EndCrystalEntity) (Object) this;
             if (entity.getWorld() instanceof ServerWorld) {
                 BlockPos blockPos = entity.getBlockPos();
-                if (((ServerWorld)entity.getWorld()).getEnderDragonFight() != null && entity.getWorld().getBlockState(blockPos).isAir()) {
+                if (((ServerWorld) entity.getWorld()).getEnderDragonFight() != null && entity.getWorld().getBlockState(blockPos).isAir()) {
                     entity.getWorld().setBlockState(blockPos, AbstractFireBlock.getState(entity.getWorld(), blockPos));
                 }
             }

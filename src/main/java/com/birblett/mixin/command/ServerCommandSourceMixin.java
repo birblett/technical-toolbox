@@ -22,11 +22,16 @@ import java.util.HashSet;
 @Mixin(ServerCommandSource.class)
 public class ServerCommandSourceMixin implements CommandSourceModifier {
 
-    @Unique private boolean overridePermissions = false;
-    @Unique private boolean shutUp = false;
-    @Unique private final HashMap<String, String> selectorMap = new HashMap<>();
-    @Unique private final HashSet<ScoreboardCriterion> criteria = new HashSet<>();
-    @Unique private Operator ret = null;
+    @Unique
+    private boolean overridePermissions = false;
+    @Unique
+    private boolean shutUp = false;
+    @Unique
+    private final HashMap<String, String> selectorMap = new HashMap<>();
+    @Unique
+    private final HashSet<ScoreboardCriterion> criteria = new HashSet<>();
+    @Unique
+    private Operator ret = null;
 
     @Override
     public void technicalToolbox$setPermissionOverride(boolean override) {

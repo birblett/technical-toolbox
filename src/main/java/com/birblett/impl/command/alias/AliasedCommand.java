@@ -67,8 +67,7 @@ public class AliasedCommand {
         for (Variable.Definition var : arguments) {
             if (var.name.matches("[a-zA-Z_][a-zA-Z0-9_]*")) {
                 this.argumentDefinitions.put(var.name, var);
-            }
-            else {
+            } else {
                 args.add(var.name);
             }
         }
@@ -103,6 +102,7 @@ public class AliasedCommand {
     /**
      * Attempts to compile the currently stored alias; control flow/assignment are formatted as
      * [statement], everything else that does not match the regex will be interpreted as a command
+     *
      * @return false if it fails to compile
      */
     private boolean compile() {
@@ -142,7 +142,7 @@ public class AliasedCommand {
                             case "if" -> {
                                 depth++;
                                 scope.add(new LinkedHashMap<>());
-                                String instr =  c.substring(1, c.length() - 1).replaceFirst("if", "").strip();
+                                String instr = c.substring(1, c.length() - 1).replaceFirst("if", "").strip();
                                 Instruction.If instruction = new Instruction.If(instr, scope);
                                 if (!instruction.valid) {
                                     return this.compileError(i, instruction.err);
@@ -160,7 +160,7 @@ public class AliasedCommand {
                                     Instruction jumpInstruction = new Instruction.IfJump(-1, depth);
                                     this.instructions.add(jumpInstruction);
                                     controlFlowStack.add(jumpInstruction);
-                                    String instr =  c.substring(1, c.length() - 1).replaceFirst("elif", "").strip();
+                                    String instr = c.substring(1, c.length() - 1).replaceFirst("elif", "").strip();
                                     Instruction.If newInstruction = new Instruction.If(instr, scope);
                                     if (!newInstruction.valid) {
                                         return this.compileError(i, newInstruction.err);
@@ -169,8 +169,7 @@ public class AliasedCommand {
                                     controlFlowStack.add(newInstruction);
                                     scope.removeLast();
                                     scope.add(new LinkedHashMap<>());
-                                }
-                                else {
+                                } else {
                                     return this.compileError(i, "[elif] must follow an [if/elif]");
                                 }
                             }
@@ -186,8 +185,7 @@ public class AliasedCommand {
                                     controlFlowStack.add(newInstruction);
                                     scope.removeLast();
                                     scope.add(new LinkedHashMap<>());
-                                }
-                                else {
+                                } else {
                                     return this.compileError(i, "{} - line {}: [else] must follow an [if/elif]");
                                 }
                             }
@@ -195,7 +193,7 @@ public class AliasedCommand {
                             case "while" -> {
                                 depth++;
                                 scope.add(new LinkedHashMap<>());
-                                String instr =  c.substring(1, c.length() - 1).replaceFirst("while", "").strip();
+                                String instr = c.substring(1, c.length() - 1).replaceFirst("while", "").strip();
                                 Instruction.While instruction = new Instruction.While(address, instr, scope);
                                 if (!instruction.valid) {
                                     return this.compileError(i, instruction.err);
@@ -209,13 +207,11 @@ public class AliasedCommand {
                                 scope.removeLast();
                                 if (controlFlowStack.isEmpty()) {
                                     return this.compileError(i, "[end] does not enclose any control block");
-                                }
-                                else if (controlFlowStack.peek() instanceof Instruction.While instruction) {
+                                } else if (controlFlowStack.peek() instanceof Instruction.While instruction) {
                                     this.instructions.add(new Instruction.Jump(instruction.startAddress));
                                     instruction.jumpTo = address + 1;
                                     controlFlowStack.pop();
-                                }
-                                else if (controlFlowStack.peek() instanceof Instruction.Jump instruction) {
+                                } else if (controlFlowStack.peek() instanceof Instruction.Jump instruction) {
                                     instruction.jumpTo = address--;
                                     controlFlowStack.pop();
                                     // processes all the previous if/elif/else chains, so they correctly skip over elif/else after if
@@ -224,15 +220,14 @@ public class AliasedCommand {
                                         instruction1.jumpTo = address + 1;
                                         controlFlowStack.pop();
                                     }
-                                }
-                                else {
+                                } else {
                                     // is this even reachable i have no idea
                                     return false;
                                 }
                             }
                             // [return] causes the program to terminate immediately and if specified can return a value accessed via [fetch]
                             case "return" -> {
-                                String instr =  c.substring(1, c.length() - 1).replaceFirst("return", "").strip();
+                                String instr = c.substring(1, c.length() - 1).replaceFirst("return", "").strip();
                                 Instruction.Return instruction = new Instruction.Return(instr, scope);
                                 if (!instruction.valid) {
                                     return this.compileError(i, instruction.err);
@@ -242,7 +237,7 @@ public class AliasedCommand {
                             // [fetch] retrieves the last return value in scope. there is no type inference for return values so it must be
                             // cast. attempting to cast a string as any number will set it to 0.
                             case "fetch" -> {
-                                String[] instr =  c.substring(1, c.length() - 1).replaceFirst("fetch", "").strip()
+                                String[] instr = c.substring(1, c.length() - 1).replaceFirst("fetch", "").strip()
                                         .split(" ");
                                 if (instr.length != 2) {
                                     return this.compileError(i, "fetch should be of form [fetch type <var>]");
@@ -254,12 +249,11 @@ public class AliasedCommand {
                                 this.instructions.add(instruction);
                             }
                             default -> {
-                                return this.compileError(i, "invalid statement [" + ctrl +"]");
+                                return this.compileError(i, "invalid statement [" + ctrl + "]");
                             }
                         }
                     }
-                }
-                else {
+                } else {
                     this.instructions.add(new Instruction.Command(cmd));
                 }
                 address++;
@@ -271,16 +265,14 @@ public class AliasedCommand {
                 this.instructions.add(new Instruction.Jump(instruction.startAddress));
                 instruction.jumpTo = address + 1;
                 controlFlowStack.pop();
-            }
-            else if (controlFlowStack.peek() instanceof Instruction.Jump instruction) {
+            } else if (controlFlowStack.peek() instanceof Instruction.Jump instruction) {
                 instruction.jumpTo = address--;
                 controlFlowStack.pop();
                 while (!controlFlowStack.isEmpty() && controlFlowStack.peek() instanceof Instruction.IfJump instruction1) {
                     instruction1.jumpTo = address + 1;
                     controlFlowStack.pop();
                 }
-            }
-            else {
+            } else {
                 return false;
             }
             address++;
@@ -296,8 +288,9 @@ public class AliasedCommand {
 
     /**
      * Logs an error and stores an error message.
+     *
      * @param line line number
-     * @param err specific error mesasge
+     * @param err  specific error mesasge
      * @return always false, inlined when compiler fails
      */
     private boolean compileError(int line, String err) {
@@ -308,6 +301,7 @@ public class AliasedCommand {
 
     /**
      * Attempts to register a command, and sends compiler errors to the source.
+     *
      * @param source command source to send feedback to
      * @return whether compilation was successful or not
      */
@@ -322,6 +316,7 @@ public class AliasedCommand {
 
     /**
      * Compiles the alias and if successful registers it as an executable command.
+     *
      * @param dispatcher dispatcher to register to
      * @return true if successful, false if compilation failed
      */
@@ -350,8 +345,7 @@ public class AliasedCommand {
                             return true;
                         }));
                     }
-                }
-                else {
+                } else {
                     baseNodes.add(CommandManager.argument(def.name, def.getArgumentType()));
                 }
                 // build command tree by layer, from the bottom up
@@ -359,8 +353,7 @@ public class AliasedCommand {
                     for (ArgumentBuilder<ServerCommandSource, ?> base : baseNodes) {
                         tree.add(base.executes(this::execute));
                     }
-                }
-                else {
+                } else {
                     for (ArgumentBuilder<ServerCommandSource, ?> base : baseNodes) {
                         for (ArgumentBuilder<ServerCommandSource, ?> treeNode : tree) {
                             base = base.then(treeNode);
@@ -370,7 +363,7 @@ public class AliasedCommand {
                 }
             }
             LiteralArgumentBuilder<ServerCommandSource> root = CommandManager.literal(this.alias)
-                            .requires(source -> source.hasPermissionLevel(this.getPermission()));
+                    .requires(source -> source.hasPermissionLevel(this.getPermission()));
             for (ArgumentBuilder<ServerCommandSource, ?> base : tree) {
                 root = root.then(base);
             }
@@ -387,6 +380,7 @@ public class AliasedCommand {
 
     /**
      * Deregisters a command alias and resends the command tree.
+     *
      * @param server server to deregister commands from.
      */
     public void deregister(MinecraftServer server, boolean hard) {
@@ -398,6 +392,7 @@ public class AliasedCommand {
 
     /**
      * Executes an alias from start to finish. Configured to interpret {@link Instruction}.
+     *
      * @param context command context
      */
     private int execute(CommandContext<ServerCommandSource> context) {
@@ -410,8 +405,7 @@ public class AliasedCommand {
             if ("selection".equals(var.typeName)) {
                 String arg = ((CommandSourceModifier) context.getSource()).technicalToolbox$getSelectorArgument(var.name);
                 variableDefinitions.put(var.name, new Variable(var, arg));
-            }
-            else {
+            } else {
                 Object arg = context.getArgument(var.name, var.type.clazz());
                 variableDefinitions.put(var.name, new Variable(var, arg));
             }
@@ -425,8 +419,7 @@ public class AliasedCommand {
             int out = instructions.get(i).execute(this, context, variableDefinitions);
             if (out == -2) {
                 return 0;
-            }
-            else if (out >= 0) {
+            } else if (out >= 0) {
                 i = out - 1;
             }
         }
@@ -451,6 +444,7 @@ public class AliasedCommand {
 
     /**
      * Executes command on server with command permission level override enabled
+     *
      * @param context command context
      * @param command command to execute
      */
@@ -465,8 +459,7 @@ public class AliasedCommand {
         try {
             dispatcher.execute(dispatcher.parse(command, source));
             ((CommandSourceModifier) source).technicalToolbox$shutUp(false);
-        }
-        catch (CommandSyntaxException e) {
+        } catch (CommandSyntaxException e) {
             context.getSource().sendError(TextUtils.formattable(e.getMessage()));
             ((CommandSourceModifier) source).technicalToolbox$shutUp(false);
             return false;
@@ -483,6 +476,7 @@ public class AliasedCommand {
 
     /**
      * Adds a line to the end of the current alias script and automatically updates argument count.
+     *
      * @param command full command to add.
      */
     public void addCommand(String command) {
@@ -491,6 +485,7 @@ public class AliasedCommand {
 
     /**
      * Removes a line at the given position. Can't remove the last line of an alias.
+     *
      * @param line line number
      * @return Fail message if removal failed, otherwise null.
      */
@@ -507,8 +502,9 @@ public class AliasedCommand {
 
     /**
      * Inserts a line at a position, moving lines below down
+     *
      * @param line command string to be inserted
-     * @param num line number to insert at (or before)
+     * @param num  line number to insert at (or before)
      * @return an error message if unsuccessful
      */
     public MutableText insert(String line, int num) {
@@ -561,10 +557,11 @@ public class AliasedCommand {
 
     /**
      * Adds an argument, failing if it already exists, and recompiles afterward if auto-compilation is enabled.
+     *
      * @param replace whether the argument should replace the old one
-     * @param name name of the argument
+     * @param name    name of the argument
      * @param argType argument type
-     * @param args optional args
+     * @param args    optional args
      * @return false if failed to add argument, true otherwise
      */
     public boolean addArgument(ServerCommandSource source, boolean replace, String name, String argType, String[] args) {
@@ -601,6 +598,7 @@ public class AliasedCommand {
 
     /**
      * Removes an argument with the specified name, and recompiles afterward if auto-compilation is enabled.
+     *
      * @param name name of argument
      * @return true if successful, false if not
      */
@@ -620,7 +618,8 @@ public class AliasedCommand {
 
     /**
      * Renames an argument, and recompiles afterward if auto-compilation is enabled.
-     * @param name target argument
+     *
+     * @param name    target argument
      * @param newName name to rename to
      * @return true if successful, false otherwise
      */
@@ -638,8 +637,7 @@ public class AliasedCommand {
                     Variable.Definition v = tmp.getValue();
                     list.put(newName, new Variable.Definition(newName, v.typeName, v.args));
                     break;
-                }
-                else {
+                } else {
                     list.put(tmp.getKey(), tmp.getValue());
                 }
             }
@@ -657,6 +655,7 @@ public class AliasedCommand {
 
     /**
      * Provides this command's arguments; only used for {@link AliasCommand#modifyListArguments(CommandContext, SuggestionsBuilder)}
+     *
      * @return command arguments, as an ordered collection
      */
     @SuppressWarnings("JavadocReference")
@@ -686,7 +685,7 @@ public class AliasedCommand {
         MutableText out = TextUtils.formattable("Commands:\n");
         int lineNum = 0;
         for (String line : this.getCommands()) {
-            out.append(TextUtils.formattable( " " + ++lineNum + ". ")).append(TextUtils.formattable(line)
+            out.append(TextUtils.formattable(" " + ++lineNum + ". ")).append(TextUtils.formattable(line)
                     .formatted(Formatting.YELLOW));
             if (lineNum != this.getCommands().size()) {
                 out.append(TextUtils.formattable("\n"));
@@ -705,6 +704,7 @@ public class AliasedCommand {
 
     /**
      * Writes alias, permission level, separator (if applicable)
+     *
      * @param path path to write to
      * @return whether alias was written successfully or not
      */
@@ -745,6 +745,7 @@ public class AliasedCommand {
     /**
      * Recreates an alias from an alias file. Alias, separator, and permlevel can come in any order and will use defaults
      * if not provided, but commands must come last.
+     *
      * @param path path to read from
      * @return whether alias was successfully restored or not; outputs errors if failed
      */
@@ -789,8 +790,7 @@ public class AliasedCommand {
                                     String name = temp[0];
                                     if (temp.length == 1) {
                                         arguments.add(new Variable.Definition(name, "string", new String[0]));
-                                    }
-                                    else {
+                                    } else {
                                         temp = temp[1].split("\\|");
                                         arguments.add(new Variable.Definition(name, temp[0], temp.length > 1 ? temp[1].split(",") :
                                                 new String[0]));
@@ -798,12 +798,10 @@ public class AliasedCommand {
                                 }
                             }
                         }
-                    }
-                    else if (split.length == 1 && split[0].equalsIgnoreCase("command list")) {
+                    } else if (split.length == 1 && split[0].equalsIgnoreCase("command list")) {
                         readingCommandState = true;
                     }
-                }
-                else {
+                } else {
                     if (!line.isEmpty()) {
                         commands.add(line.stripTrailing());
                     }
@@ -818,8 +816,7 @@ public class AliasedCommand {
                 return false;
             }
             new AliasedCommand(alias, permission, silent, commands, arguments, global);
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             TechnicalToolbox.warn("Something went wrong reading from file " + path);
         }
         return true;

@@ -30,6 +30,7 @@ public class AliasManager {
 
     /**
      * Called on server open, sets server and reads aliases into memory.
+     *
      * @param server the server being opened
      */
     public void onServerOpen(MinecraftServer server) {
@@ -41,8 +42,7 @@ public class AliasManager {
         for (AliasedCommand aliasedCommand : AliasManager.ALIASES.values()) {
             try {
                 aliasedCommand.register(server.getCommandSource().getDispatcher());
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
                 TechnicalToolbox.error("Something went wrong with compiling alias {}", aliasedCommand.getAlias());
             }
         }
@@ -78,7 +78,7 @@ public class AliasManager {
             }
         }
         File directory = ServerUtil.getToolboxPath(server, ALIAS_PATH).toFile();
-        if (!ServerUtil.createDirectoryIfNotPresent(directory)){
+        if (!ServerUtil.createDirectoryIfNotPresent(directory)) {
             TechnicalToolbox.error("Failed to create {} directory, aliases will not be saved", ALIAS_PATH);
             return;
         }
@@ -93,8 +93,7 @@ public class AliasManager {
                 }
             }
             TechnicalToolbox.log("Loaded " + count + " aliases");
-        }
-        else {
+        } else {
             TechnicalToolbox.warn("Couldn't list files for alias directory, skipping alias loading step");
         }
     }

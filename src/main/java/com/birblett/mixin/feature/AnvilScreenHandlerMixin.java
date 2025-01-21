@@ -20,7 +20,8 @@ import java.util.Optional;
 @Mixin(AnvilScreenHandler.class)
 public class AnvilScreenHandlerMixin {
 
-    @Unique private static final Identifier PROTECTION_ID = Identifier.of("exclusive_set/armor");
+    @Unique
+    private static final Identifier PROTECTION_ID = Identifier.of("exclusive_set/armor");
 
     @WrapOperation(method = "updateResult", at = @At(value = "INVOKE", target = "Lnet/minecraft/enchantment/Enchantment;canBeCombined(Lnet/minecraft/registry/entry/RegistryEntry;Lnet/minecraft/registry/entry/RegistryEntry;)Z"))
     private boolean allowProtectionCombination(RegistryEntry<Enchantment> first, RegistryEntry<Enchantment> second, Operation<Boolean> original) {

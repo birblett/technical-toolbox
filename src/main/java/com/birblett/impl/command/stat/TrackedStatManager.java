@@ -134,9 +134,10 @@ public class TrackedStatManager {
 
     /**
      * Add and return new scoreboard objective.
-     * @param name full name of the created objective
+     *
+     * @param name      full name of the created objective
      * @param criterion criterion to track
-     * @param text displayed text - can be a translatable
+     * @param text      displayed text - can be a translatable
      * @return created scoreboard objective corresponding to stat
      */
     public static ScoreboardObjective createNewObjective(MinecraftServer server, String name, ScoreboardCriterion criterion, Text text) {
@@ -169,12 +170,10 @@ public class TrackedStatManager {
                     int playerScore = TrackedStatManager.getCriterionValue(profiles.get(profile), criterion);
                     if (playerScore != 0) {
                         score.setScore(playerScore);
-                    }
-                    else {
+                    } else {
                         scoreboard.removeScore(scoreHolder, objective);
                     }
-                }
-                else {
+                } else {
                     scoreboard.removeScores(scoreHolder);
                 }
             }
@@ -201,12 +200,10 @@ public class TrackedStatManager {
                 }
                 if (totalScore != 0) {
                     compound.setScore(scoreboard, scoreHolder, totalScore);
-                }
-                else {
+                } else {
                     compound.removeScore(scoreboard, scoreHolder);
                 }
-            }
-            else {
+            } else {
                 scoreboard.removeScores(scoreHolder);
             }
         }
@@ -279,23 +276,20 @@ public class TrackedStatManager {
                                 TrackedStatManager.refreshCompound(server, stat, profiles);
                                 j++;
                             }
-                        }
-                        catch (Exception e) {
+                        } catch (Exception e) {
                             TechnicalToolbox.error("Something went wrong parsing compound stat at line {}", i);
                         }
                     }
                     i++;
                 }
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
                 TechnicalToolbox.error("Something went wrong reading from {}{}", global ? "global stat file " : "", COMPOUND_FILE_NAME);
                 return;
             }
             if (j > 0) {
                 TechnicalToolbox.log("Loaded {} {}compound stats", j, global ? "global " : "");
             }
-        }
-        else {
+        } else {
             TechnicalToolbox.log("No {}compound stats loaded: {} does not exist", global ? "global " : "", COMPOUND_FILE_NAME);
         }
     }
@@ -312,8 +306,7 @@ public class TrackedStatManager {
                     bufferedWriter.write("\n");
                 }
             }
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             TechnicalToolbox.error("Something went wrong creating {}", COMPOUND_FILE_NAME);
         }
     }

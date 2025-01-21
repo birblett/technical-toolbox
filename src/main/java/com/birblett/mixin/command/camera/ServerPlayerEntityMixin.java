@@ -28,11 +28,15 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(ServerPlayerEntity.class)
 public class ServerPlayerEntityMixin implements CameraInterface {
 
-    @Unique private boolean isCamera = false;
-    @Unique private String storedGameMode;
-    @Unique private NbtCompound storedNbt = null;
+    @Unique
+    private boolean isCamera = false;
+    @Unique
+    private String storedGameMode;
+    @Unique
+    private NbtCompound storedNbt = null;
 
-    @Unique private NbtList toDoubleNbtList(double ... values) {
+    @Unique
+    private NbtList toDoubleNbtList(double... values) {
         NbtList nbtList = new NbtList();
         for (double d : values) {
             nbtList.add(NbtDouble.of(d));
@@ -40,7 +44,8 @@ public class ServerPlayerEntityMixin implements CameraInterface {
         return nbtList;
     }
 
-    @Unique private NbtList toIntNbtList(int ... values) {
+    @Unique
+    private NbtList toIntNbtList(int... values) {
         NbtList nbtList = new NbtList();
         for (int i : values) {
             nbtList.add(NbtInt.of(i));
@@ -56,6 +61,7 @@ public class ServerPlayerEntityMixin implements CameraInterface {
     /**
      * Swaps player into or out of camera mode. All relevant data is stored as temporary NBT data and is restored when
      * swapping back.
+     *
      * @param sendMessage whether it should output a status message or not
      * @return a status message to send to the player and server (if option enabled)
      */
@@ -64,11 +70,9 @@ public class ServerPlayerEntityMixin implements CameraInterface {
         ServerPlayerEntity player = (ServerPlayerEntity) (Object) this;
         if (player.getVehicle() != null && !this.isCamera) {
             return "Exit vehicles before entering camera mode";
-        }
-        else if (player.isSpectator() && !this.isCamera) {
+        } else if (player.isSpectator() && !this.isCamera) {
             return "Player is already in spectator mode";
-        }
-        else if (!this.isCamera) {
+        } else if (!this.isCamera) {
             this.isCamera = true;
             this.storedGameMode = player.interactionManager.getGameMode().asString();
             NbtCompound nbt = (this.storedNbt = new NbtCompound());
@@ -107,8 +111,7 @@ public class ServerPlayerEntityMixin implements CameraInterface {
             }
             player.changeGameMode(GameMode.SPECTATOR);
             return "Swapping from " + this.storedGameMode + " to camera mode";
-        }
-        else {
+        } else {
             String out;
             if (this.storedNbt != null) {
                 NbtCompound nbt = this.storedNbt;
@@ -121,7 +124,7 @@ public class ServerPlayerEntityMixin implements CameraInterface {
                 NbtList pos = nbt.getList("Pos", NbtElement.DOUBLE_TYPE);
                 Vec3d finalPos = new Vec3d(MathHelper.clamp(pos.getDouble(0), -3.0000512E7, 3.0000512E7),
                         MathHelper.clamp(pos.getDouble(1), -2.0E7, 2.0E7), MathHelper.clamp(pos
-                                .getDouble(2), -3.0000512E7, 3.0000512E7));
+                        .getDouble(2), -3.0000512E7, 3.0000512E7));
                 // restore rotation
                 float yaw = nbt.getFloat("Yaw");
                 float pitch = nbt.getFloat("Pitch");
@@ -171,8 +174,7 @@ public class ServerPlayerEntityMixin implements CameraInterface {
                 }
                 out = "Swapping from camera mode back to " + this.storedGameMode;
                 this.isCamera = false;
-            }
-            else {
+            } else {
                 out = "Swapping back to " + this.storedGameMode + " but can't restore playerdata - maybe corrupted?";
             }
             this.storedNbt = null;
@@ -191,11 +193,10 @@ public class ServerPlayerEntityMixin implements CameraInterface {
             value = "INVOKE"), cancellable = true)
     protected void cameraSpectating(Entity target, CallbackInfo ci) {
         ServerPlayerEntity player = (ServerPlayerEntity) (Object) this;
-        if (this.isCamera && ! ConfigOptions.CAMERA_CAN_SPECTATE.val()) {
+        if (this.isCamera && !ConfigOptions.CAMERA_CAN_SPECTATE.val()) {
             player.sendMessage(TextUtils.formattable("Entity spectating is currently disabled in camera mode"), true);
             ci.cancel();
-        }
-        else if (this.isCamera && ConfigOptions.CAMERA_CONSOLE_LOGGING.val().equals("spectate") && player.getServer()
+        } else if (this.isCamera && ConfigOptions.CAMERA_CONSOLE_LOGGING.val().equals("spectate") && player.getServer()
                 != null) {
             player.getServer().sendMessage(TextUtils.formattable("[Camera Mode] " + player.getNameForScoreboard() + " is spectating " +
                     target.getNameForScoreboard()));
@@ -207,7 +208,7 @@ public class ServerPlayerEntityMixin implements CameraInterface {
      * Automatically disables camera mode if player directly switches gamemodes
      */
     @Inject(method = "changeGameMode", at = @At("HEAD"))
-    protected void disableCameraMode(GameMode gameMode, CallbackInfoReturnable<Boolean> cir){
+    protected void disableCameraMode(GameMode gameMode, CallbackInfoReturnable<Boolean> cir) {
         if (this.isCamera && gameMode != GameMode.SPECTATOR) {
             ((ServerPlayerEntity) (Object) this).sendMessage(TextUtils.formattable("Swapped gamemodes directly, disabling camera mode"),
                     true);

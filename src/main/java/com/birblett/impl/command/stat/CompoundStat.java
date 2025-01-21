@@ -60,6 +60,7 @@ public class CompoundStat {
 
     /**
      * Sets execution mode to multiply or divide
+     *
      * @param mode boolean value corresponds to multiply if true, divide otherwise
      */
     public void setMode(boolean mode) {
@@ -68,9 +69,10 @@ public class CompoundStat {
 
     /**
      * Sets a score to the provided value.
-     * @param scoreboard scoreboard to update
+     *
+     * @param scoreboard  scoreboard to update
      * @param scoreHolder scoreholder to update
-     * @param score value to set score to
+     * @param score       value to set score to
      */
     public void setScore(Scoreboard scoreboard, ScoreHolder scoreHolder, int score) {
         String name = scoreHolder.getNameForScoreboard();
@@ -81,10 +83,11 @@ public class CompoundStat {
 
     /**
      * Updates a scoreholder's entry for this compound stat with a delta
-     * @param scoreboard scoreboard to update
+     *
+     * @param scoreboard  scoreboard to update
      * @param scoreHolder scoreholder to update
-     * @param delta change to previous score
-     * @param score value to set score to, if applicalbe
+     * @param delta       change to previous score
+     * @param score       value to set score to, if applicalbe
      */
     public void updateScore(Scoreboard scoreboard, ScoreHolder scoreHolder, int delta, int score) {
         String name = scoreHolder.getNameForScoreboard();
@@ -135,8 +138,9 @@ public class CompoundStat {
 
     /**
      * Returns a compound stat from its string representation, if possible
+     *
      * @param string a valid string representation of a compound stat
-     * @param line the line number, used for errors
+     * @param line   the line number, used for errors
      * @return a compound stat if deserialized correctly, otherwise null
      */
     public static CompoundStat deserialize(MinecraftServer server, String string, int line) {
@@ -183,8 +187,7 @@ public class CompoundStat {
                         }
                         try {
                             modifier = Double.parseDouble(found.substring(1));
-                        }
-                        catch (Exception e) {
+                        } catch (Exception e) {
                             TechnicalToolbox.error("Something went wrong with parsing \"{}\" at line {}", found, line);
                             return null;
                         }

@@ -1,6 +1,5 @@
 package com.birblett.impl.command.stat;
 
-import com.birblett.TechnicalToolbox;
 import com.birblett.accessor.command.stat.StatTracker;
 import com.birblett.impl.config.ConfigOptions;
 import com.birblett.util.TextUtils;
@@ -85,7 +84,7 @@ public class StatCommand {
                                                 .executes(StatCommand::addCompound))))
                         .then(CommandManager.literal("modify")
                                 .then(CommandManager.argument("name", StringArgumentType.word())
-                                .suggests(StatCommand::getCompoundSuggestions)
+                                        .suggests(StatCommand::getCompoundSuggestions)
                                         .then(CommandManager.literal("modifier")
                                                 .then(CommandManager.argument("modifier", DoubleArgumentType.doubleArg())
                                                         .executes(StatCommand::setCompoundModifier)))
@@ -111,6 +110,7 @@ public class StatCommand {
 
     /**
      * Clears a display slot for the executor.
+     *
      * @param slot target slot, clears all if null.
      */
     private static int resetTracked(CommandContext<ServerCommandSource> context, ScoreboardDisplaySlot slot) {
@@ -122,13 +122,11 @@ public class StatCommand {
                 tracker.technicalToolbox$StopTracking(ScoreboardDisplaySlot.SIDEBAR);
                 tracker.technicalToolbox$StopTracking(ScoreboardDisplaySlot.BELOW_NAME);
                 context.getSource().sendFeedback(() -> TextUtils.formattable("Reset all tracked objectives"), false);
-            }
-            else {
+            } else {
                 if (tracker.technicalToolbox$StopTracking(slot)) {
                     context.getSource().sendFeedback(() -> TextUtils.formattable("Stopped tracking objective for display slot " +
                             slot.name()), false);
-                }
-                else {
+                } else {
                     context.getSource().sendFeedback(() -> TextUtils.formattable("Display slot " +
                             slot.name() + " is already empty"), false);
                 }
@@ -160,11 +158,9 @@ public class StatCommand {
                     prefix = "stat_type." + split[0];
                     if (Registries.ITEM.get(Identifier.of(split2[0], split2[1])) instanceof BlockItem) {
                         translatableStat = "block." + translatableStat.split(":")[1];
-                    }
-                    else if (Registries.ITEM.get(Identifier.of(split2[0], split2[1])) != Items.AIR) {
+                    } else if (Registries.ITEM.get(Identifier.of(split2[0], split2[1])) != Items.AIR) {
                         translatableStat = "item." + translatableStat.split(":")[1];
-                    }
-                    else {
+                    } else {
                         translatableStat = "stat." + translatableStat.split(":")[1];
                         prefix = "";
                     }
@@ -192,8 +188,7 @@ public class StatCommand {
             }
             StatCommand.updatePlayerScoreboard(player, objective, scoreboardDisplaySlot, shouldAdd);
             TrackedStatManager.TRACKED_STATS.add(objective);
-        }
-        else {
+        } else {
             context.getSource().sendError(TextUtils.formattable("Stat tracking can only be done by players"));
         }
         return 1;
@@ -208,6 +203,7 @@ public class StatCommand {
 
     /**
      * Add an empty compound stat.
+     *
      * @param context command context
      */
     private static int addCompound(CommandContext<ServerCommandSource> context) {
@@ -225,15 +221,15 @@ public class StatCommand {
             }
             context.getSource().sendFeedback(() -> TextUtils.formattable("Created new compound ").append(TextUtils.formattable(name)
                     .formatted(Formatting.GREEN)), false);
-        }
-        else {
-            context.getSource().sendError(TextUtils.formattable("Objective " + name +  " already exists"));
+        } else {
+            context.getSource().sendError(TextUtils.formattable("Objective " + name + " already exists"));
         }
         return 1;
     }
 
     /**
      * Add a tracked criterion to an existing compound stat
+     *
      * @param context command context
      */
     private static int addCompoundCriterion(CommandContext<ServerCommandSource> context) {
@@ -248,8 +244,7 @@ public class StatCommand {
             context.getSource().sendFeedback(() -> TextUtils.formattable("Compound stat ").append(TextUtils.formattable(name)
                     .formatted(Formatting.GREEN)).append(TextUtils.formattable(" is now tracking stat ").formatted(Formatting.WHITE)
                     .append(TextUtils.formattable(criterion.getName()).formatted(Formatting.AQUA))), false);
-        }
-        else {
+        } else {
             context.getSource().sendError(TextUtils.formattable("Compound stat " + name + " does not exist"));
         }
         return 1;
@@ -269,6 +264,7 @@ public class StatCommand {
 
     /**
      * Remove a tracked criterion from a compound stat
+     *
      * @param context command context
      */
     private static int removeCompoundCriterion(CommandContext<ServerCommandSource> context) {
@@ -286,13 +282,11 @@ public class StatCommand {
                                     .formatted(Formatting.GREEN)).append(TextUtils.formattable(" is no longer tracking tracking stat ")
                                     .formatted(Formatting.WHITE).append(TextUtils.formattable(criterion.getName()).formatted(Formatting.YELLOW))),
                             false);
-                }
-                else {
+                } else {
                     context.getSource().sendError(TextUtils.formattable("Compound stat " + name + " is not tracking " + criterionName));
                 }
-            }, () -> context.getSource().sendError(TextUtils.formattable( criterionName + " not found")));
-        }
-        else {
+            }, () -> context.getSource().sendError(TextUtils.formattable(criterionName + " not found")));
+        } else {
             context.getSource().sendError(TextUtils.formattable("Compound stat " + name + " does not exist"));
         }
         return 1;
@@ -300,7 +294,8 @@ public class StatCommand {
 
     /**
      * Start tracking a compound stat.
-     * @param context command context
+     *
+     * @param context               command context
      * @param scoreboardDisplaySlot slot to display to
      */
     private static int trackCompound(CommandContext<ServerCommandSource> context, ScoreboardDisplaySlot scoreboardDisplaySlot) {
@@ -311,12 +306,10 @@ public class StatCommand {
             if (stat != null) {
                 StatCommand.updatePlayerScoreboard(player, stat.objective, scoreboardDisplaySlot,
                         !((StatTracker) player).technicalToolbox$HasObjective(stat.objective));
-            }
-            else {
+            } else {
                 context.getSource().sendError(TextUtils.formattable("Compound stat " + name + " does not exist"));
             }
-        }
-        else {
+        } else {
             context.getSource().sendError(TextUtils.formattable("Stat tracking can only be done by players"));
         }
         return 1;
@@ -332,8 +325,7 @@ public class StatCommand {
             context.getSource().getServer().getScoreboard().removeObjective(stat.objective);
             context.getSource().sendFeedback(() -> TextUtils.formattable("Removed compound stat ").append(TextUtils.formattable(name)
                     .formatted(Formatting.GREEN)), false);
-        }
-        else {
+        } else {
             context.getSource().sendError(TextUtils.formattable("Compound stat " + name + " does not exist"));
         }
         return 1;
@@ -341,6 +333,7 @@ public class StatCommand {
 
     /**
      * Sets the modifier value for a compound stat.
+     *
      * @param context command context
      */
     private static int setCompoundModifier(CommandContext<ServerCommandSource> context) {
@@ -356,8 +349,7 @@ public class StatCommand {
                     .append(TextUtils.formattable(name).formatted(Formatting.GREEN)).append(TextUtils.formattable(" to ")
                             .formatted(Formatting.WHITE).append(TextUtils.formattable(String.valueOf(modifier))
                                     .formatted(Formatting.AQUA))), false);
-        }
-        else {
+        } else {
             context.getSource().sendError(TextUtils.formattable("Compound stat " + name + " does not exist"));
             return 0;
         }
@@ -376,8 +368,7 @@ public class StatCommand {
                     .append(TextUtils.formattable(name).formatted(Formatting.GREEN)).append(TextUtils.formattable(" to ")
                             .formatted(Formatting.WHITE).append(TextUtils.formattable(mode ? "multiply" : "divide")
                                     .formatted(Formatting.AQUA))), false);
-        }
-        else {
+        } else {
             context.getSource().sendError(TextUtils.formattable("Compound stat " + name + " does not exist"));
             return 0;
         }
@@ -402,9 +393,10 @@ public class StatCommand {
 
     /**
      * Sends packets to set the player scoreboard to a specific objective, and update its values
-     * @param objective objective to force
+     *
+     * @param objective   objective to force
      * @param displaySlot display slot to display objective to
-     * @param shouldAdd should default to true, but can pass if processed with other logic beforehand
+     * @param shouldAdd   should default to true, but can pass if processed with other logic beforehand
      */
     public static void updatePlayerScoreboard(ServerPlayerEntity player, ScoreboardObjective objective, ScoreboardDisplaySlot displaySlot, boolean shouldAdd) {
         if (player.getServer() != null) {

@@ -34,6 +34,7 @@ public class ConfigManager {
 
     /**
      * Called on server open, reads configurations
+     *
      * @param server host server
      */
     public void onServerOpen(MinecraftServer server) {
@@ -64,7 +65,7 @@ public class ConfigManager {
                 }
                 if (split.length != 2 && !split[0].isEmpty()) {
                     TechnicalToolbox.error("Improperly separated config option on line " +
-                            lineCount + " ('"+ line + "')");
+                            lineCount + " ('" + line + "')");
                     continue;
                 }
                 if (split.length == 2) {
@@ -92,8 +93,7 @@ public class ConfigManager {
                     configOption.setFromString(configOption.getDefaultValue(), server);
                 }
             }
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             TechnicalToolbox.warn("Configuration file 'toolbox.conf' was not found, using defaults");
             if (ServerUtil.createDirectoryIfNotPresent(ServerUtil.getToolboxPath(server, "").toFile())) {
                 try (BufferedWriter bufferedWriter = Files.newBufferedWriter(ServerUtil.getToolboxPath(server, CONFIG_PATH))) {
@@ -122,8 +122,7 @@ public class ConfigManager {
                     }
                 }
                 TechnicalToolbox.log("Wrote " + options + " configuration options to 'toolbox.conf'");
-            }
-            catch (IOException e) {
+            } catch (IOException e) {
                 TechnicalToolbox.error("Failed to write to file 'toolbox.conf', configurations will not be saved");
             }
         }

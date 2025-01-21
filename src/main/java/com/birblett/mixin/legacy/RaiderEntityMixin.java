@@ -47,11 +47,10 @@ public class RaiderEntityMixin {
             Entity e = source.getAttacker();
             if (e instanceof PlayerEntity) {
                 playerEntity = (PlayerEntity) e;
-            }
-            else if (e instanceof WolfEntity wolfEntity) {
+            } else if (e instanceof WolfEntity wolfEntity) {
                 LivingEntity livingEntity = wolfEntity.getOwner();
                 if (wolfEntity.isTamed() && livingEntity instanceof PlayerEntity) {
-                    playerEntity = (PlayerEntity)livingEntity;
+                    playerEntity = (PlayerEntity) livingEntity;
                 }
             }
             if (!itemStack.isEmpty() && ItemStack.areEqual(itemStack, Raid.getOminousBanner(self.getRegistryManager()

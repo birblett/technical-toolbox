@@ -19,7 +19,7 @@ public class EndPortalBlockMixin {
 
     @WrapOperation(method = "createTeleportTarget", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/gen/feature/EndPlatformFeature;generate(Lnet/minecraft/world/ServerWorldAccess;Lnet/minecraft/util/math/BlockPos;Z)V"))
     private void legacyEndPlatformLogic(ServerWorldAccess world, BlockPos blockPos, boolean breakBlocks, Operation<Void> original) {
-        if (ConfigOptions.LEGACY_END_PLATFORM.val() ) {
+        if (ConfigOptions.LEGACY_END_PLATFORM.val()) {
             BlockPos spawnPos = ServerWorld.END_SPAWN_POS;
             int i = spawnPos.getX();
             int j = spawnPos.getY() - 2;
@@ -30,8 +30,7 @@ public class EndPortalBlockMixin {
             for (BlockPos pos : BlockPos.iterate(i - 2, j, k - 2, i + 2, j, k + 2)) {
                 world.toServerWorld().setBlockState(pos, Blocks.OBSIDIAN.getDefaultState());
             }
-        }
-        else {
+        } else {
             original.call(world, blockPos, breakBlocks);
         }
     }

@@ -110,7 +110,7 @@ public class AliasCommand {
                                                 .then(CommandManager.argument("argument", StringArgumentType.word())
                                                         .suggests(AliasCommand::modifyListArguments)
                                                         .then(CommandManager.argument("newArgument", StringArgumentType.word())
-                                                            .executes(AliasCommand::modifyArgumentRename)))))
+                                                                .executes(AliasCommand::modifyArgumentRename)))))
                                 // if called without subcommands will instead output alias information
                                 .executes(AliasCommand::modifyInfo)))));
     }
@@ -125,8 +125,8 @@ public class AliasCommand {
             String command = context.getArgument("command", String.class);
             new AliasedCommand(alias, command, context.getSource().getDispatcher());
             Text out = TextUtils.formattable("Registered new command alias ").append(TextUtils.formattable(alias)
-                            .formatted(Formatting.GREEN)).append(" for command string ").append(TextUtils.formattable("\"" + command +
-                            "\"").formatted(Formatting.YELLOW));
+                    .formatted(Formatting.GREEN)).append(" for command string ").append(TextUtils.formattable("\"" + command +
+                    "\"").formatted(Formatting.YELLOW));
             context.getSource().sendFeedback(() -> out, false);
             if (player != null) {
                 context.getSource().getServer().sendMessage(TextUtils.formattable(player.getNameForScoreboard() + ": ").append(out));
@@ -185,8 +185,7 @@ public class AliasCommand {
         for (AliasedCommand aliasedCommand : AliasManager.ALIASES.values()) {
             try {
                 aliasedCommand.register(context.getSource().getDispatcher());
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
                 TechnicalToolbox.error("Something went wrong with compiling alias {}", aliasedCommand.getAlias());
             }
         }
@@ -212,9 +211,10 @@ public class AliasCommand {
         for (AliasedCommand cmd : AliasManager.ALIASES.values().stream().sorted(Comparator.comparing(AliasedCommand::
                 getAlias)).toList()) {
             if (!context.getSource().isExecutedByPlayer() || context.getSource().getPlayer() != null && context.getSource().getPlayer()
-                    .hasPermissionLevel(cmd.getPermission())) {text.append("\n  ").append(TextUtils.formattable(cmd.getAlias())
-                    .formatted(cmd.global ? Formatting.AQUA : Formatting.WHITE)).append( TextUtils.formattable(": ")
-                    .formatted(Formatting.WHITE)).append(cmd.getSyntax());
+                    .hasPermissionLevel(cmd.getPermission())) {
+                text.append("\n  ").append(TextUtils.formattable(cmd.getAlias())
+                        .formatted(cmd.global ? Formatting.AQUA : Formatting.WHITE)).append(TextUtils.formattable(": ")
+                        .formatted(Formatting.WHITE)).append(cmd.getSyntax());
             }
         }
         context.getSource().sendFeedback(() -> text, false);
@@ -335,8 +335,7 @@ public class AliasCommand {
                 return CommandSource.suggestMatching(Collections.emptyList(), builder);
             }
             c = Collections.singleton(cmd.getCommands().get(line - 1));
-        }
-        else {
+        } else {
             c = Collections.emptyList();
         }
         return CommandSource.suggestMatching(c, builder);
@@ -433,7 +432,7 @@ public class AliasCommand {
             }
             cmd.setPermission(permissionLevel);
             context.getSource().sendFeedback(() -> TextUtils.formattable("Permission level for alias ").append(TextUtils
-                            .formattable(alias).formatted(Formatting.GREEN)).append(TextUtils.formattable(" set" + " to ")
+                    .formattable(alias).formatted(Formatting.GREEN)).append(TextUtils.formattable(" set" + " to ")
                     .append(TextUtils.formattable(String.valueOf(permissionLevel)).formatted(Formatting.YELLOW))), false);
             return 1;
         }
@@ -489,10 +488,11 @@ public class AliasCommand {
 
     /**
      * Can be used to add or modify an argument.
+     *
      * @param argType argument type, must correspond to one of the fixed argument types
      * @param replace whether the new argument should replace an existing one or not
-     * @param clazz type of the argument; will be used in verification and casting
-     * @param args provided arguments for the argument type, if applicable
+     * @param clazz   type of the argument; will be used in verification and casting
+     * @param args    provided arguments for the argument type, if applicable
      */
     private static int modifyArgumentSet(CommandContext<ServerCommandSource> context, String argType, boolean replace, Class<?> clazz, String... args) {
         String alias = context.getArgument("alias", String.class);
@@ -517,8 +517,7 @@ public class AliasCommand {
                     return 0;
                 }
                 stringArgs = selectionArgs.split(" *, *");
-            }
-            else {
+            } else {
                 for (int i = 0; i < args.length; i++) {
                     stringArgs[i] = context.getArgument(args[i], clazz).toString();
                 }

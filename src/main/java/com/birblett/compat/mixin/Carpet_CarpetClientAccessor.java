@@ -13,6 +13,8 @@ public interface Carpet_CarpetClientAccessor {
     @Invoker("disconnect")
     static void disconnect() {
         throw new AssertionError();
-    };
+    }
+
+    ;
 
 }

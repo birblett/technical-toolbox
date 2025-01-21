@@ -23,7 +23,8 @@ import org.spongepowered.asm.mixin.injection.At;
 @Mixin(CrafterBlock.class)
 public abstract class CrafterBlockMixin {
 
-    @Shadow protected abstract void scheduledTick(BlockState state, ServerWorld world, BlockPos pos, Random random);
+    @Shadow
+    protected abstract void scheduledTick(BlockState state, ServerWorld world, BlockPos pos, Random random);
 
     @WrapOperation(method = "neighborUpdate", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/World;scheduleBlockTick(Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/Block;I)V"))
     private void crafterDelay(World world, BlockPos pos, Block block, int i, Operation<Void> original) {

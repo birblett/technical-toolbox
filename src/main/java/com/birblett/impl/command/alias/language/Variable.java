@@ -14,11 +14,13 @@ public record Variable(Definition type, Object value) {
 
     /**
      * Defines variable type, primarily for use with arguments.
-     * @param argc number of arguments required
+     *
+     * @param argc                 number of arguments required
      * @param argumentTypeProvider provides an argument type to be passed to an argument builder
-     * @param clazz class used to retrieve arguments
+     * @param clazz                class used to retrieve arguments
      */
-    public record Entry<T>(int argc, Function<String[], ArgumentType<T>> argumentTypeProvider, Class<T> clazz) {}
+    public record Entry<T>(int argc, Function<String[], ArgumentType<T>> argumentTypeProvider, Class<T> clazz) {
+    }
 
     /**
      * Defines various traits related to variables, such as its name, type, and expected arguments.

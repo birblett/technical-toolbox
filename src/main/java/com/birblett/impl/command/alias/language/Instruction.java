@@ -19,6 +19,7 @@ public interface Instruction {
 
     /**
      * Holds a single command; does text replacement for variables on execution.
+     *
      * @param command
      */
     record Command(String command) implements Instruction {
@@ -56,14 +57,12 @@ public interface Instruction {
             String[] assn = assignVar.split(" ");
             if (assn.length == 2) {
                 this.assignVar = assn[1];
-            }
-            else if (assn.length != 1) {
+            } else if (assn.length != 1) {
                 this.assignVar = "";
                 this.err = "expected 1-2 arguments for assignment, got " + assn.length;
                 this.valid = false;
                 return;
-            }
-            else {
+            } else {
                 this.assignVar = assignVar;
             }
             if (!this.assignVar.matches("[a-zA-Z_][a-zA-Z0-9_]*")) {
@@ -93,8 +92,7 @@ public interface Instruction {
             String varType = AliasConstants.INV_VALUE_MAP.getOrDefault(this.type, "string");
             if (newAssignment) {
                 vars.getLast().put(this.assignVar, new Variable.Definition(this.assignVar, varType, new String[0]));
-            }
-            else {
+            } else {
                 map.put(this.assignVar, new Variable.Definition(this.assignVar, varType, new String[0]));
             }
         }
@@ -108,8 +106,7 @@ public interface Instruction {
             }
             if (o instanceof Operator.NumberOperator n) {
                 variables.put(this.assignVar, new Variable(variables.get(this.assignVar).type(), n.getValue()));
-            }
-            else if (o instanceof Operator.StringOperator s) {
+            } else if (o instanceof Operator.StringOperator s) {
                 variables.put(this.assignVar, new Variable(variables.get(this.assignVar).type(), s.str()));
             }
             return -1;
@@ -183,8 +180,7 @@ public interface Instruction {
                 if (!Objects.equals(type[0], type[1]) && (type[0] == 4 || type[1] == 4) && !"=".equals(this.cmp)) {
                     this.err = "string type only supports comparison of equality";
                 }
-            }
-            else {
+            } else {
                 this.err = "invalid comparator \"" + cmp + "\"";
                 this.valid = false;
             }
@@ -259,8 +255,7 @@ public interface Instruction {
             if (this.inferredType >= 0) {
                 Operator o = this.evaluate(this.post, variables);
                 ((CommandSourceModifier) context.getSource()).technicalToolbox$setReturnValue(o);
-            }
-            else {
+            } else {
                 ((CommandSourceModifier) context.getSource()).technicalToolbox$setReturnValue(null);
             }
             return -2;

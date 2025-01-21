@@ -51,10 +51,10 @@ public class ConfigOption<T> {
     public Text getText() {
         if (this.getWriteable().equals(this.defaultValue)) {
             return TextUtils.formattable(this.desc + "\nCurrent value (default): ").append(TextUtils.formattable(this
-                            .getWriteable()).setStyle(Style.EMPTY.withColor(Formatting.GREEN))).append(TextUtils.formattable(")"));
+                    .getWriteable()).setStyle(Style.EMPTY.withColor(Formatting.GREEN))).append(TextUtils.formattable(")"));
         }
         return TextUtils.formattable(this.desc + "\nCurrent value: ").append(TextUtils.formattable(this.getWriteable())
-                .setStyle(Style.EMPTY.withColor(Formatting.GREEN))).append(TextUtils.formattable(" (default: "))
+                        .setStyle(Style.EMPTY.withColor(Formatting.GREEN))).append(TextUtils.formattable(" (default: "))
                 .append(TextUtils.formattable(this.defaultValue).setStyle(Style.EMPTY.withColor(Formatting.YELLOW)))
                 .append(TextUtils.formattable(")"));
     }
@@ -65,11 +65,15 @@ public class ConfigOption<T> {
 
     public boolean hasLineBreak() {
         return this.hasLineBreak;
-    };
+    }
+
+    ;
 
     public Text setFromString(String value, MinecraftServer manager) {
         return this.setFromString(value);
-    };
+    }
+
+    ;
 
     public T val() {
         return this.value;
@@ -77,11 +81,15 @@ public class ConfigOption<T> {
 
     public Text setFromString(String value) {
         return null;
-    };
+    }
+
+    ;
 
     public String getWriteable() {
         return String.valueOf(this.val());
-    };
+    }
+
+    ;
 
     public static ConfigOption<Boolean> boolConfig(String name, boolean defaultValue, String desc, boolean hasLineBreak) {
         return new ConfigOption<>(name, defaultValue, desc, hasLineBreak, "true", "false") {
@@ -171,16 +179,13 @@ public class ConfigOption<T> {
                 if (left != Integer.MIN_VALUE && right != Integer.MAX_VALUE) {
                     return new Pair<>(defaultValue, t.append(TextUtils.formattable("in range [" + left + ", " + right
                             + "]")));
-                }
-                else if (left != Integer.MIN_VALUE) {
+                } else if (left != Integer.MIN_VALUE) {
                     return new Pair<>(defaultValue, t.append(TextUtils.formattable(">= " + left)));
-                }
-                else if (right != Integer.MAX_VALUE) {
+                } else if (right != Integer.MAX_VALUE) {
                     return new Pair<>(defaultValue, t.append(TextUtils.formattable("<= " + right)));
                 }
             }
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             return new Pair<>(defaultValue, setFailGeneric(name, value));
         }
         return new Pair<>(tmp, null);
@@ -195,16 +200,13 @@ public class ConfigOption<T> {
                 if (left != Long.MIN_VALUE && right != Long.MAX_VALUE) {
                     return new Pair<>(defaultValue, t.append(TextUtils.formattable("in range [" + left + ", " + right
                             + "]")));
-                }
-                else if (left != Long.MIN_VALUE) {
+                } else if (left != Long.MIN_VALUE) {
                     return new Pair<>(defaultValue, t.append(TextUtils.formattable(">= " + left)));
-                }
-                else if (right != Long.MAX_VALUE) {
+                } else if (right != Long.MAX_VALUE) {
                     return new Pair<>(defaultValue, t.append(TextUtils.formattable("<= " + right)));
                 }
             }
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             return new Pair<>(defaultValue, setFailGeneric(name, value));
         }
         return new Pair<>(tmp, null);
@@ -219,16 +221,13 @@ public class ConfigOption<T> {
                 if (left != Float.MIN_VALUE && right != Float.MAX_VALUE) {
                     return new Pair<>(defaultValue, t.append(TextUtils.formattable("in range [" + left + ", " + right
                             + "]")));
-                }
-                else if (left != Float.MIN_VALUE) {
+                } else if (left != Float.MIN_VALUE) {
                     return new Pair<>(defaultValue, t.append(TextUtils.formattable(">= " + left)));
-                }
-                else if (right != Float.MAX_VALUE) {
+                } else if (right != Float.MAX_VALUE) {
                     return new Pair<>(defaultValue, t.append(TextUtils.formattable("<= " + right)));
                 }
             }
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             return new Pair<>(defaultValue, setFailGeneric(name, value));
         }
         return new Pair<>(tmp, null);
@@ -243,16 +242,13 @@ public class ConfigOption<T> {
                 if (left != Double.MIN_VALUE && right != Double.MAX_VALUE) {
                     return new Pair<>(defaultValue, t.append(TextUtils.formattable("in range [" + left + ", " + right
                             + "]")));
-                }
-                else if (left != Double.MIN_VALUE) {
+                } else if (left != Double.MIN_VALUE) {
                     return new Pair<>(defaultValue, t.append(TextUtils.formattable(">= " + left)));
-                }
-                else if (right != Double.MAX_VALUE) {
+                } else if (right != Double.MAX_VALUE) {
                     return new Pair<>(defaultValue, t.append(TextUtils.formattable("<= " + right)));
                 }
             }
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             return new Pair<>(defaultValue, setFailGeneric(name, value));
         }
         return new Pair<>(tmp, null);
@@ -265,8 +261,7 @@ public class ConfigOption<T> {
         }
         try {
             tmp = Boolean.parseBoolean(value);
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             return new Pair<>(defaultValue, setFailGeneric(name, value));
         }
         return new Pair<>(tmp, null);

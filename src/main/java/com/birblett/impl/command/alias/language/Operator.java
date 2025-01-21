@@ -8,8 +8,11 @@ package com.birblett.impl.command.alias.language;
 public interface Operator {
 
     Object getValue();
+
     Operator operation(String operator, Operator other);
+
     boolean compare(String comparator, Operator other);
+
     Object toType(int type);
 
     /**
@@ -25,8 +28,7 @@ public interface Operator {
         public NumberOperator(Number value) {
             if (value instanceof Integer || value instanceof Long) {
                 this.longVal = value.longValue();
-            }
-            else {
+            } else {
                 this.isLong = false;
                 this.doubleVal = value.doubleValue();
             }
@@ -35,15 +37,13 @@ public interface Operator {
         public static NumberOperator fromString(String s) {
             try {
                 return new NumberOperator(Long.parseLong(s));
-            }
-            catch (NumberFormatException e) {
+            } catch (NumberFormatException e) {
                 try {
                     if (s.endsWith("s")) {
                         return new NumberOperator(Double.parseDouble(s.substring(0, s.length() - 1)));
                     }
                     return new NumberOperator(Double.parseDouble(s));
-                }
-                catch (NumberFormatException f) {
+                } catch (NumberFormatException f) {
                     return null;
                 }
             }
@@ -86,8 +86,7 @@ public interface Operator {
                                 (this.getDoubleValue() % second.getDoubleValue()));
                     }
                 }
-            }
-            else if (other instanceof StringOperator str) {
+            } else if (other instanceof StringOperator str) {
                 return new StringOperator(this.getValue().toString()).operation("+", str);
             }
             return null;
@@ -112,8 +111,7 @@ public interface Operator {
                         return (this.isLong && num.isLong) ? this.longVal <= num.longVal : this.getDoubleValue() <= num.getDoubleValue();
                     }
                 }
-            }
-            else if (other instanceof StringOperator str) {
+            } else if (other instanceof StringOperator str) {
                 return str.compare("=", this);
             }
             return false;

@@ -8,7 +8,8 @@ import java.util.regex.Matcher;
  */
 public interface ExpressionParser {
 
-    record ExpressionOperator(String op, int precedence) {}
+    record ExpressionOperator(String op, int precedence) {
+    }
 
     default Integer parseExpression(String expr, Integer type, List<LinkedHashMap<String, Variable.Definition>> vars, Queue<Object> post) {
         int inferredType = type != null ? type : 0;

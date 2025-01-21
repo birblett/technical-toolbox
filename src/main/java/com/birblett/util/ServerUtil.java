@@ -44,10 +44,11 @@ public class ServerUtil {
 
     /**
      * Attempts to create directories corresponding to the provided filepath.
+     *
      * @return whether the directory was successfully created or not
      */
     public static boolean createDirectoryIfNotPresent(File directory) {
-        if (!directory.isDirectory()){
+        if (!directory.isDirectory()) {
             TechnicalToolbox.log("{} not found, creating an empty directory", StringUtils.capitalize(directory.getName()));
             if (!directory.mkdirs()) {
                 TechnicalToolbox.warn("Failed to create directory, please report");
@@ -59,8 +60,9 @@ public class ServerUtil {
 
     /**
      * Removes a command from a server given by the specified string
+     *
      * @param server target server
-     * @param name target command
+     * @param name   target command
      */
     public static void removeCommandByName(MinecraftServer server, String name) {
         RootCommandNode<ServerCommandSource> r = server.getCommandManager().getDispatcher().getRoot();
@@ -70,6 +72,7 @@ public class ServerUtil {
 
     /**
      * Refreshes the server command tree.
+     *
      * @param server target server
      */
     public static void refreshCommandTree(MinecraftServer server) {
@@ -78,8 +81,7 @@ public class ServerUtil {
                 for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
                     server.getCommandManager().sendCommandTree(player);
                 }
-            }
-            catch (NullPointerException e) {
+            } catch (NullPointerException e) {
                 TechnicalToolbox.error("Failed to update command tree, please report");
             }
         }));

@@ -1,6 +1,5 @@
 package com.birblett.mixin.command.stat;
 
-import com.birblett.TechnicalToolbox;
 import com.birblett.accessor.command.stat.StatTracker;
 import com.birblett.impl.command.stat.TrackedStatManager;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
@@ -30,8 +29,12 @@ import java.util.Set;
 @Mixin(ServerScoreboard.class)
 public class ServerScoreboardMixin {
 
-    @Shadow @Final private MinecraftServer server;
-    @Shadow @Final private Set<ScoreboardObjective> objectives;
+    @Shadow
+    @Final
+    private MinecraftServer server;
+    @Shadow
+    @Final
+    private Set<ScoreboardObjective> objectives;
 
     @WrapOperation(method = "addScoreboardObjective", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/network/ServerPlayNetworkHandler;sendPacket(Lnet/minecraft/network/packet/Packet;)V"))
     private void noResendToSubscribedPlayer(ServerPlayNetworkHandler instance, Packet<?> packet, Operation<Void> original, @Local ServerPlayerEntity player) {

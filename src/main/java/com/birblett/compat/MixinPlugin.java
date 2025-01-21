@@ -26,24 +26,23 @@ public class MixinPlugin implements IMixinConfigPlugin {
                     .getClassNode(mixinClassName), RequiresMod.class);
             //noinspection unchecked
             List<String> args = (List<String>) annotationNode.values.get(1);
-            if (!args.isEmpty() &&  !FabricLoader.getInstance().isModLoaded(args.getFirst())) {
+            if (!args.isEmpty() && !FabricLoader.getInstance().isModLoaded(args.getFirst())) {
                 return false;
-            }
-            else if (args.size() > 1) {
+            } else if (args.size() > 1) {
                 Optional<ModContainer> c = FabricLoader.getInstance().getModContainer(args.getFirst());
                 if (!(c.isPresent() && c.get().getMetadata().getVersion().toString().equals(args.get(1)))) {
                     return false;
                 }
             }
-        }
-        catch (ClassNotFoundException | IOException e) {
+        } catch (ClassNotFoundException | IOException e) {
             return false;
         }
         return true;
     }
 
     @Override
-    public void onLoad(String mixinPackage) {}
+    public void onLoad(String mixinPackage) {
+    }
 
     @Override
     public String getRefMapperConfig() {
@@ -51,7 +50,8 @@ public class MixinPlugin implements IMixinConfigPlugin {
     }
 
     @Override
-    public void acceptTargets(Set<String> myTargets, Set<String> otherTargets) {}
+    public void acceptTargets(Set<String> myTargets, Set<String> otherTargets) {
+    }
 
     @Override
     public List<String> getMixins() {
@@ -59,9 +59,11 @@ public class MixinPlugin implements IMixinConfigPlugin {
     }
 
     @Override
-    public void preApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {}
+    public void preApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {
+    }
 
     @Override
-    public void postApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {}
+    public void postApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {
+    }
 
 }

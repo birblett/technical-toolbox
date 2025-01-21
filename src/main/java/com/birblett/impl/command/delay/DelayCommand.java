@@ -68,8 +68,7 @@ public class DelayCommand {
         try {
             Object o = c.technicalToolbox$GetOpt(arg);
             return o == null ? def : clazz.cast(o);
-        }
-        catch (ClassCastException e) {
+        } catch (ClassCastException e) {
             return def;
         }
     }
@@ -90,10 +89,10 @@ public class DelayCommand {
         ((AliasedCommandSource) context.getSource()).technicalToolbox$ResetOpt();
         MutableText out = ((CommandScheduler) context.getSource().getServer().getSaveProperties().getMainWorldProperties()
                 .getScheduledEvents()).technicalToolbox$AddCommandEvent(command, context.getSource().getWorld().getTime() + delay,
-                        id, priority, silent, Objects.equals(source, "server") ? context.getSource().getServer().getCommandSource() :
+                id, priority, silent, Objects.equals(source, "server") ? context.getSource().getServer().getCommandSource() :
                         context.getSource()) ? TextUtils.formattable("Scheduled command \"" + command + "\" with identifier ")
                 .append(TextUtils.formattable(id).setStyle(Style.EMPTY.withColor(Formatting.GREEN))) : TextUtils.formattable("Command" +
-                        " with identifier " + id + " already scheduled").setStyle(Style.EMPTY.withColor(Formatting.RED));
+                " with identifier " + id + " already scheduled").setStyle(Style.EMPTY.withColor(Formatting.RED));
         context.getSource().sendFeedback(() -> out, false);
         return 0;
     }
@@ -103,7 +102,7 @@ public class DelayCommand {
                 .getScheduledEvents();
         List<Text> commandList = new ArrayList<>();
         for (String key : c.technicalToolbox$GetCommandEventMap().keySet()) {
-            CommandEvent event =  c.technicalToolbox$GetCommandEventMap().get(key);
+            CommandEvent event = c.technicalToolbox$GetCommandEventMap().get(key);
             long timeLeft = event.tick() - context.getSource().getServer().getSaveProperties().getMainWorldProperties().getTime();
             commandList.add(TextUtils.formattable(key).setStyle(Style.EMPTY.withColor(Formatting.GREEN)).append(TextUtils
                     .formattable(" | " + timeLeft + " | " + event.command()).setStyle(Style.EMPTY.withColor(Formatting.WHITE))));
@@ -127,8 +126,7 @@ public class DelayCommand {
         if (c.technicalToolbox$RemoveCommandEvent(id)) {
             out = TextUtils.formattable("Removed scheduled command with identifier ").append(TextUtils.formattable(id)
                     .setStyle(Style.EMPTY.withColor(Formatting.GREEN)));
-        }
-        else {
+        } else {
             out = TextUtils.formattable("No scheduled command with identifier \"" + id + "\"").setStyle(Style.EMPTY
                     .withColor(Formatting.RED));
         }

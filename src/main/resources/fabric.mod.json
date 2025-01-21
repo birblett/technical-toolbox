@@ -14,7 +14,7 @@
   "license": "MIT",
   "icon": "assets/technical_toolbox/icon.png",
   "environment": "*",
-  "accessWidener" : "technical_toolbox.accesswidener",
+  "accessWidener": "technical_toolbox.accesswidener",
   "entrypoints": {},
   "mixins": [
     "technical_toolbox.mixins.json",

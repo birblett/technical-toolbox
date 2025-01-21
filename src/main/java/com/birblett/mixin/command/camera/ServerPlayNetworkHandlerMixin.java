@@ -24,7 +24,8 @@ import java.util.Iterator;
 @Mixin(ServerPlayNetworkHandler.class)
 public class ServerPlayNetworkHandlerMixin {
 
-    @Shadow public ServerPlayerEntity player;
+    @Shadow
+    public ServerPlayerEntity player;
 
     /**
      * Forcibly switches player out of camera mode on disconnect
@@ -40,13 +41,12 @@ public class ServerPlayNetworkHandlerMixin {
      * Handles whether player can teleport or not in camera mode, as well as relevant logging
      */
     @Inject(method = "onSpectatorTeleport", at = @At(target = "Lnet/minecraft/server/network/ServerPlayerEntity;teleport(Lnet/minecraft/server/world/ServerWorld;DDDFF)V",
-                    value = "INVOKE"), locals = LocalCapture.CAPTURE_FAILSOFT, cancellable = true)
+            value = "INVOKE"), locals = LocalCapture.CAPTURE_FAILSOFT, cancellable = true)
     protected void disableCamTeleport(SpectatorTeleportC2SPacket packet, CallbackInfo ci, Iterator<ServerWorld> var2, ServerWorld serverWorld, Entity entity) {
         if (((CameraInterface) this.player).technicalToolbox$IsCamera() && !ConfigOptions.CAMERA_CAN_TELEPORT.val()) {
             this.player.sendMessage(TextUtils.formattable("Teleportation is disabled in camera mode"), true);
             ci.cancel();
-        }
-        else if (((CameraInterface) this.player).technicalToolbox$IsCamera() && ConfigOptions.CAMERA_CONSOLE_LOGGING.val().equals("spectate") && this.player
+        } else if (((CameraInterface) this.player).technicalToolbox$IsCamera() && ConfigOptions.CAMERA_CONSOLE_LOGGING.val().equals("spectate") && this.player
                 .getServer() != null) {
             this.player.getServer().sendMessage(TextUtils.formattable("[Camera Mode] " + this.player.getNameForScoreboard() +
                     " teleported to " + entity.getNameForScoreboard()));

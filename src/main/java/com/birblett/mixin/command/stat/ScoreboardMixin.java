@@ -1,6 +1,5 @@
 package com.birblett.mixin.command.stat;
 
-import com.birblett.TechnicalToolbox;
 import com.birblett.impl.command.stat.TrackedStatManager;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
@@ -8,7 +7,10 @@ import com.llamalad7.mixinextras.sugar.Local;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.registry.RegistryWrapper;
-import net.minecraft.scoreboard.*;
+import net.minecraft.scoreboard.ScoreAccess;
+import net.minecraft.scoreboard.ScoreHolder;
+import net.minecraft.scoreboard.Scoreboard;
+import net.minecraft.scoreboard.ScoreboardObjective;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -24,7 +26,9 @@ import java.util.function.Consumer;
 @Mixin(Scoreboard.class)
 public class ScoreboardMixin {
 
-    @Shadow @Final private Object2ObjectMap<String, ScoreboardObjective> objectives;
+    @Shadow
+    @Final
+    private Object2ObjectMap<String, ScoreboardObjective> objectives;
 
     @Inject(method = "removeObjective", at = @At(value = "INVOKE", target = "Lnet/minecraft/scoreboard/ScoreboardDisplaySlot;values()[Lnet/minecraft/scoreboard/ScoreboardDisplaySlot;"))
     private void removeTracked(ScoreboardObjective objective, CallbackInfo ci) {
@@ -45,8 +49,7 @@ public class ScoreboardMixin {
             return TrackedStatManager.whitelistIfEnabled(scoreHolder) ? original.call(instance, scoreHolder,
                     objective, forceWritable) :
                     null;
-        }
-        else {
+        } else {
             return original.call(instance, scoreHolder, objective, forceWritable);
         }
     }

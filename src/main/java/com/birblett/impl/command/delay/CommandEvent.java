@@ -18,8 +18,7 @@ public record CommandEvent(String id, String command, long tick, int priority, b
         try {
             dispatcher.execute(dispatcher.parse(this.command, this.source));
             ((CommandSourceModifier) this.source).technicalToolbox$shutUp(false);
-        }
-        catch (CommandSyntaxException e) {
+        } catch (CommandSyntaxException e) {
             this.source.sendError(TextUtils.formattable(e.getMessage()));
             ((CommandSourceModifier) this.source).technicalToolbox$shutUp(false);
             return;

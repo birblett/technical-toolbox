@@ -25,7 +25,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(CommandManager.class)
 public class CommandManagerMixin {
 
-    @Shadow @Final private CommandDispatcher<ServerCommandSource> dispatcher;
+    @Shadow
+    @Final
+    private CommandDispatcher<ServerCommandSource> dispatcher;
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void onRegister(CommandManager.RegistrationEnvironment environment, CommandRegistryAccess commandRegistryAccess, CallbackInfo ci) {
@@ -37,8 +39,7 @@ public class CommandManagerMixin {
         for (AliasedCommand aliasedCommand : AliasManager.ALIASES.values()) {
             try {
                 aliasedCommand.register(this.dispatcher);
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
                 TechnicalToolbox.error("Something went wrong with compiling alias {}", aliasedCommand.getAlias());
             }
         }

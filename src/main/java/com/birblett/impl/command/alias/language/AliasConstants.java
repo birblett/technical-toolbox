@@ -59,9 +59,10 @@ public class AliasConstants {
 
     /**
      * Generic range argument type for {@link AliasConstants#ARGUMENT_TYPES}
-     * @param opt should be a 2-element array of string inputs, parseable as T
-     * @param clazz argument type; generic T is inferred from this
-     * @param parse parsing function mapping opt->T
+     *
+     * @param opt          should be a 2-element array of string inputs, parseable as T
+     * @param clazz        argument type; generic T is inferred from this
+     * @param parse        parsing function mapping opt->T
      * @param argumentType numeric range argument type provider
      * @return a matching argument type i.e {@link LongArgumentType#longArg(long, long)}
      */
@@ -74,13 +75,11 @@ public class AliasConstants {
             if (((Comparable<T>) min).compareTo(max) > 0) {
                 throw new Exception();
             }
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             try {
                 min = (T) clazz.getDeclaredField("MIN_VALUE").get(null);
                 max = (T) clazz.getDeclaredField("MAX_VALUE").get(null);
-            }
-            catch (Exception e2) {
+            } catch (Exception e2) {
                 min = (T) Integer.valueOf(0);
                 max = (T) Integer.valueOf(0);
             }

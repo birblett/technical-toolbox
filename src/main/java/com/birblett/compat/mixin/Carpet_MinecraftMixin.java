@@ -17,7 +17,8 @@ public class Carpet_MinecraftMixin {
 
     @TargetHandler(mixin = "carpet.mixins.MinecraftMixin", name = "onCloseGame", prefix = "handler")
     @WrapOperation(method = "@MixinSquared:Handler", at = @At(value = "INVOKE", target = "Lcarpet/network/CarpetClient;disconnect()V"))
-    private void preventCarpetDisconnectCrash(Operation<Void> operation,  Screen screen, CallbackInfo ci) {}
+    private void preventCarpetDisconnectCrash(Operation<Void> operation, Screen screen, CallbackInfo ci) {
+    }
 
     @Inject(method = "disconnect(Lnet/minecraft/client/gui/screen/Screen;Z)V", at = @At("HEAD"))
     private void callDisconnect(Screen disconnectionScreen, boolean transferring, CallbackInfo ci) {
