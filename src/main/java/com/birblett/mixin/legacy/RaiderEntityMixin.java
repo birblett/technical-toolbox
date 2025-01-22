@@ -40,8 +40,8 @@ public class RaiderEntityMixin {
     @ModifyExpressionValue(method = "onDeath", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/raid/RaiderEntity;getRaid()Lnet/minecraft/village/raid/Raid;"))
     private Raid handleRaidCaptain(Raid raid, @Local(argsOnly = true) DamageSource source) {
         RaiderEntity self = (RaiderEntity) (Object) this;
-        if (ConfigOptions.LEGACY_BAD_OMEN.val() && self.isPatrolLeader() && raid == null && ((ServerWorld)
-                (self.getWorld())).getRaidAt(self.getBlockPos()) == null) {
+        if (self.getWorld() instanceof ServerWorld world  && ConfigOptions.LEGACY_BAD_OMEN.val() && self.isPatrolLeader() && raid == null
+                && world.getRaidAt(self.getBlockPos()) == null) {
             ItemStack itemStack = self.getEquippedStack(EquipmentSlot.HEAD);
             PlayerEntity playerEntity = null;
             Entity e = source.getAttacker();
@@ -53,8 +53,8 @@ public class RaiderEntityMixin {
                     playerEntity = (PlayerEntity) livingEntity;
                 }
             }
-            if (!itemStack.isEmpty() && ItemStack.areEqual(itemStack, Raid.getOminousBanner(self.getRegistryManager()
-                    .getWrapperOrThrow(RegistryKeys.BANNER_PATTERN))) && playerEntity != null) {
+            if (!itemStack.isEmpty() && ItemStack.areEqual(itemStack, Raid.createOminousBanner(self.getRegistryManager()
+                    .getOrThrow(RegistryKeys.BANNER_PATTERN))) && playerEntity != null) {
                 StatusEffectInstance statusEffectInstance = playerEntity.getStatusEffect(StatusEffects.BAD_OMEN);
                 int i = 1;
                 if (statusEffectInstance != null) {
@@ -66,7 +66,7 @@ public class RaiderEntityMixin {
                 i = MathHelper.clamp(i, 0, 4);
                 StatusEffectInstance statusEffectInstance2 = new StatusEffectInstance(StatusEffects.BAD_OMEN, 120000, i,
                         false, false, true);
-                if (!self.getWorld().getGameRules().getBoolean(GameRules.DISABLE_RAIDS)) {
+                if (!world.getGameRules().getBoolean(GameRules.DISABLE_RAIDS)) {
                     playerEntity.addStatusEffect(statusEffectInstance2);
                 }
             }

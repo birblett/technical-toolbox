@@ -19,16 +19,15 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public class BadOmenStatusEffectMixin {
 
     @Inject(method = "applyUpdateEffect", at = @At("HEAD"), cancellable = true)
-    private void instantRaidProc(LivingEntity entity, int amplifier, CallbackInfoReturnable<Boolean> cir) {
+    private void instantRaidProc(ServerWorld world, LivingEntity entity, int amplifier, CallbackInfoReturnable<Boolean> cir) {
         if (ConfigOptions.LEGACY_BAD_OMEN.val() && entity instanceof ServerPlayerEntity serverPlayerEntity &&
                 !entity.isSpectator()) {
-            ServerWorld serverWorld = serverPlayerEntity.getServerWorld();
-            if (serverWorld.getDifficulty() == Difficulty.PEACEFUL) {
+            if (world.getDifficulty() == Difficulty.PEACEFUL) {
                 return;
             }
-            if (serverWorld.isNearOccupiedPointOfInterest(entity.getBlockPos())) {
+            if (world.isNearOccupiedPointOfInterest(entity.getBlockPos())) {
                 serverPlayerEntity.setStartRaidPos(serverPlayerEntity.getBlockPos());
-                serverWorld.getRaidManager().startRaid(serverPlayerEntity, serverPlayerEntity.getStartRaidPos());
+                world.getRaidManager().startRaid(serverPlayerEntity, serverPlayerEntity.getStartRaidPos());
                 cir.setReturnValue(false);
             }
         }

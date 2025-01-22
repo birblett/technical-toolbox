@@ -18,7 +18,7 @@ import java.util.function.Predicate;
 @Mixin(value = PointOfInterestStorage.class, priority = 2000)
 public class Lithium_PointOfInterestStorageMixin {
 
-    @TargetHandler(mixin = "me.jellysquid.mods.lithium.mixin.ai.poi.PointOfInterestStorageMixin", name = "lithium$findNearestForPortalLogic", prefix = "lithium")
+    @TargetHandler(mixin = "net.caffeinemc.mods.lithium.mixin.ai.poi.PoiManagerMixin", name = "lithium$findNearestForPortalLogic", prefix = "lithium")
     @ModifyVariable(method = "@MixinSquared:Handler", at = @At("HEAD"))
     private Predicate<PointOfInterest> overrideLithiumPOILogic(Predicate<PointOfInterest> p) {
         if (ConfigOptions.LEGACY_POI_PROPERTY_CHECK.val()) {

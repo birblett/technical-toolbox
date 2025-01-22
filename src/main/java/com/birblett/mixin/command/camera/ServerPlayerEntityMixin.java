@@ -22,6 +22,8 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import java.util.Set;
+
 /**
  * Allows player to swap to and from camera mode, and also handles some configured functionalities
  */
@@ -86,7 +88,7 @@ public class ServerPlayerEntityMixin implements CameraInterface {
             // store creative flight
             nbt.putBoolean("Flying", player.getAbilities().flying);
             // store elytra flight
-            nbt.putBoolean("FallFlying", player.isFallFlying());
+            nbt.putBoolean("Gliding", player.isGliding());
             // store rotation
             nbt.putFloat("Yaw", player.getYaw());
             nbt.putFloat("Pitch", player.getPitch());
@@ -129,14 +131,14 @@ public class ServerPlayerEntityMixin implements CameraInterface {
                 float yaw = nbt.getFloat("Yaw");
                 float pitch = nbt.getFloat("Pitch");
                 // restore all
-                player.teleport(world, finalPos.x, finalPos.y, finalPos.z, yaw, pitch);
+                player.teleport(world, finalPos.x, finalPos.y, finalPos.z, Set.of(), yaw, pitch, false);
                 // restore creative flight
                 if (!nbt.getBoolean("Flying")) {
                     player.getAbilities().flying = false;
                 }
                 // restore elytra flight
-                if (nbt.getBoolean("FallFlying")) {
-                    player.startFallFlying();
+                if (nbt.getBoolean("Gliding")) {
+                    player.startGliding();
                 }
                 // restore motion
                 NbtList motion = nbt.getList("Motion", NbtElement.DOUBLE_TYPE);

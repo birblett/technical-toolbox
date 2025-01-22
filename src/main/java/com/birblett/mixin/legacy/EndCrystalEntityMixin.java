@@ -13,7 +13,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(EndCrystalEntity.class)
 public class EndCrystalEntityMixin {
 
-    @Inject(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/decoration/EndCrystalEntity;checkBlockCollision()V"), cancellable = true)
+    @Inject(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/decoration/EndCrystalEntity;tickBlockCollision()V"), cancellable = true)
     private void oldEndCrystalLogic(CallbackInfo ci) {
         if (ConfigOptions.LEGACY_END_CRYSTAL_COLLISION.val()) {
             EndCrystalEntity entity = (EndCrystalEntity) (Object) this;

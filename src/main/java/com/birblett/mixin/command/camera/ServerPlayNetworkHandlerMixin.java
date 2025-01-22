@@ -40,7 +40,7 @@ public class ServerPlayNetworkHandlerMixin {
     /**
      * Handles whether player can teleport or not in camera mode, as well as relevant logging
      */
-    @Inject(method = "onSpectatorTeleport", at = @At(target = "Lnet/minecraft/server/network/ServerPlayerEntity;teleport(Lnet/minecraft/server/world/ServerWorld;DDDFF)V",
+    @Inject(method = "onSpectatorTeleport", at = @At(target = "Lnet/minecraft/server/network/ServerPlayerEntity;teleport(Lnet/minecraft/server/world/ServerWorld;DDDLjava/util/Set;FFZ)Z",
             value = "INVOKE"), locals = LocalCapture.CAPTURE_FAILSOFT, cancellable = true)
     protected void disableCamTeleport(SpectatorTeleportC2SPacket packet, CallbackInfo ci, Iterator<ServerWorld> var2, ServerWorld serverWorld, Entity entity) {
         if (((CameraInterface) this.player).technicalToolbox$IsCamera() && !ConfigOptions.CAMERA_CAN_TELEPORT.val()) {

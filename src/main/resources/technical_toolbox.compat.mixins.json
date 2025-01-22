@@ -4,8 +4,6 @@
   "plugin": "com.birblett.compat.MixinPlugin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
-    "Carpet_CarpetClientAccessor",
-    "Carpet_MinecraftMixin",
     "Lithium_PointOfInterestStorageMixin"
   ],
   "injectors": {

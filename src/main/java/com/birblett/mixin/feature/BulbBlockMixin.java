@@ -10,6 +10,8 @@ import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.random.Random;
 import net.minecraft.world.World;
+import net.minecraft.world.block.WireOrientation;
+import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -28,7 +30,7 @@ public abstract class BulbBlockMixin extends Block {
     }
 
     @Inject(method = "neighborUpdate", at = @At("HEAD"), cancellable = true)
-    protected void bulbDelayLogic(BlockState state, World world, BlockPos pos, Block sourceBlock, BlockPos sourcePos, boolean notify, CallbackInfo ci) {
+    protected void bulbDelayLogic(BlockState state, World world, BlockPos pos, Block sourceBlock, @Nullable WireOrientation wireOrientation, boolean notify, CallbackInfo ci) {
         int delay = ConfigOptions.FEATURE_COPPER_BULB_DELAY.val();
         if (delay > 0 && world instanceof ServerWorld) {
             boolean bl = world.isReceivingRedstonePower(pos);
