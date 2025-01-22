@@ -173,8 +173,8 @@ public class ConfigOptions {
             "The riding velocity threshold after which the server corrects player velocity.",
             0.0, Double.MAX_VALUE, true,
             "100.0", String.valueOf(Integer.MAX_VALUE));
-    public static final ConfigOption<Boolean> LEGACY_BAD_OMEN = ConfigOption.boolConfig(
-            "legacyBadOmen", false,
+    public static final ConfigOption<Boolean> LEGACY_RAID = ConfigOption.boolConfig(
+            "legacyRaids", false,
             "Whether pre-1.21 bad omen/raid mechanics should be used.");
     public static final ConfigOption<Boolean> LEGACY_POI_PROPERTY_CHECK = ConfigOption.boolConfig(
             "legacyDisablePoiPropertyCheck", false,

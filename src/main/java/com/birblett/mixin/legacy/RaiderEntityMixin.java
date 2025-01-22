@@ -25,22 +25,22 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
  * Disables raid captain ominous bottle drops when old raid mechanics are enabled and instead directly applies bad omen.
- * See {@link ConfigOptions#LEGACY_BAD_OMEN}
+ * See {@link ConfigOptions#LEGACY_RAID}
  */
 @Mixin(RaiderEntity.class)
 public class RaiderEntityMixin {
 
     @Inject(method = "isCaptain", at = @At("HEAD"), cancellable = true)
-    private void disableCaptainPredicate(CallbackInfoReturnable<Boolean> cir) {
-        if (ConfigOptions.LEGACY_BAD_OMEN.val()) {
+    private void disableCaptainPredicateForLoot(CallbackInfoReturnable<Boolean> cir) {
+        if (ConfigOptions.LEGACY_RAID.val()) {
             cir.setReturnValue(false);
         }
     }
 
     @ModifyExpressionValue(method = "onDeath", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/raid/RaiderEntity;getRaid()Lnet/minecraft/village/raid/Raid;"))
-    private Raid handleRaidCaptain(Raid raid, @Local(argsOnly = true) DamageSource source) {
+    private Raid legacyRaidCaptain(Raid raid, @Local(argsOnly = true) DamageSource source) {
         RaiderEntity self = (RaiderEntity) (Object) this;
-        if (self.getWorld() instanceof ServerWorld world  && ConfigOptions.LEGACY_BAD_OMEN.val() && self.isPatrolLeader() && raid == null
+        if (self.getWorld() instanceof ServerWorld world && ConfigOptions.LEGACY_RAID.val() && self.isPatrolLeader() && raid == null
                 && world.getRaidAt(self.getBlockPos()) == null) {
             ItemStack itemStack = self.getEquippedStack(EquipmentSlot.HEAD);
             PlayerEntity playerEntity = null;

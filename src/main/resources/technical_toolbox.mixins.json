@@ -22,6 +22,8 @@
     "legacy.EntityTypeMixin",
     "legacy.PortalForcerMixin",
     "legacy.RaiderEntityMixin",
+    "legacy.RaidManagerMixin",
+    "legacy.RaidMixin",
     "legacy.RedstoneWireBlockMixin"
   ],
   "injectors": {
