@@ -54,6 +54,10 @@ public class DelayCommand {
                                 .then(CommandManager.argument("delay", LongArgumentType.longArg(1))
                                         .then(CommandManager.argument("command", StringArgumentType.greedyString())
                                                 .executes(DelayCommand::set)))))
+                .then(CommandManager.literal("proc")
+                        .then(CommandManager.argument("delay", LongArgumentType.longArg(1))
+                                .then(CommandManager.argument("command", StringArgumentType.greedyString())
+                                        .executes(DelayCommand::proc))))
                 .then(CommandManager.literal("list")
                         .executes(DelayCommand::list))
                 .then(CommandManager.literal("remove")
@@ -93,6 +97,21 @@ public class DelayCommand {
                 .append(TextUtils.formattable(id).setStyle(Style.EMPTY.withColor(Formatting.GREEN))) : TextUtils.formattable("Command" +
                 " with identifier " + id + " already scheduled").setStyle(Style.EMPTY.withColor(Formatting.RED));
         context.getSource().sendFeedback(() -> out, false);
+        return 0;
+    }
+
+    private static int proc(CommandContext<ServerCommandSource> context) {
+        String source = DelayCommand.getOpt(context, "source", "self", String.class);
+        int priority = DelayCommand.getOpt(context, "priority", 1000, Integer.class);
+        boolean silent = DelayCommand.getOpt(context, "silent", false, Boolean.class);
+        long delay = context.getArgument("delay", Long.class);
+        String command = context.getArgument("command", String.class);
+        ((AliasedCommandSource) context.getSource()).technicalToolbox$ResetOpt();
+        ((CommandScheduler) context.getSource().getServer().getSaveProperties().getMainWorldProperties().getScheduledEvents())
+                .technicalToolbox$AddCommandEvent(command, context.getSource().getWorld().getTime() + delay,null, priority, silent,
+                        Objects.equals(source, "server") ? context.getSource().getServer().getCommandSource() : context.getSource());
+        context.getSource().sendFeedback(() -> TextUtils.formattable("Scheduled command \"" + command + "\" with " + delay +
+                " game tick delay"), false);
         return 0;
     }
 

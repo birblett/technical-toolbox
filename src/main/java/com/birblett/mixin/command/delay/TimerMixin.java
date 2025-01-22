@@ -5,6 +5,7 @@ import com.birblett.impl.command.delay.CommandEvent;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.world.timer.Timer;
+import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -18,21 +19,23 @@ import java.util.PriorityQueue;
 public class TimerMixin<T> implements CommandScheduler {
 
     @Unique
-    private final PriorityQueue<CommandEvent> scheduledCommands = new PriorityQueue<>((a, b) -> a.tick() - b
-            .tick() == 0 ? a.priority() - b.priority() : a.tick() > b.tick() ? 1 : -1);
+    private final PriorityQueue<CommandEvent> scheduledCommands = new PriorityQueue<>((a, b) -> a.tick() - b.tick() == 0 ? a.priority() -
+            b.priority() : a.tick() > b.tick() ? 1 : -1);
 
     @Unique
     private final HashMap<String, CommandEvent> scheduledCommandMap = new HashMap<>();
 
     @Override
-    public boolean technicalToolbox$AddCommandEvent(String command, long delay, String id, int priority, boolean silent, ServerCommandSource source) {
-        if (!this.scheduledCommandMap.containsKey(id)) {
-            CommandEvent e = new CommandEvent(id, command, delay, priority, silent, source);
-            this.scheduledCommands.add(e);
+    public boolean technicalToolbox$AddCommandEvent(String command, long delay, @Nullable String id, int priority, boolean silent, ServerCommandSource source) {
+        CommandEvent e = new CommandEvent(id, command, delay, priority, silent, source);
+        if (id != null) {
+            if (this.scheduledCommandMap.containsKey(id)) {
+                return false;
+            }
             this.scheduledCommandMap.put(id, e);
-            return true;
         }
-        return false;
+        this.scheduledCommands.add(e);
+        return true;
     }
 
     @Override
