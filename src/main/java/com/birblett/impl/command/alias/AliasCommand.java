@@ -354,7 +354,7 @@ public class AliasCommand {
                         "can't be modified via commands"));
                 return 0;
             }
-            if (line >= cmd.getCommands().size()) {
+            if (line - 1 >= cmd.getCommands().size()) {
                 context.getSource().sendError(TextUtils.formattable("Index \"" + line + "\" is out of bounds"));
                 return 0;
             }

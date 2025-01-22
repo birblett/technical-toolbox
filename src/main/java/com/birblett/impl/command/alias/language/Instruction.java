@@ -16,7 +16,6 @@ public interface Instruction {
         return -1;
     }
 
-
     /**
      * Holds a single command; does text replacement for variables on execution.
      *
@@ -30,6 +29,7 @@ public interface Instruction {
             for (String var : variables.keySet()) {
                 cmd = cmd.replaceAll("\\{\\$" + var + "}", variables.get(var).value().toString());
             }
+            cmd = cmd.replaceAll("\\{\\$@[a-zA-Z_][a-zA-Z0-9_]*}", "0");
             return aliasedCommand.executeCommand(context, cmd) ? -1 : -2;
         }
 
@@ -65,7 +65,7 @@ public interface Instruction {
             } else {
                 this.assignVar = assignVar;
             }
-            if (!this.assignVar.matches("[a-zA-Z_][a-zA-Z0-9_]*")) {
+            if (!this.assignVar.matches("@?[a-zA-Z_][a-zA-Z0-9_]*")) {
                 this.err = "invalid variable name " + this.assignVar;
                 this.valid = false;
                 return;
@@ -91,7 +91,11 @@ public interface Instruction {
             this.type = type;
             String varType = AliasConstants.INV_VALUE_MAP.getOrDefault(this.type, "string");
             if (newAssignment) {
-                vars.getLast().put(this.assignVar, new Variable.Definition(this.assignVar, varType, new String[0]));
+                if (this.assignVar.startsWith("@")) {
+                    AliasedCommand.GLOBALS.put(this.assignVar, new Variable.Definition(this.assignVar, varType, new String[0]));
+                } else {
+                    vars.getLast().put(this.assignVar, new Variable.Definition(this.assignVar, varType, new String[0]));
+                }
             } else {
                 map.put(this.assignVar, new Variable.Definition(this.assignVar, varType, new String[0]));
             }
@@ -157,14 +161,14 @@ public interface Instruction {
 
         public If(String expression, List<LinkedHashMap<String, Variable.Definition>> vars) {
             super(-1);
-            String[] comparators = expression.split(" *[<=>] *");
+            String[] comparators = expression.split(" *([<=>]|[<=>!]=) *");
             if (comparators.length != 2) {
-                this.err = "must be be of format [" + this.name + " operator1 (>|>=|<|<=|==) operator2]";
+                this.err = "must be be of format [" + this.name + " operator1 (>|>=|<|<=|==|!=) operator2]";
                 this.valid = false;
                 return;
             }
             String cmp = expression.replace(comparators[0], "").replace(comparators[1], "").strip();
-            if (cmp.length() == 1 && "<=>".contains(cmp) || cmp.length() == 2 && cmp.matches("(<=|>=)")) {
+            if (cmp.length() == 1 && "<=>".contains(cmp) || cmp.length() == 2 && cmp.matches("(<=|>=|!=)")) {
                 this.cmp = cmp;
                 Integer[] type = {0, 0};
                 type[0] = this.parseExpression(comparators[0], null, vars, this.left);
@@ -177,7 +181,7 @@ public interface Instruction {
                     this.valid = false;
                     return;
                 }
-                if (!Objects.equals(type[0], type[1]) && (type[0] == 4 || type[1] == 4) && !"=".equals(this.cmp)) {
+                if (!Objects.equals(type[0], type[1]) && (type[0] == 4 || type[1] == 4) && !"=".equals(this.cmp) && !"!=".equals(this.cmp)) {
                     this.err = "string type only supports comparison of equality";
                 }
             } else {
@@ -285,7 +289,7 @@ public interface Instruction {
                 this.error("not a valid type: " + type);
             }
             this.assignVar = var;
-            if (!this.assignVar.matches("[a-zA-Z_][a-zA-Z0-9_]*")) {
+            if (!this.assignVar.matches("@?[a-zA-Z_][a-zA-Z0-9_]*")) {
                 this.err = "invalid variable name " + this.assignVar;
                 this.valid = false;
                 return;

@@ -14,7 +14,7 @@ public class AliasConstants {
     public static final HashMap<Class<?>, Integer> TYPE_MAP = new HashMap<>();
     public static final HashMap<String, Integer> TYPE_VALUE_MAP = new HashMap<>();
     public static final HashMap<Integer, String> INV_VALUE_MAP = new HashMap<>();
-    public static final Pattern TOKEN = Pattern.compile("((?<!\\\\)\".*?(?<!\\\\)\"|[0-9]+[.][0-9]+[fF]?|[0-9]+[fF]?|[()+\\-%*/^]|[a-zA-Z_][a-zA-Z0-9_]*)");
+    public static final Pattern TOKEN = Pattern.compile("((?<!\\\\)\".*?(?<!\\\\)\"|[0-9]+[.][0-9]+[fF]?|[0-9]+[fF]?|[()+\\-%*/^]|@?[a-zA-Z_][a-zA-Z0-9_]*)");
 
     static {
         ARGUMENT_TYPES.put("int", new Variable.Entry<>(0, opt -> IntegerArgumentType.integer(), Integer.class));

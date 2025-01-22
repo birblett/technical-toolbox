@@ -110,6 +110,9 @@ public interface Operator {
                     case "<=" -> {
                         return (this.isLong && num.isLong) ? this.longVal <= num.longVal : this.getDoubleValue() <= num.getDoubleValue();
                     }
+                    case "!=" -> {
+                        return (this.isLong && num.isLong) ? this.longVal != num.longVal : this.getDoubleValue() != num.getDoubleValue();
+                    }
                 }
             } else if (other instanceof StringOperator str) {
                 return str.compare("=", this);
@@ -157,7 +160,8 @@ public interface Operator {
 
         @Override
         public boolean compare(String comparator, Operator other) {
-            return this.str.equals(other.getValue().toString());
+            boolean b = this.str.equals(other.getValue().toString());
+            return "==".equals(comparator) == b;
         }
 
         @Override

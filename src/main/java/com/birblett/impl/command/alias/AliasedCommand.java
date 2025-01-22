@@ -40,6 +40,8 @@ public class AliasedCommand {
     private String alias;
     private final List<String> commands = new ArrayList<>();
     private final List<Instruction> instructions = new ArrayList<>();
+    public static final LinkedHashMap<String, Variable.Definition> GLOBALS = new LinkedHashMap<>();
+    private static final LinkedHashMap<String, Variable> GLOBAL_VARIABLE_DEFINITIONS = new LinkedHashMap<>();
     private final LinkedHashMap<String, Variable.Definition> argumentDefinitions = new LinkedHashMap<>();
     private int permission;
     private boolean silent;
@@ -110,6 +112,7 @@ public class AliasedCommand {
         Stack<Instruction> controlFlowStack = new Stack<>();
         List<LinkedHashMap<String, Variable.Definition>> scope = new ArrayList<>();
         scope.add(new LinkedHashMap<>(this.argumentDefinitions));
+        scope.add(new LinkedHashMap<>(AliasedCommand.GLOBALS));
         int address = 0, depth = 0;
         for (int i = 0; i < this.commands.size(); i++) {
             String s = this.commands.get(i);
@@ -410,6 +413,8 @@ public class AliasedCommand {
                 variableDefinitions.put(var.name, new Variable(var, arg));
             }
         }
+        // load globals
+        variableDefinitions.putAll(AliasedCommand.GLOBAL_VARIABLE_DEFINITIONS);
         int i;
         // main loop for running instructions; opcode of -2 is return, -1 is donothing, >=0 is an instruction index to jump to
         for (i = 0; i < instructions.size() && (ConfigOptions.ALIAS_INSTRUCTION_LIMIT.val() == -1 ||
@@ -439,6 +444,11 @@ public class AliasedCommand {
         if (source.technicalToolbox$getRecursionCount() < ConfigOptions.ALIAS_MAX_RECURSION_DEPTH.val()) {
             source.technicalToolbox$AddToRecursionDepth(-1);
         }
+        variableDefinitions.forEach((k, v) -> {
+            if (k.startsWith("@")) {
+                AliasedCommand.GLOBAL_VARIABLE_DEFINITIONS.put(k, v);
+            }
+        });
         return 1;
     }
 

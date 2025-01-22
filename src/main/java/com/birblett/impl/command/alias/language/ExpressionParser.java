@@ -1,5 +1,7 @@
 package com.birblett.impl.command.alias.language;
 
+import com.birblett.TechnicalToolbox;
+
 import java.util.*;
 import java.util.regex.Matcher;
 
@@ -76,6 +78,10 @@ public interface ExpressionParser {
                                     break;
                                 }
                             }
+                            if (!valid && token.startsWith("@")) {
+                                post.add(token);
+                                valid = true;
+                            }
                             if (!valid) {
                                 this.error("no declaration/forward reference of variable \"" + token + "\"");
                                 return null;
@@ -147,10 +153,14 @@ public interface ExpressionParser {
                         }
                     } else {
                         Variable v = variables.get(tok);
-                        if (Number.class.isAssignableFrom(v.type().type.clazz())) {
-                            eval.push(new Operator.NumberOperator((Number) v.value()));
+                        if (v == null && tok.startsWith("@")) {
+                            eval.push(new Operator.NumberOperator(0));
                         } else {
-                            eval.push(new Operator.StringOperator(v.value().toString()));
+                            if (Number.class.isAssignableFrom(v.type().type.clazz())) {
+                                eval.push(new Operator.NumberOperator((Number) v.value()));
+                            } else {
+                                eval.push(new Operator.StringOperator(v.value().toString()));
+                            }
                         }
                     }
                 } else if (o instanceof Operator op) {
