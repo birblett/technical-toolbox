@@ -1,6 +1,7 @@
 package com.birblett.impl.command.alias;
 
 import com.birblett.TechnicalToolbox;
+import com.birblett.impl.command.alias.language.AliasConstants;
 import com.birblett.impl.command.alias.language.Variable;
 import com.birblett.impl.config.ConfigOptions;
 import com.birblett.util.ServerUtil;
@@ -8,6 +9,7 @@ import com.birblett.util.TextUtils;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.*;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
@@ -58,6 +60,25 @@ public class AliasCommand {
                         .then(CommandManager.argument("alias", StringArgumentType.word())
                                 .suggests(AliasCommand::listAliases)
                                 .executes(AliasCommand::compile)))
+                // sets a global variable value
+                .then(CommandManager.literal("global")
+                        .then(CommandManager.argument("name", StringArgumentType.word())
+                                .suggests(AliasCommand::listGlobals)
+                                .then(CommandManager.literal("int")
+                                        .then(CommandManager.argument("value", IntegerArgumentType.integer())
+                                                .executes(c -> AliasCommand.globalSet(c, "int"))))
+                                .then(CommandManager.literal("long")
+                                        .then(CommandManager.argument("value", LongArgumentType.longArg())
+                                                .executes(c -> AliasCommand.globalSet(c, "long"))))
+                                .then(CommandManager.literal("float")
+                                        .then(CommandManager.argument("value", FloatArgumentType.floatArg())
+                                                .executes(c -> AliasCommand.globalSet(c, "float"))))
+                                .then(CommandManager.literal("double")
+                                        .then(CommandManager.argument("value", DoubleArgumentType.doubleArg())
+                                                .executes(c -> AliasCommand.globalSet(c, "double"))))
+                                .then(CommandManager.literal("string")
+                                        .then(CommandManager.argument("value", StringArgumentType.greedyString())
+                                                .executes(c -> AliasCommand.globalSet(c, "string"))))))
                 // modifies an existing alias
                 .then(CommandManager.literal("modify")
                         .requires(source -> source.hasPermissionLevel(4))
@@ -146,6 +167,13 @@ public class AliasCommand {
      */
     private static CompletableFuture<Suggestions> listAliases(CommandContext<ServerCommandSource> context, SuggestionsBuilder builder) {
         return CommandSource.suggestMatching(AliasManager.ALIASES.keySet(), builder);
+    }
+
+    /**
+     * Lists all current globals as suggestions.
+     */
+    private static CompletableFuture<Suggestions> listGlobals(CommandContext<ServerCommandSource> context, SuggestionsBuilder builder) {
+        return CommandSource.suggestMatching(AliasedCommand.GLOBALS.keySet().stream().map(s -> s.replaceFirst("@", "")), builder);
     }
 
     /**
@@ -242,6 +270,18 @@ public class AliasCommand {
         }
         context.getSource().sendError(TextUtils.formattable("Couldn't find alias \"" + alias + "\""));
         return 0;
+    }
+
+    /**
+     * Sets the value of a global variable. Note that global variables default to 0 if unset. Mainly for internal use.
+     */
+    private static int globalSet(CommandContext<ServerCommandSource> context, String type) {
+        String variable = "@" + context.getArgument("name", String.class);
+        Variable.Definition def = new Variable.Definition(variable, type, new String[0]);
+        AliasedCommand.GLOBALS.put(variable, def);
+        AliasedCommand.GLOBAL_VARIABLE_DEFINITIONS.put(variable, new Variable(def, context.getArgument("value",
+                AliasConstants.ARGUMENT_TYPES.get(type).clazz())));
+        return 1;
     }
 
     /**
@@ -395,7 +435,7 @@ public class AliasCommand {
                         "can't be modified via commands"));
                 return 0;
             }
-            if (line >= cmd.getCommands().size()) {
+            if (line - 1 >= cmd.getCommands().size()) {
                 context.getSource().sendError(TextUtils.formattable("Index \"" + line + "\" is out of bounds"));
                 return 0;
             }
