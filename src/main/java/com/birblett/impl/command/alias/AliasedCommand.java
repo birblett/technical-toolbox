@@ -41,7 +41,7 @@ public class AliasedCommand {
     private final List<String> commands = new ArrayList<>();
     private final List<Instruction> instructions = new ArrayList<>();
     public static final LinkedHashMap<String, Variable.Definition> GLOBALS = new LinkedHashMap<>();
-    private static final LinkedHashMap<String, Variable> GLOBAL_VARIABLE_DEFINITIONS = new LinkedHashMap<>();
+    public static final LinkedHashMap<String, Variable> GLOBAL_VARIABLE_DEFINITIONS = new LinkedHashMap<>();
     private final LinkedHashMap<String, Variable.Definition> argumentDefinitions = new LinkedHashMap<>();
     private int permission;
     private boolean silent;

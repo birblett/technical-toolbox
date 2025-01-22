@@ -1,6 +1,7 @@
 package com.birblett.impl.command.alias;
 
 import com.birblett.TechnicalToolbox;
+import com.birblett.impl.command.alias.language.Variable;
 import com.birblett.impl.config.ConfigOptions;
 import com.birblett.util.ServerUtil;
 import net.minecraft.server.MinecraftServer;
@@ -11,10 +12,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Handles writing and reading of configuration options, with methods called on server start and close
@@ -37,6 +35,8 @@ public class AliasManager {
         for (String key : AliasManager.ALIASES.keySet()) {
             AliasManager.ALIASES.get(key).deregister(server, false);
         }
+        AliasedCommand.GLOBALS.clear();
+        AliasedCommand.GLOBAL_VARIABLE_DEFINITIONS.clear();
         AliasManager.ALIASES.clear();
         this.readAliases(server);
         for (AliasedCommand aliasedCommand : AliasManager.ALIASES.values()) {
@@ -57,6 +57,8 @@ public class AliasManager {
             AliasManager.ALIASES.get((String) key).deregister(server, false);
         }
         AliasManager.ALIASES.clear();
+        AliasedCommand.GLOBALS.clear();
+        AliasedCommand.GLOBAL_VARIABLE_DEFINITIONS.clear();
     }
 
     /**
