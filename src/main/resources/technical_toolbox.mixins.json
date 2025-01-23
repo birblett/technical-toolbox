@@ -24,7 +24,8 @@
     "legacy.RaiderEntityMixin",
     "legacy.RaidManagerMixin",
     "legacy.RaidMixin",
-    "legacy.RedstoneWireBlockMixin"
+    "legacy.RedstoneWireBlockMixin",
+    "legacy.TripwireHookBlockMixin"
   ],
   "injectors": {
     "defaultRequire": 1

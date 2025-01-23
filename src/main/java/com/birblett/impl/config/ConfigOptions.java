@@ -191,6 +191,9 @@ public class ConfigOptions {
     public static final ConfigOption<Boolean> LEGACY_PROTECTION_COMPATIBILITY = ConfigOption.boolConfig(
             "legacyProtectionCompatibility", false,
             "Makes all protection types compatible with each other.");
+    public static final ConfigOption<Boolean> LEGACY_TRIPWIRE_HOOK = ConfigOption.boolConfig(
+            "legacyTripwireHook", false,
+            "Whether old tripwire hook mechanics should be used (enables silly string).");
     public static final ConfigOption<Boolean> LEGACY_TRAPDOOR_UPDATE_SKIPPING = ConfigOption.boolConfig(
             "legacyTrapdoorUpdateSkipping", false,
             "Whether update skipping should be allowed.");
