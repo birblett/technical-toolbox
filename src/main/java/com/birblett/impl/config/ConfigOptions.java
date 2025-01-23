@@ -121,27 +121,6 @@ public class ConfigOptions {
             return out.getRight();
         }
     };
-    public static final ConfigOption<Integer> STAT_MODIFY_PERMISSION_LEVEL = ConfigOption.intConfig(
-            "statModifyPermissionLevel", 4,
-            "Permission level required to use the /stat modify command.",
-            0, 4,
-            "0", "4");
-    public static final ConfigOption<Boolean> STAT_MODIFY_REFRESH = ConfigOption.boolConfig(
-            "statRefreshOnModify", true,
-            "Whether stats will always refresh their scoreboard values on modfication or not.");
-    public static final ConfigOption<Integer> STAT_REFRESH_PERMISSION_LEVEL = ConfigOption.intConfig(
-            "statRefreshPermissionLevel", 4,
-            "Permission level required to use the /stat refresh command.",
-            0, 4,
-            "0", "4");
-    public static final ConfigOption<Integer> STAT_TRACK_PERMISSION_LEVEL = ConfigOption.intConfig(
-            "statTrackPermissionLevel", 0,
-            "Permission level required to use the /stat track command.",
-            0, 4, true,
-            "0", "4");
-    public static final ConfigOption<Boolean> STAT_TRACK_WHITELIST_ONLY = ConfigOption.boolConfig(
-            "statTrackWhitelistOnly", false,
-            "Whether stats will only be tracked for whitelisted players.", true);
     public static final ConfigOption<Integer> FEATURE_COPPER_BULB_DELAY = ConfigOption.intConfig(
             "featureCopperBulbDelay", 0,
             "Gameticks of copper bulb delay when powered",
