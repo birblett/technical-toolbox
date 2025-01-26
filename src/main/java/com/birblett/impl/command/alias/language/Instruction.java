@@ -161,9 +161,9 @@ public interface Instruction {
 
         public If(String expression, List<LinkedHashMap<String, Variable.Definition>> vars) {
             super(-1);
-            String[] comparators = expression.split(" *([<=>]|[<=>!]=) *");
+            String[] comparators = expression.split("( *[<>!]= *| *[<=>] *)");
             if (comparators.length != 2) {
-                this.err = "must be be of format [" + this.name + " operator1 (>|>=|<|<=|==|!=) operator2]";
+                this.err = "must be be of format [" + this.name + " operator1 (=|>|>=|<|<=|!=) operator2]";
                 this.valid = false;
                 return;
             }

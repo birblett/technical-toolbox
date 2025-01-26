@@ -161,7 +161,7 @@ public interface Operator {
         @Override
         public boolean compare(String comparator, Operator other) {
             boolean b = this.str.equals(other.getValue().toString());
-            return "==".equals(comparator) == b;
+            return "=".equals(comparator) == b;
         }
 
         @Override
