@@ -737,7 +737,10 @@ public class AliasedCommand {
                 bufferedWriter.write("Permission level: " + this.permission + "\n");
             }
             if (this.silent != (ConfigOptions.ALIAS_DEFAULT_SILENT.val())) {
-                bufferedWriter.write("Silent: \"" + this.silent + "\"\n");
+                bufferedWriter.write("Silent: " + this.silent + "\n");
+            }
+            if (this.fail_silent != (ConfigOptions.ALIAS_DEFAULT_SILENT.val())) {
+                bufferedWriter.write("Fail Silent: " + this.fail_silent + "\n");
             }
             if (!this.argumentDefinitions.isEmpty()) {
                 bufferedWriter.write("Arguments:");
