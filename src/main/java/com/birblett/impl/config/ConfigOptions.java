@@ -29,6 +29,9 @@ public class ConfigOptions {
     public static final ConfigOption<Boolean> ALIAS_DEFAULT_SILENT = ConfigOption.boolConfig(
             "aliasDefaultSilent", false,
             "Whether aliases default to sending feedback or not.");
+    public static final ConfigOption<Boolean> ALIAS_DEFAULT_FAIL_SILENT = ConfigOption.boolConfig(
+            "aliasDefaultFailSilent", false,
+            "Whether aliases default to bypassing failure or not.");
     public static final ConfigOption<Integer> ALIAS_INSTRUCTION_LIMIT = ConfigOption.intConfig(
             "aliasInstructionLimit", 50000,
             "Maximum number of instructions (not lines) that an alias can execute. " +

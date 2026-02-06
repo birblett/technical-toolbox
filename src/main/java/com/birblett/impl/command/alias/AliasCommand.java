@@ -115,6 +115,10 @@ public class AliasCommand {
                                 .then(CommandManager.literal("silent")
                                         .then(CommandManager.argument("silent execution", BoolArgumentType.bool())
                                                 .executes(AliasCommand::modifySilent)))
+                                // sets silent failure mode
+                                .then(CommandManager.literal("fail_silent")
+                                        .then(CommandManager.argument("silent failure", BoolArgumentType.bool())
+                                                .executes(AliasCommand::modifyFailSilent)))
                                 // edit arguments of the alias
                                 .then(CommandManager.literal("argument")
                                         // add an argument without replacing it
@@ -497,6 +501,30 @@ public class AliasCommand {
             context.getSource().sendFeedback(() -> TextUtils.formattable("Alias ").append(
                     TextUtils.formattable(alias).formatted(Formatting.GREEN)).append(TextUtils.formattable(" set to " + (silent ?
                     "silent " : "verbose ") + "execution mode")), false);
+            return 1;
+        }
+        context.getSource().sendError(TextUtils.formattable("Couldn't " +
+                "find alias \"" + alias + "\n"));
+        return 0;
+    }
+
+    /**
+     * Sets whether an alias command should fail silently and continue after failure or not.
+     */
+    private static int modifyFailSilent(CommandContext<ServerCommandSource> context) {
+        String alias = context.getArgument("alias", String.class);
+        boolean failSilent = context.getArgument("silent failure", Boolean.class);
+        AliasedCommand cmd = AliasManager.ALIASES.get(alias);
+        if (cmd != null) {
+            if (cmd.global) {
+                context.getSource().sendError(TextUtils.formattable("Alias \"" + alias + "\" is global and " +
+                        "can't be modified via commands"));
+                return 0;
+            }
+            cmd.setFailSilent(failSilent);
+            context.getSource().sendFeedback(() -> TextUtils.formattable("Alias ").append(
+                    TextUtils.formattable(alias).formatted(Formatting.GREEN)).append(TextUtils.formattable(" set to " + (failSilent ?
+                    "silent " : "verbose ") + "failure mode")), false);
             return 1;
         }
         context.getSource().sendError(TextUtils.formattable("Couldn't " +

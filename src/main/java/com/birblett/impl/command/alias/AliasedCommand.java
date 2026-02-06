@@ -45,6 +45,7 @@ public class AliasedCommand {
     private final LinkedHashMap<String, Variable.Definition> argumentDefinitions = new LinkedHashMap<>();
     private int permission;
     private boolean silent;
+    private boolean fail_silent;
     public final boolean global;
     private static final Pattern SAVED_ARGS = Pattern.compile("\\{\\$[^:]+(:[^}]+)?}");
     private static final Pattern STATEMENT = Pattern.compile("\\[.*]");
@@ -57,11 +58,12 @@ public class AliasedCommand {
         this.commands.add(command);
         this.permission = ConfigOptions.ALIAS_DEFAULT_PERMISSION.val();
         this.silent = ConfigOptions.ALIAS_DEFAULT_SILENT.val();
+        this.fail_silent = ConfigOptions.ALIAS_DEFAULT_FAIL_SILENT.val();
         AliasManager.ALIASES.put(this.alias, this);
         this.register(dispatcher);
     }
 
-    private AliasedCommand(String alias, int permission, boolean silent, Collection<String> commands, Collection<Variable.Definition> arguments, boolean global) {
+    private AliasedCommand(String alias, int permission, boolean silent, boolean fail_silent, Collection<String> commands, Collection<Variable.Definition> arguments, boolean global) {
         this.global = global;
         this.alias = alias;
         this.commands.addAll(commands);
@@ -78,6 +80,7 @@ public class AliasedCommand {
         }
         this.permission = permission;
         this.silent = silent;
+        this.fail_silent = fail_silent;
         AliasManager.ALIASES.put(this.alias, this);
     }
 
@@ -95,6 +98,10 @@ public class AliasedCommand {
 
     public void setSilent(boolean silent) {
         this.silent = silent;
+    }
+
+    public void setFailSilent(boolean failSilent) {
+        this.fail_silent = failSilent;
     }
 
     public List<String> getCommands() {
@@ -470,9 +477,14 @@ public class AliasedCommand {
             dispatcher.execute(dispatcher.parse(command, source));
             ((CommandSourceModifier) source).technicalToolbox$shutUp(false);
         } catch (CommandSyntaxException e) {
-            context.getSource().sendError(TextUtils.formattable(e.getMessage()));
-            ((CommandSourceModifier) source).technicalToolbox$shutUp(false);
-            return false;
+            if (this.fail_silent) {
+                ((CommandSourceModifier) source).technicalToolbox$shutUp(false);
+                return true;
+            } else {
+                context.getSource().sendError(TextUtils.formattable(e.getMessage()));
+                ((CommandSourceModifier) source).technicalToolbox$shutUp(false);
+                return false;
+            }
         }
         ((CommandSourceModifier) source).technicalToolbox$setPermissionOverride(false);
         return true;
@@ -761,7 +773,9 @@ public class AliasedCommand {
      */
     public static boolean readFromFile(Path path, boolean global) {
         try (BufferedReader bufferedReader = Files.newBufferedReader(path)) {
-            boolean readingCommandState = false, silent = ConfigOptions.ALIAS_DEFAULT_SILENT.val();
+            boolean readingCommandState = false,
+                    silent = ConfigOptions.ALIAS_DEFAULT_SILENT.val(),
+                    fail_silent = ConfigOptions.ALIAS_DEFAULT_FAIL_SILENT.val();
             String line, alias = null;
             int permission = ConfigOptions.ALIAS_DEFAULT_PERMISSION.val();
             List<String> commands = new ArrayList<>();
@@ -789,6 +803,10 @@ public class AliasedCommand {
                             case "silent" -> {
                                 String tmp = line.replaceFirst("(?i)Silent: *", "").strip();
                                 silent = Boolean.parseBoolean(tmp);
+                            }
+                            case "fail_silent" -> {
+                                String tmp = line.replaceFirst("(?i)Fail Silent: *", "").strip();
+                                fail_silent = Boolean.parseBoolean(tmp);
                             }
                             case "arguments" -> {
                                 String tmp = line.replaceFirst("(?i)Arguments: *", "").strip();
@@ -825,7 +843,7 @@ public class AliasedCommand {
                 TechnicalToolbox.error(path + ": Missing script body");
                 return false;
             }
-            new AliasedCommand(alias, permission, silent, commands, arguments, global);
+            new AliasedCommand(alias, permission, silent, fail_silent, commands, arguments, global);
         } catch (IOException e) {
             TechnicalToolbox.warn("Something went wrong reading from file " + path);
         }
