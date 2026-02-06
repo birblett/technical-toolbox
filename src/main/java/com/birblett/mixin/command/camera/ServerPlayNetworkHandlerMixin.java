@@ -46,9 +46,8 @@ public class ServerPlayNetworkHandlerMixin {
         if (((CameraInterface) this.player).technicalToolbox$IsCamera() && !ConfigOptions.CAMERA_CAN_TELEPORT.val()) {
             this.player.sendMessage(TextUtils.formattable("Teleportation is disabled in camera mode"), true);
             ci.cancel();
-        } else if (((CameraInterface) this.player).technicalToolbox$IsCamera() && ConfigOptions.CAMERA_CONSOLE_LOGGING.val().equals("spectate") && this.player
-                .getServer() != null) {
-            this.player.getServer().sendMessage(TextUtils.formattable("[Camera Mode] " + this.player.getNameForScoreboard() +
+        } else if (((CameraInterface) this.player).technicalToolbox$IsCamera() && ConfigOptions.CAMERA_CONSOLE_LOGGING.val().equals("spectate")) {
+            this.player.getEntityWorld().getServer().sendMessage(TextUtils.formattable("[Camera Mode] " + this.player.getNameForScoreboard() +
                     " teleported to " + entity.getNameForScoreboard()));
         }
     }

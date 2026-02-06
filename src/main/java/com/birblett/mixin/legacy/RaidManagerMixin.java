@@ -1,6 +1,7 @@
 package com.birblett.mixin.legacy;
 
 import com.birblett.impl.config.ConfigOptions;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import net.minecraft.advancement.criterion.Criteria;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.registry.tag.PointOfInterestTypeTags;
@@ -33,14 +34,17 @@ public abstract class RaidManagerMixin extends PersistentState {
 
     @Shadow
     @Final
-    private Map<Integer, Raid> raids;
+    private Int2ObjectMap<Raid> raids;
     @Shadow
     protected abstract Raid getOrCreateRaid(ServerWorld world, BlockPos pos);
+
+    @Shadow
+    protected abstract int nextId();
 
     @Inject(method = "startRaid", at = @At("HEAD"), cancellable = true)
     private void startRaid(ServerPlayerEntity player, BlockPos pos, CallbackInfoReturnable<Raid> cir) {
         if (ConfigOptions.LEGACY_RAID.val()) {
-            cir.setReturnValue(this.legacyStartRaid(player, player.getServerWorld()));
+            cir.setReturnValue(this.legacyStartRaid(player, player.getEntityWorld()));
         }
     }
 
@@ -51,7 +55,7 @@ public abstract class RaidManagerMixin extends PersistentState {
         } else if (world.getGameRules().getBoolean(GameRules.DISABLE_RAIDS)) {
             return null;
         } else {
-            DimensionType dimensionType = player.getWorld().getDimension();
+            DimensionType dimensionType = player.getEntityWorld().getDimension();
             if (!dimensionType.hasRaids()) {
                 return null;
             } else {
@@ -67,13 +71,10 @@ public abstract class RaidManagerMixin extends PersistentState {
                     vec3d = vec3d.add(blockPos2.getX(), blockPos2.getY(), blockPos2.getZ());
                 }
                 BlockPos blockPos3 = i > 0 ? BlockPos.ofFloored(vec3d.multiply(1.0 / (double) i)) : blockPos;
-                Raid raid = this.getOrCreateRaid(player.getServerWorld(), blockPos3);
+                Raid raid = this.getOrCreateRaid(player.getEntityWorld(), blockPos3);
                 boolean bl = false;
                 if (!raid.hasStarted()) {
-                    if (!this.raids.containsKey(raid.getRaidId())) {
-                        this.raids.put(raid.getRaidId(), raid);
-                    }
-
+                    this.raids.put(this.nextId(), raid);
                     bl = true;
                 } else if (raid.getBadOmenLevel() < raid.getMaxAcceptableBadOmenLevel()) {
                     bl = true;

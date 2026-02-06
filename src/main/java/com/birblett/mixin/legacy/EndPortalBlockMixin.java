@@ -3,6 +3,7 @@ package com.birblett.mixin.legacy;
 import com.birblett.impl.config.ConfigOptions;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
+import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.EndPortalBlock;
 import net.minecraft.server.world.ServerWorld;
@@ -25,10 +26,10 @@ public class EndPortalBlockMixin {
             int j = spawnPos.getY() - 2;
             int k = spawnPos.getZ();
             for (BlockPos pos : BlockPos.iterate(i - 2, j + 1, k - 2, i + 2, j + 3, k + 2)) {
-                world.toServerWorld().setBlockState(pos, Blocks.AIR.getDefaultState());
+                world.setBlockState(pos, Blocks.AIR.getDefaultState(), Block.NOTIFY_ALL);
             }
             for (BlockPos pos : BlockPos.iterate(i - 2, j, k - 2, i + 2, j, k + 2)) {
-                world.toServerWorld().setBlockState(pos, Blocks.OBSIDIAN.getDefaultState());
+                world.setBlockState(pos, Blocks.OBSIDIAN.getDefaultState(), Block.NOTIFY_ALL);
             }
         } else {
             original.call(world, blockPos, breakBlocks);

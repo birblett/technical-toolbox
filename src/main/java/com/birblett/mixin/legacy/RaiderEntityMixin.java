@@ -40,7 +40,7 @@ public class RaiderEntityMixin {
     @ModifyExpressionValue(method = "onDeath", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/raid/RaiderEntity;getRaid()Lnet/minecraft/village/raid/Raid;"))
     private Raid legacyRaidCaptain(Raid raid, @Local(argsOnly = true) DamageSource source) {
         RaiderEntity self = (RaiderEntity) (Object) this;
-        if (self.getWorld() instanceof ServerWorld world && ConfigOptions.LEGACY_RAID.val() && self.isPatrolLeader() && raid == null
+        if (self.getEntityWorld() instanceof ServerWorld world && ConfigOptions.LEGACY_RAID.val() && self.isPatrolLeader() && raid == null
                 && world.getRaidAt(self.getBlockPos()) == null) {
             ItemStack itemStack = self.getEquippedStack(EquipmentSlot.HEAD);
             PlayerEntity playerEntity = null;

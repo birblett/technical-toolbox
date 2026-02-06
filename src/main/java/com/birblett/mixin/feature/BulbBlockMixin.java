@@ -35,7 +35,7 @@ public abstract class BulbBlockMixin extends Block {
         if (delay > 0 && world instanceof ServerWorld) {
             boolean bl = world.isReceivingRedstonePower(pos);
             if (ConfigOptions.FEATURE_COPPER_BULB_NO_POWERED_UPDATES.val()) {
-                world.getWorldChunk(pos).setBlockState(pos, state.with(BulbBlock.POWERED, bl), false);
+                world.getWorldChunk(pos).setBlockState(pos, state.with(BulbBlock.POWERED, bl), Block.SKIP_REDSTONE_WIRE_STATE_REPLACEMENT);
                 world.updateListeners(pos, state, state.with(BulbBlock.POWERED, bl), Block.NOTIFY_ALL_AND_REDRAW);
             } else {
                 world.setBlockState(pos, state.with(BulbBlock.POWERED, bl), Block.NOTIFY_ALL);

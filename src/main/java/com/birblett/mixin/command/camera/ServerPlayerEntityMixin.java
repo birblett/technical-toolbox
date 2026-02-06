@@ -10,9 +10,10 @@ import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.storage.ReadView;
+import net.minecraft.storage.WriteView;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameMode;
 import org.spongepowered.asm.mixin.Mixin;
@@ -22,6 +23,8 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -35,25 +38,7 @@ public class ServerPlayerEntityMixin implements CameraInterface {
     @Unique
     private String storedGameMode;
     @Unique
-    private NbtCompound storedNbt = null;
-
-    @Unique
-    private NbtList toDoubleNbtList(double... values) {
-        NbtList nbtList = new NbtList();
-        for (double d : values) {
-            nbtList.add(NbtDouble.of(d));
-        }
-        return nbtList;
-    }
-
-    @Unique
-    private NbtList toIntNbtList(int... values) {
-        NbtList nbtList = new NbtList();
-        for (int i : values) {
-            nbtList.add(NbtInt.of(i));
-        }
-        return nbtList;
-    }
+    private NbtCompound nbt = null;
 
     @Override
     public boolean technicalToolbox$IsCamera() {
@@ -77,110 +62,87 @@ public class ServerPlayerEntityMixin implements CameraInterface {
         } else if (!this.isCamera) {
             this.isCamera = true;
             this.storedGameMode = player.interactionManager.getGameMode().asString();
-            NbtCompound nbt = (this.storedNbt = new NbtCompound());
+            this.nbt = new NbtCompound();
             // store dimension
-            nbt.putString("Dimension", player.getServerWorld().getRegistryKey().getValue().toString());
+            nbt.putString("dimension", player.getEntityWorld().getRegistryKey().getValue().toString());
             // store position
-            nbt.put("Pos", this.toDoubleNbtList(player.getX(), player.getY(), player.getZ()));
+            nbt.put("pos", Vec3d.CODEC, player.getEntityPos());
             // store motion
-            Vec3d vec3d = player.getVelocity();
-            nbt.put("Motion", this.toDoubleNbtList(vec3d.x, vec3d.y, vec3d.z));
+            nbt.put("motion", Vec3d.CODEC, player.getVelocity());
             // store creative flight
-            nbt.putBoolean("Flying", player.getAbilities().flying);
+            nbt.putBoolean("flying", player.getAbilities().flying);
             // store elytra flight
-            nbt.putBoolean("Gliding", player.isGliding());
+            nbt.putBoolean("gliding", player.isGliding());
             // store rotation
-            nbt.putFloat("Yaw", player.getYaw());
-            nbt.putFloat("Pitch", player.getPitch());
+            nbt.putFloat("yaw", player.getYaw());
+            nbt.putFloat("pitch", player.getPitch());
             // store fall distance
-            nbt.putFloat("FallDistance", player.fallDistance);
+            nbt.putDouble("fall_distance", player.fallDistance);
             // store fire ticks
-            nbt.putInt("Fire", player.getFireTicks());
+            nbt.putInt("fire", player.getFireTicks());
             // store air ticks
-            nbt.putInt("Air", player.getAir());
+            nbt.putInt("air", player.getAir());
             // store frozen ticks
-            nbt.putInt("TicksFrozen", player.getFrozenTicks());
+            nbt.putInt("ticks_frozen", player.getFrozenTicks());
             // store sleeping pos
-            player.getSleepingPosition().ifPresent(pos -> nbt.put("SleepingPos", this.toIntNbtList(pos.getX(),
-                    pos.getY(), pos.getZ())));
+            player.getSleepingPosition().ifPresent(pos -> nbt.put("sleeping_pos", BlockPos.CODEC, pos));
             // store status effects
             if (!player.getStatusEffects().isEmpty()) {
-                NbtList nbtList = new NbtList();
-                for (StatusEffectInstance statusEffectInstance : player.getStatusEffects()) {
-                    nbtList.add(statusEffectInstance.writeNbt());
-                }
-                nbt.put("ActiveEffects", nbtList);
+                nbt.put("active_effects", StatusEffectInstance.CODEC.listOf(), List.copyOf(player.getStatusEffects()));
             }
             player.changeGameMode(GameMode.SPECTATOR);
             return "Swapping from " + this.storedGameMode + " to camera mode";
         } else {
             String out;
-            if (this.storedNbt != null) {
-                NbtCompound nbt = this.storedNbt;
+            if (this.nbt != null) {
                 // restore world
-                ServerWorld world = player.getServerWorld();
-                if (player.getServer() != null) {
-                    world = player.getServer().getWorld(RegistryKey.of(RegistryKeys.WORLD, Identifier.of(nbt.getString("Dimension"))));
+                ServerWorld world = player.getEntityWorld();
+                if (player.getEntityWorld().getServer() != null) {
+                    world = player.getEntityWorld().getServer().getWorld(RegistryKey.of(RegistryKeys.WORLD,
+                            Identifier.of(nbt.getString("dimension", "overworld"))));
                 }
-                // restore position
-                NbtList pos = nbt.getList("Pos", NbtElement.DOUBLE_TYPE);
-                Vec3d finalPos = new Vec3d(MathHelper.clamp(pos.getDouble(0), -3.0000512E7, 3.0000512E7),
-                        MathHelper.clamp(pos.getDouble(1), -2.0E7, 2.0E7), MathHelper.clamp(pos
-                        .getDouble(2), -3.0000512E7, 3.0000512E7));
-                // restore rotation
-                float yaw = nbt.getFloat("Yaw");
-                float pitch = nbt.getFloat("Pitch");
-                // restore all
-                player.teleport(world, finalPos.x, finalPos.y, finalPos.z, Set.of(), yaw, pitch, false);
+                // restore position and rotation
+                Optional<Vec3d> pos = nbt.get("pos", Vec3d.CODEC);
+                Optional<Float> yaw = nbt.getFloat("yaw");
+                Optional<Float> pitch = nbt.getFloat("pitch");
+                if (pos.isPresent() && yaw.isPresent() && pitch.isPresent()) {
+                    player.teleport(world, pos.get().x, pos.get().y, pos.get().z, Set.of(), yaw.get(), pitch.get(), false);
+                }
                 // restore creative flight
-                if (!nbt.getBoolean("Flying")) {
-                    player.getAbilities().flying = false;
-                }
+                nbt.getBoolean("flying").ifPresent(b -> player.getAbilities().flying = b);
                 // restore elytra flight
-                if (nbt.getBoolean("Gliding")) {
-                    player.startGliding();
-                }
+                nbt.getBoolean("gliding").ifPresent(b -> {
+                    if (b) {
+                        player.startGliding();
+                    }
+                });
                 // restore motion
-                NbtList motion = nbt.getList("Motion", NbtElement.DOUBLE_TYPE);
-                double dx = motion.getDouble(0);
-                double dy = motion.getDouble(1);
-                double dz = motion.getDouble(2);
-                player.setVelocity(Math.abs(dx) > 10.0 ? 0.0 : dx, Math.abs(dy) > 10.0 ? 0.0 : dy, Math.abs(dz) > 10.0 ? 0.0 : dz);
+                nbt.get("motion", Vec3d.CODEC).ifPresent(player::setVelocity);
                 player.velocityModified = true;
                 player.velocityDirty = true;
                 // restore fall distance
-                player.fallDistance = nbt.getFloat("FallDistance");
+                nbt.getFloat("fall_distance").ifPresent(f -> player.fallDistance = f);
                 // restore fire ticks
-                player.setFireTicks(nbt.getInt("Fire"));
+                nbt.getInt("fire").ifPresent(player::setFireTicks);
                 // restore air ticks
-                player.setAir(nbt.getInt("Air"));
+                nbt.getInt("air").ifPresent(player::setAir);
                 // restore frozen ticks
-                player.setFrozenTicks(nbt.getInt("TicksFrozen"));
+                nbt.getInt("ticks_frozen").ifPresent(player::setFrozenTicks);
                 // restore sleeping pos
-                if (nbt.contains("SleepingPos")) {
-                    NbtList sleepingPos = nbt.getList("SleepingPos", NbtElement.INT_TYPE);
-                    player.setSleepingPosition(new BlockPos(sleepingPos.getInt(0), sleepingPos.getInt(1),
-                            sleepingPos.getInt(2)));
-                }
+                nbt.get("sleeping_pos", BlockPos.CODEC).ifPresent(player::setSleepingPosition);
                 // restore status effects
-                if (nbt.contains("ActiveEffects", NbtElement.LIST_TYPE)) {
-                    NbtList nbtList = nbt.getList("ActiveEffects", NbtElement.COMPOUND_TYPE);
-                    for (int i = 0; i < nbtList.size(); ++i) {
-                        NbtCompound nbtCompound = nbtList.getCompound(i);
-                        StatusEffectInstance statusEffectInstance = StatusEffectInstance.fromNbt(nbtCompound);
-                        if (statusEffectInstance == null) {
-                            continue;
-                        }
-                        player.setStatusEffect(statusEffectInstance, null);
+                nbt.get("active_effects", StatusEffectInstance.CODEC.listOf()).ifPresent(effects -> {
+                    for (StatusEffectInstance effect : effects) {
+                        player.setStatusEffect(effect, null);
                     }
-                }
+                });
                 out = "Swapping from camera mode back to " + this.storedGameMode;
                 this.isCamera = false;
             } else {
                 out = "Swapping back to " + this.storedGameMode + " but can't restore playerdata - maybe corrupted?";
             }
-            this.storedNbt = null;
-            player.changeGameMode(GameMode.byName(this.storedGameMode, GameMode.SURVIVAL));
+            this.nbt = null;
+            player.changeGameMode(GameMode.byId(this.storedGameMode, GameMode.SURVIVAL));
             if (!sendMessage) {
                 out = null;
             }
@@ -198,10 +160,10 @@ public class ServerPlayerEntityMixin implements CameraInterface {
         if (this.isCamera && !ConfigOptions.CAMERA_CAN_SPECTATE.val()) {
             player.sendMessage(TextUtils.formattable("Entity spectating is currently disabled in camera mode"), true);
             ci.cancel();
-        } else if (this.isCamera && ConfigOptions.CAMERA_CONSOLE_LOGGING.val().equals("spectate") && player.getServer()
+        } else if (this.isCamera && ConfigOptions.CAMERA_CONSOLE_LOGGING.val().equals("spectate") && player.getEntityWorld().getServer()
                 != null) {
-            player.getServer().sendMessage(TextUtils.formattable("[Camera Mode] " + player.getNameForScoreboard() + " is spectating " +
-                    target.getNameForScoreboard()));
+            player.getEntityWorld().getServer().sendMessage(TextUtils.formattable("[Camera Mode] " + player.getNameForScoreboard() +
+                    " is spectating " + target.getNameForScoreboard()));
         }
     }
 
@@ -214,26 +176,28 @@ public class ServerPlayerEntityMixin implements CameraInterface {
         if (this.isCamera && gameMode != GameMode.SPECTATOR) {
             ((ServerPlayerEntity) (Object) this).sendMessage(TextUtils.formattable("Swapped gamemodes directly, disabling camera mode"),
                     true);
-            this.storedNbt = null;
+            this.nbt = null;
             this.isCamera = false;
         }
     }
 
-    @Inject(method = "writeCustomDataToNbt", at = @At("HEAD"))
-    private void writeCameraNbt(NbtCompound nbt, CallbackInfo ci) {
+    @Inject(method = "writeCustomData", at = @At("HEAD"))
+    private void writeCameraNbt(WriteView view, CallbackInfo ci) {
         if (this.isCamera) {
-            nbt.putBoolean("IsCamera", true);
-            nbt.put("StoredNbt", this.storedNbt);
-            nbt.putString("StoredGameMode", this.storedGameMode);
+            view.putBoolean("IsCamera", true);
+            view.put("StoredNbt", NbtCompound.CODEC, this.nbt);
+            view.putString("StoredGameMode", this.storedGameMode);
         }
     }
 
-    @Inject(method = "readCustomDataFromNbt", at = @At("HEAD"))
-    private void readCameraNbt(NbtCompound nbt, CallbackInfo ci) {
-        if (nbt.contains("IsCamera")) {
-            this.isCamera = nbt.getBoolean("IsCamera");
-            this.storedNbt = (NbtCompound) nbt.get("StoredNbt");
-            this.storedGameMode = nbt.getString("StoredGameMode");
+    @Inject(method = "readCustomData", at = @At("HEAD"))
+    private void readCameraNbt(ReadView view, CallbackInfo ci) {
+        if (view.getBoolean("IsCamera", false)) {
+            this.isCamera = true;
+            view.read("StoredNbt", NbtCompound.CODEC).ifPresent(nbt -> {
+                this.storedGameMode = view.getString("StoredGameMode", "survival");
+                this.nbt = nbt;
+            });
         }
     }
 

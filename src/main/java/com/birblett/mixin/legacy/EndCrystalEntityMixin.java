@@ -17,10 +17,10 @@ public class EndCrystalEntityMixin {
     private void oldEndCrystalLogic(CallbackInfo ci) {
         if (ConfigOptions.LEGACY_END_CRYSTAL_COLLISION.val()) {
             EndCrystalEntity entity = (EndCrystalEntity) (Object) this;
-            if (entity.getWorld() instanceof ServerWorld) {
+            if (entity.getEntityWorld() instanceof ServerWorld) {
                 BlockPos blockPos = entity.getBlockPos();
-                if (((ServerWorld) entity.getWorld()).getEnderDragonFight() != null && entity.getWorld().getBlockState(blockPos).isAir()) {
-                    entity.getWorld().setBlockState(blockPos, AbstractFireBlock.getState(entity.getWorld(), blockPos));
+                if (((ServerWorld) entity.getEntityWorld()).getEnderDragonFight() != null && entity.getEntityWorld().getBlockState(blockPos).isAir()) {
+                    entity.getEntityWorld().setBlockState(blockPos, AbstractFireBlock.getState(entity.getEntityWorld(), blockPos));
                 }
             }
             ci.cancel();
