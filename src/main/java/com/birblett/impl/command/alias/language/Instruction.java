@@ -159,6 +159,10 @@ public interface Instruction {
         public String err = null;
         public boolean valid = true;
 
+        protected If() {
+            super(-1);
+        }
+
         public If(String expression, List<LinkedHashMap<String, Variable.Definition>> vars) {
             super(-1);
             String[] comparators = expression.split("( *[<>!]= *| *[<=>] *)");
@@ -219,6 +223,35 @@ public interface Instruction {
         public IfJump(int jumpTo, int depth) {
             super(jumpTo);
             this.depth = depth;
+        }
+
+    }
+
+
+    /**
+     * For all intents and purposes, an IfInstruction, but evaluates the expression as a command
+     */
+    class IfExec extends If {
+
+        private final String commandString;
+
+        public IfExec(String expression) {
+            super();
+            this.commandString = expression;
+        }
+
+        @Override
+        public int execute(AliasedCommand aliasedCommand, CommandContext<ServerCommandSource> context, LinkedHashMap<String, Variable> variables) {
+            boolean failSilent = aliasedCommand.getFailSilent();
+            aliasedCommand.setFailSilent(true);
+            boolean rval = aliasedCommand.executeCommand(context, this.commandString);
+            aliasedCommand.setFailSilent(failSilent);
+            return rval ? -1 : this.jumpTo;
+        }
+
+        @Override
+        public String toString() {
+            return "ifexec [" + this.commandString + "] else jmp " + this.jumpTo;
         }
 
     }

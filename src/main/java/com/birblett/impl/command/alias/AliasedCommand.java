@@ -45,7 +45,7 @@ public class AliasedCommand {
     private final LinkedHashMap<String, Variable.Definition> argumentDefinitions = new LinkedHashMap<>();
     private int permission;
     private boolean silent;
-    private boolean fail_silent;
+    private boolean failSilent;
     public final boolean global;
     private static final Pattern SAVED_ARGS = Pattern.compile("\\{\\$[^:]+(:[^}]+)?}");
     private static final Pattern STATEMENT = Pattern.compile("\\[.*]");
@@ -58,7 +58,7 @@ public class AliasedCommand {
         this.commands.add(command);
         this.permission = ConfigOptions.ALIAS_DEFAULT_PERMISSION.val();
         this.silent = ConfigOptions.ALIAS_DEFAULT_SILENT.val();
-        this.fail_silent = ConfigOptions.ALIAS_DEFAULT_FAIL_SILENT.val();
+        this.failSilent = ConfigOptions.ALIAS_DEFAULT_FAIL_SILENT.val();
         AliasManager.ALIASES.put(this.alias, this);
         this.register(dispatcher);
     }
@@ -80,7 +80,7 @@ public class AliasedCommand {
         }
         this.permission = permission;
         this.silent = silent;
-        this.fail_silent = fail_silent;
+        this.failSilent = fail_silent;
         AliasManager.ALIASES.put(this.alias, this);
     }
 
@@ -101,7 +101,11 @@ public class AliasedCommand {
     }
 
     public void setFailSilent(boolean failSilent) {
-        this.fail_silent = failSilent;
+        this.failSilent = failSilent;
+    }
+
+    public boolean getFailSilent() {
+        return this.failSilent;
     }
 
     public List<String> getCommands() {
@@ -157,6 +161,15 @@ public class AliasedCommand {
                                 if (!instruction.valid) {
                                     return this.compileError(i, instruction.err);
                                 }
+                                this.instructions.add(instruction);
+                                controlFlowStack.add(instruction);
+                            }
+                            // runs a command, entering the block if it succeeds
+                            case "ifexec" -> {
+                                depth++;
+                                scope.add(new LinkedHashMap<>());
+                                String instr = c.substring(1, c.length() - 1).replaceFirst("ifexec", "").strip();
+                                Instruction.IfExec instruction = new Instruction.IfExec(instr);
                                 this.instructions.add(instruction);
                                 controlFlowStack.add(instruction);
                             }
@@ -477,7 +490,7 @@ public class AliasedCommand {
             dispatcher.execute(dispatcher.parse(command, source));
             ((CommandSourceModifier) source).technicalToolbox$shutUp(false);
         } catch (CommandSyntaxException e) {
-            if (this.fail_silent) {
+            if (this.failSilent) {
                 ((CommandSourceModifier) source).technicalToolbox$shutUp(false);
                 return true;
             } else {
@@ -739,8 +752,8 @@ public class AliasedCommand {
             if (this.silent != (ConfigOptions.ALIAS_DEFAULT_SILENT.val())) {
                 bufferedWriter.write("Silent: " + this.silent + "\n");
             }
-            if (this.fail_silent != (ConfigOptions.ALIAS_DEFAULT_SILENT.val())) {
-                bufferedWriter.write("Fail Silent: " + this.fail_silent + "\n");
+            if (this.failSilent != (ConfigOptions.ALIAS_DEFAULT_SILENT.val())) {
+                bufferedWriter.write("Fail Silent: " + this.failSilent + "\n");
             }
             if (!this.argumentDefinitions.isEmpty()) {
                 bufferedWriter.write("Arguments:");
