@@ -3,6 +3,7 @@ package com.birblett.impl.command.alias;
 import com.birblett.TechnicalToolbox;
 import com.birblett.accessor.command.CommandSourceModifier;
 import com.birblett.accessor.command.delay.AliasedCommandSource;
+import com.birblett.accessor.command.delay.CommandScheduler;
 import com.birblett.impl.command.alias.language.AliasConstants;
 import com.birblett.impl.command.alias.language.Instruction;
 import com.birblett.impl.command.alias.language.Variable;
@@ -42,6 +43,7 @@ public class AliasedCommand {
     private final List<Instruction> instructions = new ArrayList<>();
     public static final LinkedHashMap<String, Variable.Definition> GLOBALS = new LinkedHashMap<>();
     public static final LinkedHashMap<String, Variable> GLOBAL_VARIABLE_DEFINITIONS = new LinkedHashMap<>();
+    public int wait = 0;
     private final LinkedHashMap<String, Variable.Definition> argumentDefinitions = new LinkedHashMap<>();
     private int permission;
     private boolean silent;
@@ -152,6 +154,15 @@ public class AliasedCommand {
                                 }
                                 this.instructions.add(e);
                             }
+                            // pauses execution for at least 1 tick
+                            case "wait" -> {
+                                String wait = c.substring(1, c.length() - 1).replaceFirst("wait", "").strip();
+                                Instruction.Wait instruction = new Instruction.Wait(wait);
+                                if (!instruction.valid) {
+                                    return this.compileError(i, instruction.err);
+                                }
+                                this.instructions.add(instruction);
+                            }
                             // tests a condition; if it fails jump to the next elif/else
                             case "if" -> {
                                 depth++;
@@ -221,6 +232,15 @@ public class AliasedCommand {
                                 if (!instruction.valid) {
                                     return this.compileError(i, instruction.err);
                                 }
+                                this.instructions.add(instruction);
+                                controlFlowStack.add(instruction);
+                            }
+                            // basically identical to ifexec
+                            case "whileexec" -> {
+                                depth++;
+                                scope.add(new LinkedHashMap<>());
+                                String instr = c.substring(1, c.length() - 1).replaceFirst("whileexec", "").strip();
+                                Instruction.WhileExec instruction = new Instruction.WhileExec(address, instr);
                                 this.instructions.add(instruction);
                                 controlFlowStack.add(instruction);
                             }
@@ -435,17 +455,39 @@ public class AliasedCommand {
         }
         // load globals
         variableDefinitions.putAll(AliasedCommand.GLOBAL_VARIABLE_DEFINITIONS);
+        return executeFlow(context, variableDefinitions, instructions, source, 0);
+    }
+
+    public void executeScheduled(CommandContext<ServerCommandSource> context, int instruction, LinkedHashMap<String, Variable> variableDefinitions) {
+        List<Instruction> instructions = List.copyOf(this.instructions);
+        AliasedCommandSource source = (AliasedCommandSource) context.getSource();
+        // load globals
+        variableDefinitions.putAll(AliasedCommand.GLOBAL_VARIABLE_DEFINITIONS);
+        this.executeFlow(context, variableDefinitions, instructions, source, instruction);
+    }
+
+    private int executeFlow(CommandContext<ServerCommandSource> context, LinkedHashMap<String, Variable> variableDefinitions, List<Instruction> instructions, AliasedCommandSource source, int start) {
         int i;
-        // main loop for running instructions; opcode of -2 is return, -1 is donothing, >=0 is an instruction index to jump to
-        for (i = 0; i < instructions.size() && (ConfigOptions.ALIAS_INSTRUCTION_LIMIT.val() == -1 ||
+        // main loop for running instructions; opcodes -2 is return, -1 is donothing, >=0 is an instruction index to jump to
+        for (i = start; i < instructions.size() && (ConfigOptions.ALIAS_INSTRUCTION_LIMIT.val() == -1 ||
                 source.technicalToolbox$getInstructionCount() < ConfigOptions.ALIAS_INSTRUCTION_LIMIT.val()) &&
                 source.technicalToolbox$getRecursionCount() < ConfigOptions.ALIAS_MAX_RECURSION_DEPTH.val(); i++) {
             source.technicalToolbox$AddToInstructionCount(1);
             int out = instructions.get(i).execute(this, context, variableDefinitions);
             if (out == -2) {
+                this.updateGlobals(variableDefinitions);
                 return 0;
             } else if (out >= 0) {
                 i = out - 1;
+            }
+            if (this.wait != 0) {
+                CommandScheduler c = (CommandScheduler) context.getSource().getServer().getSaveProperties().getMainWorldProperties()
+                        .getScheduledEvents();
+                c.technicalToolbox$addScheduledAlias(this, context.getSource().getWorld().getTime() + this.wait, context,
+                        i + 1, variableDefinitions);
+                this.wait = 0;
+                this.updateGlobals(variableDefinitions);
+                return 1;
             }
         }
         if (source.technicalToolbox$getRecursionCount() >= ConfigOptions.ALIAS_MAX_RECURSION_DEPTH.val()) {
@@ -454,11 +496,13 @@ public class AliasedCommand {
                         ConfigOptions.ALIAS_MAX_RECURSION_DEPTH.val()));
                 source.technicalToolbox$AddToRecursionDepth(1);
             }
+            this.updateGlobals(variableDefinitions);
             return 0;
         }
         if (i < instructions.size()) {
             context.getSource().sendError(TextUtils.formattable("Exceeded the instruction limit of " +
                     ConfigOptions.ALIAS_INSTRUCTION_LIMIT.val()));
+            this.updateGlobals(variableDefinitions);
             return 0;
         }
         if (source.technicalToolbox$getRecursionCount() < ConfigOptions.ALIAS_MAX_RECURSION_DEPTH.val()) {
@@ -469,8 +513,19 @@ public class AliasedCommand {
                 AliasedCommand.GLOBAL_VARIABLE_DEFINITIONS.put(k, v);
             }
         });
+        this.updateGlobals(variableDefinitions);
         return 1;
     }
+
+    private void updateGlobals(LinkedHashMap<String, Variable> variableDefinitions) {
+        variableDefinitions.forEach((k, v) -> {
+            if (k.startsWith("@")) {
+                AliasedCommand.GLOBAL_VARIABLE_DEFINITIONS.put(k, v);
+            }
+        });
+    }
+
+    public record CommandResult(boolean success, int value) { }
 
     /**
      * Executes command on server with command permission level override enabled
@@ -479,28 +534,31 @@ public class AliasedCommand {
      * @param command command to execute
      */
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
-    public boolean executeCommand(CommandContext<ServerCommandSource> context, String command) {
+    public CommandResult executeCommand(CommandContext<ServerCommandSource> context, String command, boolean failSilently) {
         ServerCommandSource source = context.getSource();
         CommandDispatcher<ServerCommandSource> dispatcher = source.getServer().getCommandManager().getDispatcher();
         ((CommandSourceModifier) source).technicalToolbox$setPermissionOverride(true);
+        int result = 0;
         if (this.silent) {
             ((CommandSourceModifier) source).technicalToolbox$shutUp(true);
         }
         try {
-            dispatcher.execute(dispatcher.parse(command, source));
+            result = dispatcher.execute(dispatcher.parse(command, source));
             ((CommandSourceModifier) source).technicalToolbox$shutUp(false);
         } catch (CommandSyntaxException e) {
             if (this.failSilent) {
                 ((CommandSourceModifier) source).technicalToolbox$shutUp(false);
-                return true;
+                return new CommandResult(true, result);
             } else {
-                context.getSource().sendError(TextUtils.formattable(e.getMessage()));
+                if (!failSilently) {
+                    context.getSource().sendError(TextUtils.formattable(e.getMessage()));
+                }
                 ((CommandSourceModifier) source).technicalToolbox$shutUp(false);
-                return false;
+                return new CommandResult(false, result);
             }
         }
         ((CommandSourceModifier) source).technicalToolbox$setPermissionOverride(false);
-        return true;
+        return new CommandResult(true, result);
     }
 
     public boolean rename(CommandContext<ServerCommandSource> context, String name) {

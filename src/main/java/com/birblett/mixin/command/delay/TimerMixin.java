@@ -1,7 +1,11 @@
 package com.birblett.mixin.command.delay;
 
 import com.birblett.accessor.command.delay.CommandScheduler;
+import com.birblett.impl.command.alias.AliasState;
+import com.birblett.impl.command.alias.AliasedCommand;
+import com.birblett.impl.command.alias.language.Variable;
 import com.birblett.impl.command.delay.CommandEvent;
+import com.mojang.brigadier.context.CommandContext;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.world.timer.Timer;
@@ -12,7 +16,9 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.PriorityQueue;
 
 @Mixin(Timer.class)
@@ -21,6 +27,8 @@ public class TimerMixin<T> implements CommandScheduler {
     @Unique
     private final PriorityQueue<CommandEvent> scheduledCommands = new PriorityQueue<>((a, b) -> a.tick() - b.tick() == 0 ? a.priority() -
             b.priority() : a.tick() > b.tick() ? 1 : -1);
+    @Unique
+    private final PriorityQueue<AliasState> scheduledAliases = new PriorityQueue<>(Comparator.comparingLong(AliasState::tick));
 
     @Unique
     private final HashMap<String, CommandEvent> scheduledCommandMap = new HashMap<>();
@@ -48,6 +56,11 @@ public class TimerMixin<T> implements CommandScheduler {
     }
 
     @Override
+    public void technicalToolbox$addScheduledAlias(AliasedCommand command, long delay, CommandContext<ServerCommandSource> context, int instruction, LinkedHashMap<String, Variable> variableDefinitions) {
+        this.scheduledAliases.add(new AliasState(command, delay, context, instruction, variableDefinitions));
+    }
+
+    @Override
     public HashMap<String, CommandEvent> technicalToolbox$GetCommandEventMap() {
         return this.scheduledCommandMap;
     }
@@ -59,6 +72,10 @@ public class TimerMixin<T> implements CommandScheduler {
                 CommandEvent e = this.scheduledCommands.remove();
                 this.scheduledCommandMap.remove(e.id());
                 e.execute(s);
+            }
+            while (this.scheduledAliases.peek() != null && this.scheduledAliases.peek().tick() <= time) {
+                AliasState a = this.scheduledAliases.remove();
+                a.execute();
             }
         }
     }

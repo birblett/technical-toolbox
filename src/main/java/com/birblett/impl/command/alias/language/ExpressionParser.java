@@ -1,6 +1,9 @@
 package com.birblett.impl.command.alias.language;
 
 import com.birblett.TechnicalToolbox;
+import com.birblett.impl.command.alias.AliasedCommand;
+import com.mojang.brigadier.context.CommandContext;
+import net.minecraft.server.command.ServerCommandSource;
 
 import java.util.*;
 import java.util.regex.Matcher;
@@ -63,46 +66,67 @@ public interface ExpressionParser {
                         this.error("operand can't directly follow another operand");
                         return null;
                     }
-                    Operator.NumberOperator num = Operator.NumberOperator.fromString(token);
-                    if (num == null) {
-                        if (token.startsWith("\"") && token.endsWith("\"")) {
-                            inferredType = 4;
-                            post.add(new Operator.StringOperator(token.substring(1, token.length() - 1)));
-                        } else {
+                    if (token.startsWith("(eval ")) {
+                        Matcher m2 = AliasConstants.VAR.matcher(expr);
+                        TechnicalToolbox.log("par");
+                        while (m2.find()) {
+                            String tok = m2.group();
                             boolean valid = false;
                             for (LinkedHashMap<String, Variable.Definition> varMap : vars) {
-                                if (varMap.containsKey(token)) {
+                                if (varMap.containsKey(tok.substring(2, tok.length() - 1))) {
                                     valid = true;
-                                    inferredType = Math.max(inferredType, AliasConstants.TYPE_MAP.getOrDefault(varMap.get(token).type.clazz(), 4));
-                                    post.add(token);
                                     break;
                                 }
-                            }
-                            if (!valid && token.startsWith("@")) {
-                                post.add(token);
-                                valid = true;
                             }
                             if (!valid) {
                                 this.error("no declaration/forward reference of variable \"" + token + "\"");
                                 return null;
                             }
                         }
+                        post.add(new Operator.EvalOperator(token.substring(6, token.length() - 1)));
+                        inferredType = Math.max(1, inferredType);
                     } else {
-                        if (type == null) {
-                            Number n = (Number) num.getValue();
-                            if (token.endsWith("f")) {
-                                inferredType = 2;
+                        Operator.NumberOperator num = Operator.NumberOperator.fromString(token);
+                        if (num == null) {
+                            if (token.startsWith("\"") && token.endsWith("\"")) {
+                                inferredType = 4;
+                                post.add(new Operator.StringOperator(token.substring(1, token.length() - 1)));
                             } else {
-                                if (inferredType != 0 || n.intValue() != num.getDoubleValue()) {
-                                    if (inferredType <= 1 && n.longValue() == num.getDoubleValue()) {
-                                        inferredType = 1;
-                                    } else {
-                                        inferredType = 3;
+                                boolean valid = false;
+                                for (LinkedHashMap<String, Variable.Definition> varMap : vars) {
+                                    if (varMap.containsKey(token)) {
+                                        valid = true;
+                                        inferredType = Math.max(inferredType, AliasConstants.TYPE_MAP.getOrDefault(varMap.get(token).type.clazz(), 4));
+                                        post.add(token);
+                                        break;
+                                    }
+                                }
+                                if (!valid && token.startsWith("@")) {
+                                    post.add(token);
+                                    valid = true;
+                                }
+                                if (!valid) {
+                                    this.error("no declaration/forward reference of variable \"" + token + "\"");
+                                    return null;
+                                }
+                            }
+                        } else {
+                            if (type == null) {
+                                Number n = (Number) num.getValue();
+                                if (token.endsWith("f")) {
+                                    inferredType = Math.max(2, inferredType);
+                                } else {
+                                    if (inferredType != 0 || n.intValue() != num.getDoubleValue()) {
+                                        if (inferredType <= 1 && n.longValue() == num.getDoubleValue()) {
+                                            inferredType = 1;
+                                        } else {
+                                            inferredType = Math.max(3, inferredType);
+                                        }
                                     }
                                 }
                             }
+                            post.add(num);
                         }
-                        post.add(num);
                     }
                     lastOperand = false;
                 }
@@ -136,13 +160,17 @@ public interface ExpressionParser {
         return inferredType;
     }
 
-    default Operator evaluate(Queue<Object> post, LinkedHashMap<String, Variable> variables) {
+    default Operator evaluate(AliasedCommand command, CommandContext<ServerCommandSource> context, Queue<Object> post, LinkedHashMap<String, Variable> variables) {
         Queue<Object> postfix = new LinkedList<>(post);
         Stack<Operator> eval = new Stack<>();
         if (!postfix.isEmpty()) {
             while (!postfix.isEmpty()) {
                 Object o = postfix.poll();
-                if (o instanceof String tok) {
+                if (o instanceof Operator.EvalOperator(String expr)) {
+                    String expr2 = getVarValue(variables, expr);
+                    AliasedCommand.CommandResult v = command.executeCommand(context, expr2, true);
+                    eval.push(new Operator.NumberOperator(v.success() ? v.value() : 0));
+                } if (o instanceof String tok) {
                     if ("+-*/^%".contains(tok)) {
                         switch (tok) {
                             case "*", "+", "^", "%" -> eval.push(eval.pop().operation(tok, eval.pop()));
@@ -169,6 +197,19 @@ public interface ExpressionParser {
             }
         }
         return eval.peek();
+    }
+
+    private static String getVarValue(LinkedHashMap<String, Variable> variables, String expr) {
+        Matcher m2 = AliasConstants.VAR.matcher(expr);
+        return m2.replaceAll((match) -> {
+            String tok = match.group();
+            Variable v = variables.get(tok.substring(2, tok.length() - 1));
+            if (v == null) {
+                return tok.startsWith("${@") ? "0" : tok;
+            } else {
+                return v.value().toString();
+            }
+        });
     }
 
     void error(String s);

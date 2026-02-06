@@ -95,7 +95,7 @@ public interface Operator {
         public boolean compare(String comparator, Operator other) {
             if (other instanceof NumberOperator num) {
                 switch (comparator) {
-                    case "=" -> {
+                    case "==" -> {
                         return (this.isLong && num.isLong) ? this.longVal == num.longVal : this.getDoubleValue() == num.getDoubleValue();
                     }
                     case ">" -> {
@@ -115,7 +115,7 @@ public interface Operator {
                     }
                 }
             } else if (other instanceof StringOperator str) {
-                return str.compare("=", this);
+                return str.compare("==", this);
             }
             return false;
         }
@@ -146,6 +146,8 @@ public interface Operator {
 
     }
 
+    record EvalOperator(String expression) { }
+
     record StringOperator(String str) implements Operator {
 
         @Override
@@ -161,7 +163,7 @@ public interface Operator {
         @Override
         public boolean compare(String comparator, Operator other) {
             boolean b = this.str.equals(other.getValue().toString());
-            return "=".equals(comparator) == b;
+            return "==".equals(comparator) == b;
         }
 
         @Override
