@@ -12,11 +12,11 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.village.raid.Raid;
 import net.minecraft.village.raid.RaidManager;
-import net.minecraft.world.GameRules;
 import net.minecraft.world.PersistentState;
-import net.minecraft.world.dimension.DimensionType;
+import net.minecraft.world.attribute.EnvironmentAttributes;
 import net.minecraft.world.poi.PointOfInterest;
 import net.minecraft.world.poi.PointOfInterestStorage;
+import net.minecraft.world.rule.GameRules;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -27,7 +27,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 
 @Mixin(RaidManager.class)
 public abstract class RaidManagerMixin extends PersistentState {
@@ -52,11 +51,10 @@ public abstract class RaidManagerMixin extends PersistentState {
     private Raid legacyStartRaid(ServerPlayerEntity player, ServerWorld world) {
         if (player.isSpectator()) {
             return null;
-        } else if (world.getGameRules().getBoolean(GameRules.DISABLE_RAIDS)) {
+        } else if (world.getGameRules().getValue(GameRules.DISABLE_RAIDS)) {
             return null;
         } else {
-            DimensionType dimensionType = player.getEntityWorld().getDimension();
-            if (!dimensionType.hasRaids()) {
+            if (!world.getEnvironmentAttributes().getAttributeValue(EnvironmentAttributes.CAN_START_RAID_GAMEPLAY, player.getBlockPos())) {
                 return null;
             } else {
                 BlockPos blockPos = player.getBlockPos();

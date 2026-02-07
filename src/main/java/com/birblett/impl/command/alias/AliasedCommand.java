@@ -406,7 +406,7 @@ public class AliasedCommand {
                 }
             }
             LiteralArgumentBuilder<ServerCommandSource> root = CommandManager.literal(this.alias)
-                    .requires(source -> source.hasPermissionLevel(this.getPermission()));
+                    .requires(source -> ServerUtil.permissionLookup(this.getPermission(), source));
             for (ArgumentBuilder<ServerCommandSource, ?> base : tree) {
                 root = root.then(base);
             }
@@ -415,7 +415,7 @@ public class AliasedCommand {
         // Execution if no arg provided
         else {
             dispatcher.register((CommandManager.literal(this.alias)
-                    .requires(source -> source.hasPermissionLevel(this.getPermission())))
+                    .requires(source -> ServerUtil.permissionLookup(this.getPermission(), source)))
                     .executes(this::execute));
         }
         return true;

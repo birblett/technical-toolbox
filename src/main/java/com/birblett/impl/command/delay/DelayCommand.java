@@ -3,6 +3,7 @@ package com.birblett.impl.command.delay;
 import com.birblett.accessor.command.delay.AliasedCommandSource;
 import com.birblett.accessor.command.delay.CommandScheduler;
 import com.birblett.impl.config.ConfigOptions;
+import com.birblett.util.ServerUtil;
 import com.birblett.util.TextUtils;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.BoolArgumentType;
@@ -14,6 +15,7 @@ import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import com.mojang.brigadier.tree.LiteralCommandNode;
 import net.minecraft.command.CommandSource;
+import net.minecraft.command.DefaultPermissions;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.text.MutableText;
@@ -34,10 +36,10 @@ public class DelayCommand {
     public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
         LiteralCommandNode<ServerCommandSource> node = dispatcher.register(CommandManager.literal(ConfigOptions
                         .DELAY_COMMAND.val())
-                .requires(source -> source.hasPermissionLevel(4)));
+                .requires(ServerUtil::hasAdminPerms));
         dispatcher.register(CommandManager.literal(ConfigOptions
                         .DELAY_COMMAND.val())
-                .requires(source -> source.hasPermissionLevel(4))
+                .requires(ServerUtil::hasAdminPerms)
                 .then(CommandManager.literal("as")
                         .then(CommandManager.argument("source", StringArgumentType.string())
                                 .suggests((context, builder) -> CommandSource.suggestMatching(context.getSource().isExecutedByPlayer() ?

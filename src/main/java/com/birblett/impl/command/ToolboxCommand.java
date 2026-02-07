@@ -3,6 +3,7 @@ package com.birblett.impl.command;
 import com.birblett.TechnicalToolbox;
 import com.birblett.impl.config.ConfigOption;
 import com.birblett.impl.config.ConfigOptions;
+import com.birblett.util.ServerUtil;
 import com.birblett.util.TextUtils;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -10,6 +11,7 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import net.minecraft.command.CommandSource;
+import net.minecraft.command.DefaultPermissions;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.text.Style;
@@ -27,24 +29,24 @@ public class ToolboxCommand {
 
     public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
         dispatcher.register(CommandManager.literal("toolbox")
-                .requires(source -> source.hasPermissionLevel(ConfigOptions.CONFIG_VIEW_PERMISSION_LEVEL.val()))
+                .requires(source -> ServerUtil.permissionLookup(ConfigOptions.CONFIG_VIEW_PERMISSION_LEVEL.val(), source))
                 .then(CommandManager.literal("config")
                         .then(CommandManager.argument("config_option", StringArgumentType.string())
                                 .suggests((context, builder) -> CommandSource.suggestMatching(TechnicalToolbox.CONFIG_MANAGER
                                         .getAllConfigOptions(), builder))
                                 // modifying configs; requires admin perms
                                 .then(CommandManager.argument("config_value", StringArgumentType.string())
-                                        .requires(source -> source.hasPermissionLevel(4))
+                                        .requires(ServerUtil::hasAdminPerms)
                                         .suggests(ToolboxCommand::configSuggestions)
                                         .executes((ToolboxCommand::set)))
                                 .executes(ToolboxCommand::get)))
                 // force-reloads configs from storage
                 .then(CommandManager.literal("reload_configs")
-                        .requires(source -> source.hasPermissionLevel(4))
+                        .requires(ServerUtil::hasAdminPerms)
                         .executes(ToolboxCommand::reload))
                 // force-writes configs to storage
                 .then(CommandManager.literal("save_configs")
-                        .requires(source -> source.hasPermissionLevel(4))
+                        .requires(ServerUtil::hasAdminPerms)
                         .executes(ToolboxCommand::save)));
 
     }

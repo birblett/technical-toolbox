@@ -17,7 +17,7 @@ import net.minecraft.registry.RegistryKeys;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.village.raid.Raid;
-import net.minecraft.world.GameRules;
+import net.minecraft.world.rule.GameRules;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -66,7 +66,7 @@ public class RaiderEntityMixin {
                 i = MathHelper.clamp(i, 0, 4);
                 StatusEffectInstance statusEffectInstance2 = new StatusEffectInstance(StatusEffects.BAD_OMEN, 120000, i,
                         false, false, true);
-                if (!world.getGameRules().getBoolean(GameRules.DISABLE_RAIDS)) {
+                if (!world.getGameRules().getValue(GameRules.DISABLE_RAIDS)) {
                     playerEntity.addStatusEffect(statusEffectInstance2);
                 }
             }

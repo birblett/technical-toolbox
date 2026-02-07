@@ -2,6 +2,7 @@ package com.birblett.impl.command;
 
 import com.birblett.accessor.command.camera.CameraInterface;
 import com.birblett.impl.config.ConfigOptions;
+import com.birblett.util.ServerUtil;
 import com.birblett.util.TextUtils;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.context.CommandContext;
@@ -17,7 +18,7 @@ public class CameraCommand {
 
     public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
         dispatcher.register((CommandManager.literal(ConfigOptions.CAMERA_COMMAND.getWriteable())
-                .requires(source -> source.hasPermissionLevel(ConfigOptions.CAMERA_PERMISSION_LEVEL.val()) && source.isExecutedByPlayer()))
+                .requires(source -> ServerUtil.permissionLookup(ConfigOptions.CAMERA_PERMISSION_LEVEL.val(), source) && source.isExecutedByPlayer()))
                 .executes(CameraCommand::setCameraMode));
     }
 

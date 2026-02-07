@@ -118,7 +118,6 @@ public class ServerPlayerEntityMixin implements CameraInterface {
                 });
                 // restore motion
                 nbt.get("motion", Vec3d.CODEC).ifPresent(player::setVelocity);
-                player.velocityModified = true;
                 player.velocityDirty = true;
                 // restore fall distance
                 nbt.getFloat("fall_distance").ifPresent(f -> player.fallDistance = f);

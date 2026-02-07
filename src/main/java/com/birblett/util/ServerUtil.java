@@ -3,6 +3,9 @@ package com.birblett.util;
 import com.birblett.TechnicalToolbox;
 import com.birblett.accessor.command.CommandNodeModifier;
 import com.mojang.brigadier.tree.RootCommandNode;
+import net.minecraft.command.DefaultPermissions;
+import net.minecraft.command.permission.Permission;
+import net.minecraft.command.permission.PermissionLevel;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.ServerTask;
 import net.minecraft.server.command.ServerCommandSource;
@@ -85,6 +88,28 @@ public class ServerUtil {
                 TechnicalToolbox.error("Failed to update command tree, please report");
             }
         }));
+    }
+
+    /**
+     * Check if command source has admin perms or not.
+     */
+    public static boolean hasAdminPerms(ServerCommandSource source) {
+        return source.getPermissions().hasPermission(DefaultPermissions.ADMINS);
+    }
+
+    /**
+     * Reverse lookup of legacy permission levels
+     *
+     * @param permission legacy permission level
+     */
+    public static boolean permissionLookup(int permission, ServerCommandSource source) {
+        return switch (permission) {
+            case 1 -> source.getPermissions().hasPermission(DefaultPermissions.MODERATORS);
+            case 2 -> source.getPermissions().hasPermission(DefaultPermissions.GAMEMASTERS);
+            case 3 -> source.getPermissions().hasPermission(DefaultPermissions.ADMINS);
+            case 4 -> source.getPermissions().hasPermission(DefaultPermissions.OWNERS);
+            default -> true;
+        };
     }
 
 }

@@ -14,6 +14,8 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import net.minecraft.command.CommandSource;
+import net.minecraft.command.DefaultPermissions;
+import net.minecraft.command.permission.PermissionLevel;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -33,23 +35,23 @@ public class AliasCommand {
         dispatcher.register((CommandManager.literal("alias")
                 // adds an alias by name, with a given command
                 .then(CommandManager.literal("add")
-                        .requires(source -> source.hasPermissionLevel(4))
+                        .requires(ServerUtil::hasAdminPerms)
                         .then(CommandManager.argument("alias", StringArgumentType.word())
                                 .then(CommandManager.argument("command", StringArgumentType.greedyString())
                                         .executes(AliasCommand::add))))
                 // removes an alias by name completely
                 .then(CommandManager.literal("remove")
-                        .requires(source -> source.hasPermissionLevel(4))
+                        .requires(ServerUtil::hasAdminPerms)
                         .then(CommandManager.argument("alias", StringArgumentType.word())
                                 .suggests(AliasCommand::listAliases)
                                 .executes(AliasCommand::remove)))
                 // reads all alias from file
                 .then(CommandManager.literal("reload")
-                        .requires(source -> source.hasPermissionLevel(4))
+                        .requires(ServerUtil::hasAdminPerms)
                         .executes(AliasCommand::reload))
                 // writes all aliases to file
                 .then(CommandManager.literal("save")
-                        .requires(source -> source.hasPermissionLevel(4))
+                        .requires(ServerUtil::hasAdminPerms)
                         .executes(AliasCommand::save))
                 // lists all aliases the executing player can use
                 .then(CommandManager.literal("list")
@@ -81,7 +83,7 @@ public class AliasCommand {
                                                 .executes(c -> AliasCommand.globalSet(c, "string"))))))
                 // modifies an existing alias
                 .then(CommandManager.literal("modify")
-                        .requires(source -> source.hasPermissionLevel(4))
+                        .requires(ServerUtil::hasAdminPerms)
                         .then(CommandManager.argument("alias", StringArgumentType.word())
                                 .suggests(AliasCommand::listAliases)
                                 // add a line to an alias
@@ -242,8 +244,8 @@ public class AliasCommand {
         MutableText text = TextUtils.formattable("Aliases:");
         for (AliasedCommand cmd : AliasManager.ALIASES.values().stream().sorted(Comparator.comparing(AliasedCommand::
                 getAlias)).toList()) {
-            if (!context.getSource().isExecutedByPlayer() || context.getSource().getPlayer() != null && context.getSource().getPlayer()
-                    .hasPermissionLevel(cmd.getPermission())) {
+            if (!context.getSource().isExecutedByPlayer() || context.getSource().getPlayer() != null &&
+                    ServerUtil.permissionLookup(cmd.getPermission(), context.getSource())) {
                 text.append("\n  ").append(TextUtils.formattable(cmd.getAlias())
                         .formatted(cmd.global ? Formatting.AQUA : Formatting.WHITE)).append(TextUtils.formattable(": ")
                         .formatted(Formatting.WHITE)).append(cmd.getSyntax());

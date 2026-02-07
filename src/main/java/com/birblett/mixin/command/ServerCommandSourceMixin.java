@@ -5,6 +5,7 @@ import com.birblett.impl.command.alias.language.Operator;
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
+import net.minecraft.command.permission.PermissionPredicate;
 import net.minecraft.scoreboard.ScoreboardCriterion;
 import net.minecraft.server.command.CommandOutput;
 import net.minecraft.server.command.ServerCommandSource;
@@ -63,9 +64,9 @@ public class ServerCommandSourceMixin implements CommandSourceModifier {
         return this.ret;
     }
 
-    @ModifyReturnValue(method = "hasPermissionLevel", at = @At("RETURN"))
-    private boolean overridePermissionLevelCheck(boolean b) {
-        return b || this.overridePermissions;
+    @ModifyReturnValue(method = "getPermissions", at = @At("RETURN"))
+    private PermissionPredicate overridePermissionLevelCheck(PermissionPredicate original) {
+        return this.overridePermissions ? PermissionPredicate.ALL : original;
     }
 
     @WrapOperation(method = "sendFeedback", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/command/CommandOutput;sendMessage(Lnet/minecraft/text/Text;)V"))
