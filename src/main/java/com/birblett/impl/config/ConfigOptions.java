@@ -140,6 +140,9 @@ public class ConfigOptions {
     public static final ConfigOption<Boolean> FEATURE_CRAFTER_QUASI_POWER = ConfigOption.boolConfig(
             "featureCrafterQuasiPower", false,
             "Whether crafters can be quasi-powered or not.", true);
+    public static final ConfigOption<Boolean> FEATURE_GENERATE_EMPTY_CHUNKS = ConfigOption.boolConfig(
+            "featureGenerateEmptyChunks", false,
+            "Chunks are generated as air. Bounding boxes are preserved", true);
     public static final ConfigOption<Float> FEATURE_SPEED_LIMIT = ConfigOption.floatConfig(
             "featureSpeedLimit", 100.0f,
             "The velocity threshold after which the server corrects player velocity.",
