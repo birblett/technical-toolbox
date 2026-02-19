@@ -18,13 +18,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(MinecraftServer.class)
 public class MinecraftServerMixin {
 
-    @Shadow
-    @Final
-    private ServerScoreboard scoreboard;
     @Unique
     private boolean configurable = false;
 
-    @Inject(method = "loadWorld", at = @At("TAIL"))
+    @Inject(method = "loadWorld", at = @At("HEAD"))
     private void serverLoaded(CallbackInfo ci) {
         this.configurable = true;
         MinecraftServer server = (MinecraftServer) (Object) this;
