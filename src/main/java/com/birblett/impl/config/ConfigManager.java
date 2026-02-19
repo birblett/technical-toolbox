@@ -1,14 +1,17 @@
 package com.birblett.impl.config;
 
 import com.birblett.TechnicalToolbox;
+import com.birblett.util.ConfigUtil;
 import com.birblett.util.ServerUtil;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.text.Text;
+import org.jspecify.annotations.Nullable;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -18,14 +21,22 @@ import java.util.LinkedHashMap;
  */
 public class ConfigManager {
 
-    private static final String CONFIG_PATH = "toolbox.conf";
+    public static final String CONFIG_PATH = "toolbox.conf";
 
-    public final LinkedHashMap<String, ConfigOption<?>> configMap = new LinkedHashMap<>();
+    private final LinkedHashMap<String, ConfigOption<?>> configMap = new LinkedHashMap<>();
 
     public ConfigManager() {
+        this.update();
+    }
+
+    public void update() {
         for (ConfigOption<?> c : ConfigOption.OPTIONS) {
             this.configMap.put(c.getName(), c);
         }
+    }
+
+    public ConfigOption<?> get(String key) {
+        return this.configMap.get(key);
     }
 
     public Collection<String> getAllConfigOptions() {
@@ -38,94 +49,60 @@ public class ConfigManager {
      * @param server host server
      */
     public void onServerOpen(MinecraftServer server) {
-        this.readConfigs(server);
+        this.readConfigs(ServerUtil.getToolboxPath(server), server);
     }
 
     /**
      * Called on server close, writes configs back to storage.
      */
     public void onServerClose(MinecraftServer server) {
-        this.writeConfigs(server);
+        this.writeConfigs(ServerUtil.getToolboxPath(server));
     }
 
     /**
      * Loads configs from storage into memory.
      */
-    public void readConfigs(MinecraftServer server) {
-        try (BufferedReader bufferedReader = Files.newBufferedReader(ServerUtil.getToolboxPath(server, CONFIG_PATH))) {
-            String line;
-            int lineCount = 0;
-            int options = 0;
-            HashSet<ConfigOption<?>> configOptions = new HashSet<>(this.configMap.values());
-            while ((line = bufferedReader.readLine()) != null) {
-                lineCount++;
-                String[] split = line.split(":", 2);
-                if (split.length == 0) {
-                    continue;
-                }
-                if (split.length != 2 && !split[0].isEmpty()) {
-                    TechnicalToolbox.error("Improperly separated config option on line " +
-                            lineCount + " ('" + line + "')");
-                    continue;
-                }
-                if (split.length == 2) {
-                    String name = split[0].strip();
-                    String value = split[1].strip();
+    public void readConfigs(Path basePath, @Nullable MinecraftServer server) {
+        HashSet<ConfigOption<?>> configOptions = new HashSet<>(this.configMap.values());
+        ConfigUtil.readConfigs(basePath, CONFIG_PATH,
+                (name, value) -> {
                     if (!this.configMap.containsKey(name)) {
-                        TechnicalToolbox.error("Option '" + name + "' does not exist");
-                        continue;
+                        if (server != null) {
+                            TechnicalToolbox.error("Option '" + name + "' does not exist");
+                        }
+                        return false;
                     }
                     Text out = configMap.get(name).setFromString(value, server);
                     configOptions.remove(configMap.get(name));
                     if (out != null) {
                         TechnicalToolbox.error(out.getContent().toString());
-                        continue;
+                        return false;
                     }
-                    options++;
-                }
-            }
-            TechnicalToolbox.log("Loaded " + options + " valid configuration options from " +
-                    "'toolbox.conf'");
-            if (configMap.size() - options > 0) {
-                TechnicalToolbox.log((configMap.size() - options) + " configuration options were not " +
-                        "specified, using defaults");
-                for (ConfigOption<?> configOption : configOptions) {
-                    configOption.setFromString(configOption.getDefaultValue(), server);
-                }
-            }
-        } catch (IOException e) {
-            TechnicalToolbox.warn("Configuration file 'toolbox.conf' was not found, using defaults");
-            if (ServerUtil.createDirectoryIfNotPresent(ServerUtil.getToolboxPath(server, "").toFile())) {
-                try (BufferedWriter bufferedWriter = Files.newBufferedWriter(ServerUtil.getToolboxPath(server, CONFIG_PATH))) {
-                    bufferedWriter.write("");
-                } catch (IOException ex) {
-                    TechnicalToolbox.error("Failed to generate configuration file `toolbox.conf`");
-                }
-            }
-        }
+                    return true;
+                },
+                (options) -> {
+                    if (server != null) {
+                        TechnicalToolbox.log("Loaded " + options + " valid configuration options from " +
+                                "'toolbox.conf'");
+                        if (configMap.size() - options > 0) {
+                            TechnicalToolbox.log((configMap.size() - options) + " configuration options were not " +
+                                    "specified, using defaults");
+                            for (ConfigOption<?> configOption : configOptions) {
+                                configOption.setFromString(configOption.getDefaultValue(), server);
+                            }
+                        }
+                    }
+                });
     }
 
     /**
      * Writes configs to storage.
      */
-    public void writeConfigs(MinecraftServer server) {
-        if (ServerUtil.createDirectoryIfNotPresent(ServerUtil.getToolboxPath(server, "").toFile())) {
-            try (BufferedWriter bufferedWriter = Files.newBufferedWriter(ServerUtil.getToolboxPath(server, CONFIG_PATH))) {
-                int options = 0;
-                for (ConfigOption<?> c : ConfigOption.OPTIONS) {
-                    if (!ConfigOptions.CONFIG_WRITE_ONLY_CHANGES.val() || !c.getWriteable().equals(c.getDefaultValue())) {
-                        bufferedWriter.write(c.getName() + ": " + c.getWriteable() + "\n");
-                        if (c.hasLineBreak()) {
-                            bufferedWriter.write("\n");
-                        }
-                        options++;
-                    }
-                }
-                TechnicalToolbox.log("Wrote " + options + " configuration options to 'toolbox.conf'");
-            } catch (IOException e) {
-                TechnicalToolbox.error("Failed to write to file 'toolbox.conf', configurations will not be saved");
-            }
-        }
+    public void writeConfigs(Path basePath) {
+        ConfigUtil.writeConfigs(basePath, CONFIG_PATH,
+                ConfigOption.OPTIONS.stream().map((c) ->
+                        !ConfigOptions.CONFIG_WRITE_ONLY_CHANGES.val() || !c.getWriteable().equals(c.getDefaultValue()) ?
+                                c.getName() + " " + c.getWriteable() + (c.hasLineBreak() ? "\n" : "") : null));
     }
 
 }

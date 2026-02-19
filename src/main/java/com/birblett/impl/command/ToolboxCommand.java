@@ -12,6 +12,7 @@ import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import net.minecraft.command.CommandSource;
 import net.minecraft.command.DefaultPermissions;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.text.Style;
@@ -32,8 +33,8 @@ public class ToolboxCommand {
                 .requires(source -> ServerUtil.permissionLookup(ConfigOptions.CONFIG_VIEW_PERMISSION_LEVEL.val(), source))
                 .then(CommandManager.literal("config")
                         .then(CommandManager.argument("config_option", StringArgumentType.string())
-                                .suggests((context, builder) -> CommandSource.suggestMatching(TechnicalToolbox.CONFIG_MANAGER
-                                        .getAllConfigOptions(), builder))
+                                .suggests((context, builder) ->
+                                        CommandSource.suggestMatching(TechnicalToolbox.CONFIG_MANAGER.getAllConfigOptions(), builder))
                                 // modifying configs; requires admin perms
                                 .then(CommandManager.argument("config_value", StringArgumentType.string())
                                         .requires(ServerUtil::hasAdminPerms)
@@ -51,11 +52,11 @@ public class ToolboxCommand {
 
     }
 
-    private static CompletableFuture<Suggestions> configSuggestions(CommandContext<ServerCommandSource> context, SuggestionsBuilder builder) {
+    public static CompletableFuture<Suggestions> configSuggestions(CommandContext<ServerCommandSource> context, SuggestionsBuilder builder) {
         Collection<String> suggestions = new ArrayList<>();
         String tmp = context.getArgument("config_option", String.class);
         if (TechnicalToolbox.CONFIG_MANAGER.getAllConfigOptions().contains(tmp)) {
-            ConfigOption<?> c = TechnicalToolbox.CONFIG_MANAGER.configMap.get(tmp);
+            ConfigOption<?> c = TechnicalToolbox.CONFIG_MANAGER.get(tmp);
             if (c != null) {
                 suggestions = c.commandSuggestions();
             }
@@ -67,7 +68,7 @@ public class ToolboxCommand {
         String option = context.getArgument("config_option", String.class);
         String value = context.getArgument("config_value", String.class);
         if (TechnicalToolbox.CONFIG_MANAGER.getAllConfigOptions().contains(option)) {
-            ConfigOption<?> c = TechnicalToolbox.CONFIG_MANAGER.configMap.get(option);
+            ConfigOption<?> c = TechnicalToolbox.CONFIG_MANAGER.get(option);
             Text out = c.setFromString(value, context.getSource().getServer());
             if (out != null) {
                 context.getSource().sendError(out);
@@ -77,7 +78,7 @@ public class ToolboxCommand {
                         TextUtils.formattable(value).setStyle(Style.EMPTY.withColor(Formatting.GREEN))).append(
                         TextUtils.formattable(" for option " + option)), true);
                 if (ConfigOptions.CONFIG_WRITE_ON_CHANGE.val()) {
-                    TechnicalToolbox.CONFIG_MANAGER.writeConfigs(context.getSource().getServer());
+                    TechnicalToolbox.CONFIG_MANAGER.writeConfigs(ServerUtil.getToolboxPath(context.getSource().getServer()));
                 }
                 return 1;
             }
@@ -90,7 +91,7 @@ public class ToolboxCommand {
     private static int get(CommandContext<ServerCommandSource> context) {
         String option = context.getArgument("config_option", String.class);
         if (TechnicalToolbox.CONFIG_MANAGER.getAllConfigOptions().contains(option)) {
-            ConfigOption<?> c = TechnicalToolbox.CONFIG_MANAGER.configMap.get(option);
+            ConfigOption<?> c = TechnicalToolbox.CONFIG_MANAGER.get(option);
             context.getSource().sendFeedback(c::getText, true);
         } else {
             context.getSource().sendError(TextUtils.formattable("No config option with name \"" + option + "\""));
@@ -100,13 +101,16 @@ public class ToolboxCommand {
 
     private static int reload(CommandContext<ServerCommandSource> context) {
         context.getSource().sendFeedback(() -> TextUtils.formattable("Reloading configs..."), true);
-        TechnicalToolbox.CONFIG_MANAGER.readConfigs(context.getSource().getServer());
+        MinecraftServer server = context.getSource().getServer();
+        TechnicalToolbox.CONFIG_MANAGER.readConfigs(ServerUtil.getWorldPath(server), server);
+        context.getSource().sendFeedback(() -> TextUtils.formattable("Done."), true);
         return 1;
     }
 
     private static int save(CommandContext<ServerCommandSource> context) {
         context.getSource().sendFeedback(() -> TextUtils.formattable("Saving configs..."), true);
-        TechnicalToolbox.CONFIG_MANAGER.writeConfigs(context.getSource().getServer());
+        TechnicalToolbox.CONFIG_MANAGER.writeConfigs(ServerUtil.getToolboxPath(context.getSource().getServer()));
+        context.getSource().sendFeedback(() -> TextUtils.formattable("Done."), true);
         return 1;
     }
 

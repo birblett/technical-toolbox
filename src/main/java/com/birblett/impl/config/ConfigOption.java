@@ -1,5 +1,6 @@
 package com.birblett.impl.config;
 
+import com.birblett.TechnicalToolbox;
 import com.birblett.util.TextUtils;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.text.MutableText;
@@ -27,13 +28,20 @@ public class ConfigOption<T> {
     private final boolean hasLineBreak;
 
     public ConfigOption(String name, T defaultValue, String desc, boolean hasLineBreak, String... suggestions) {
+        this(name, defaultValue, desc, hasLineBreak, false, suggestions);
+    }
+
+    public ConfigOption(String name, T defaultValue, String desc, boolean hasLineBreak, boolean virtual, String... suggestions) {
         this.hasLineBreak = hasLineBreak;
         this.name = name;
         this.desc = desc;
         this.value = defaultValue;
         this.defaultValue = defaultValue.toString();
         this.commandSuggestions = Arrays.asList(suggestions);
-        OPTIONS.add(this);
+        if (!virtual) {
+            OPTIONS.add(this);
+            TechnicalToolbox.CONFIG_MANAGER.update();
+        }
     }
 
     public ConfigOption(String name, T defaultValue, String desc, String... suggestions) {

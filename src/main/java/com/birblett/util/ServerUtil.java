@@ -22,27 +22,28 @@ import java.nio.file.Path;
 public class ServerUtil {
 
     /**
-     * @param path a relative path to a file
      * @return path to a file on within the current world folder
      */
-    public static Path getWorldPath(MinecraftServer server, String path) {
-        return server.getSavePath(WorldSavePath.ROOT).resolve(path);
+    public static Path getWorldPath(MinecraftServer server) {
+        return server.getSavePath(WorldSavePath.ROOT);
     }
 
     /**
-     * @param path a relative path to a file
      * @return path to a file on within the current world folder's technical toolbox folder
      */
-    public static Path getToolboxPath(MinecraftServer server, String path) {
-        return server.getSavePath(WorldSavePath.ROOT).resolve("technical_toolbox/" + path);
+    public static Path getToolboxPath(MinecraftServer server) {
+        return server.getSavePath(WorldSavePath.ROOT).resolve("technical_toolbox/");
     }
 
     /**
-     * @param path relative path to return
-     * @return return .minecraft/[path] directory
+     * @return return .minecraft/config/technical_toolbox/ directory
      */
-    public static Path getGlobalToolboxPath(MinecraftServer server, String path) {
-        return server.getPath("config/technical_toolbox/" + path);
+    public static Path getGlobalToolboxPath() {
+        return getBasePath().resolve("config/technical_toolbox/");
+    }
+
+    public static Path getBasePath() {
+        return Path.of("");
     }
 
     /**
