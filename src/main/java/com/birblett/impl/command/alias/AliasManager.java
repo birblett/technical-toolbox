@@ -65,7 +65,7 @@ public class AliasManager {
      * Read all aliases from storage and compile + register them.
      */
     public void readAliases(MinecraftServer server) {
-        File global = ServerUtil.getGlobalToolboxPath(server, ALIAS_PATH).toFile();
+        File global = ServerUtil.getGlobalToolboxPath().resolve(ALIAS_PATH).toFile();
         ServerUtil.createDirectoryIfNotPresent(global);
         int globalCount = 0;
         File[] globalDir = global.listFiles();
@@ -79,7 +79,7 @@ public class AliasManager {
                 TechnicalToolbox.log("Loaded " + globalCount + " global aliases");
             }
         }
-        File directory = ServerUtil.getToolboxPath(server, ALIAS_PATH).toFile();
+        File directory = ServerUtil.getToolboxPath(server).resolve(ALIAS_PATH).toFile();
         if (!ServerUtil.createDirectoryIfNotPresent(directory)) {
             TechnicalToolbox.error("Failed to create {} directory, aliases will not be saved", ALIAS_PATH);
             return;
@@ -104,8 +104,8 @@ public class AliasManager {
      * Writes all aliases to storage.
      */
     public void writeAliases(MinecraftServer server) {
-        File directory = ServerUtil.getToolboxPath(server, ALIAS_PATH).toFile();
-        File recycle = ServerUtil.getToolboxPath(server, RECYCLE_PATH).toFile();
+        File directory = ServerUtil.getToolboxPath(server).resolve(ALIAS_PATH).toFile();
+        File recycle = ServerUtil.getToolboxPath(server).resolve(RECYCLE_PATH).toFile();
         if (!ServerUtil.createDirectoryIfNotPresent(directory)) {
             TechnicalToolbox.error("Failed to create {} directory, aliases will not be saved", directory);
         }
@@ -141,7 +141,7 @@ public class AliasManager {
         int count = 0;
         for (String key : AliasManager.ALIASES.keySet()) {
             if (!AliasManager.ALIASES.get(key).global) {
-                Path path = ServerUtil.getToolboxPath(server, ALIAS_PATH + "/" + key + ".alias");
+                Path path = ServerUtil.getToolboxPath(server).resolve(ALIAS_PATH + "/" + key + ".alias");
                 if (AliasManager.ALIASES.get(key).writeToFile(path)) {
                     count++;
                 }
