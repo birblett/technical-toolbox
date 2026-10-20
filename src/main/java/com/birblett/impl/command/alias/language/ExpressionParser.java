@@ -68,7 +68,6 @@ public interface ExpressionParser {
                     }
                     if (token.startsWith("(eval ")) {
                         Matcher m2 = AliasConstants.VAR.matcher(expr);
-                        TechnicalToolbox.log("par");
                         while (m2.find()) {
                             String tok = m2.group();
                             boolean valid = false;

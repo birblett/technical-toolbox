@@ -17,6 +17,8 @@ public interface CommandScheduler {
 
     void technicalToolbox$addScheduledAlias(AliasedCommand command, long delay, CommandContext<ServerCommandSource> context, int instruction, LinkedHashMap<String, Variable> variableDefinitions);
 
+    void technicalToolbox$killAll();
+
     HashMap<String, CommandEvent> technicalToolbox$GetCommandEventMap();
 
 }

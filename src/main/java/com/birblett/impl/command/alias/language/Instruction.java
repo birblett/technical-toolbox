@@ -154,28 +154,29 @@ public interface Instruction {
 
     class Wait implements Instruction, ExpressionParser {
 
-        public int waitTicks;
+        public String waitTicks;
         public boolean valid = true;
         public String err = null;
+        protected final Queue<Object> post = new LinkedList<>();
 
-        public Wait(String waitTicks) {
-            try {
-                int i = Integer.parseInt(waitTicks);
-                if (i <= 0) {
-                    this.err = "wait time must be greater than 0";
-                    this.valid = false;
-                } else {
-                    this.waitTicks = i;
-                }
-            } catch (NumberFormatException e) {
-                this.err = "wait time must be an integer";
+        public Wait(String waitTicks, List<LinkedHashMap<String, Variable.Definition>> vars) {
+            this.waitTicks = waitTicks;
+            Integer type = this.parseExpression(waitTicks, null, vars, this.post);
+            if (type > 1) {
+                this.err = "wait time must be a whole number";
                 this.valid = false;
             }
         }
 
         @Override
         public int execute(AliasedCommand aliasedCommand, CommandContext<ServerCommandSource> context, LinkedHashMap<String, Variable> variables) {
-            aliasedCommand.wait = this.waitTicks;
+            Operator o = this.evaluate(aliasedCommand, context, this.post, variables);
+            if (o instanceof Operator.NumberOperator n) {
+                long value = (long) n.getValue();
+                if (value > 0) {
+                    aliasedCommand.wait = (long) n.getValue();
+                }
+            }
             return -1;
         }
 
@@ -283,7 +284,12 @@ public interface Instruction {
         public int execute(AliasedCommand aliasedCommand, CommandContext<ServerCommandSource> context, LinkedHashMap<String, Variable> variables) {
             boolean failSilent = aliasedCommand.getFailSilent();
             aliasedCommand.setFailSilent(false);
-            boolean rval = aliasedCommand.executeCommand(context, this.commandString, true).success() ^ this.inverted;
+            String cmd = this.commandString;
+            for (String var : variables.keySet()) {
+                cmd = cmd.replaceAll("\\{\\$" + var + "}", variables.get(var).value().toString());
+            }
+            cmd = cmd.replaceAll("\\{\\$@[a-zA-Z_][a-zA-Z0-9_]*}", "0");
+            boolean rval = aliasedCommand.executeCommand(context, cmd, true).success() ^ this.inverted;
             aliasedCommand.setFailSilent(failSilent);
             return rval ? -1 : this.jumpTo;
         }
@@ -353,7 +359,12 @@ public interface Instruction {
         public int execute(AliasedCommand aliasedCommand, CommandContext<ServerCommandSource> context, LinkedHashMap<String, Variable> variables) {
             boolean failSilent = aliasedCommand.getFailSilent();
             aliasedCommand.setFailSilent(false);
-            boolean rval = aliasedCommand.executeCommand(context, this.commandString, true).success() ^ this.inverted;
+            String cmd = this.commandString;
+            for (String var : variables.keySet()) {
+                cmd = cmd.replaceAll("\\{\\$" + var + "}", variables.get(var).value().toString());
+            }
+            cmd = cmd.replaceAll("\\{\\$@[a-zA-Z_][a-zA-Z0-9_]*}", "0");
+            boolean rval = aliasedCommand.executeCommand(context, cmd, true).success() ^ this.inverted;
             aliasedCommand.setFailSilent(failSilent);
             return rval ? -1 : this.jumpTo;
         }

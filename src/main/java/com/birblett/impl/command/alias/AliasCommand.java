@@ -1,6 +1,7 @@
 package com.birblett.impl.command.alias;
 
 import com.birblett.TechnicalToolbox;
+import com.birblett.accessor.command.delay.CommandScheduler;
 import com.birblett.impl.command.alias.language.AliasConstants;
 import com.birblett.impl.command.alias.language.Variable;
 import com.birblett.impl.config.ConfigOptions;
@@ -56,12 +57,16 @@ public class AliasCommand {
                 // lists all aliases the executing player can use
                 .then(CommandManager.literal("list")
                         .executes(AliasCommand::list))
-                // attemps to compile a specific alias
+                // attempts to compile a specific alias
                 .then(CommandManager.literal("compile")
                         .requires(source -> true)
                         .then(CommandManager.argument("alias", StringArgumentType.word())
                                 .suggests(AliasCommand::listAliases)
                                 .executes(AliasCommand::compile)))
+                // kills currently running alias scirpts
+                .then(CommandManager.literal("killall")
+                        .requires(ServerUtil::hasAdminPerms)
+                        .executes(AliasCommand::killAll))
                 // sets a global variable value
                 .then(CommandManager.literal("global")
                         .then(CommandManager.argument("name", StringArgumentType.word())
@@ -172,7 +177,7 @@ public class AliasCommand {
      * Lists all current aliases as suggestions.
      */
     private static CompletableFuture<Suggestions> listAliases(CommandContext<ServerCommandSource> context, SuggestionsBuilder builder) {
-        return CommandSource.suggestMatching(AliasManager.ALIASES.keySet(), builder);
+        return CommandSource.suggestMatching(AliasManager.ALIASES.keySet().stream().filter(s -> !AliasManager.ALIASES.get(s).global), builder);
     }
 
     /**
@@ -275,6 +280,14 @@ public class AliasCommand {
             return 0;
         }
         context.getSource().sendError(TextUtils.formattable("Couldn't find alias \"" + alias + "\""));
+        return 0;
+    }
+
+    private static int killAll(CommandContext<ServerCommandSource> context) {
+        CommandScheduler c = (CommandScheduler) context.getSource().getServer().getSaveProperties().getMainWorldProperties()
+                .getScheduledEvents();
+        c.technicalToolbox$killAll();
+        context.getSource().sendFeedback(() -> TextUtils.formattable("Killed all currently running aliases"), true);
         return 0;
     }
 

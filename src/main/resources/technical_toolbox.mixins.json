@@ -26,13 +26,11 @@
     "legacy.RaidManagerMixin",
     "legacy.RaidMixin",
     "legacy.RedstoneWireBlockMixin",
-    "legacy.TripwireHookBlockMixin",
-    "server.MinecraftServerMixin"
+    "legacy.TripwireHookBlockMixin"
   ],
   "injectors": {
     "defaultRequire": 1
   },
   "server": [
-    "server.CommandManagerMixin"
   ]
 }

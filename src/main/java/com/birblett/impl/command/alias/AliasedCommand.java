@@ -43,7 +43,7 @@ public class AliasedCommand {
     private final List<Instruction> instructions = new ArrayList<>();
     public static final LinkedHashMap<String, Variable.Definition> GLOBALS = new LinkedHashMap<>();
     public static final LinkedHashMap<String, Variable> GLOBAL_VARIABLE_DEFINITIONS = new LinkedHashMap<>();
-    public int wait = 0;
+    public long wait = 0;
     private final LinkedHashMap<String, Variable.Definition> argumentDefinitions = new LinkedHashMap<>();
     private int permission;
     private boolean silent;
@@ -157,7 +157,7 @@ public class AliasedCommand {
                             // pauses execution for at least 1 tick
                             case "wait" -> {
                                 String wait = c.substring(1, c.length() - 1).replaceFirst("wait", "").strip();
-                                Instruction.Wait instruction = new Instruction.Wait(wait);
+                                Instruction.Wait instruction = new Instruction.Wait(wait, scope);
                                 if (!instruction.valid) {
                                     return this.compileError(i, instruction.err);
                                 }

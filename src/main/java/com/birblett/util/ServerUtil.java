@@ -2,6 +2,7 @@ package com.birblett.util;
 
 import com.birblett.TechnicalToolbox;
 import com.birblett.accessor.command.CommandNodeModifier;
+import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.tree.RootCommandNode;
 import net.minecraft.command.DefaultPermissions;
 import net.minecraft.command.permission.Permission;
@@ -10,6 +11,8 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.ServerTask;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.text.MutableText;
+import net.minecraft.text.Text;
 import net.minecraft.util.WorldSavePath;
 import org.apache.commons.lang3.StringUtils;
 
@@ -111,6 +114,14 @@ public class ServerUtil {
             case 4 -> source.getPermissions().hasPermission(DefaultPermissions.OWNERS);
             default -> true;
         };
+    }
+
+    public static void commandFeedback(CommandContext<ServerCommandSource> context, String message) {
+        context.getSource().sendFeedback(() -> Text.of(message), true);
+    }
+
+    public static void commandFeedback(CommandContext<ServerCommandSource> context, MutableText message) {
+        context.getSource().sendFeedback(() -> message, true);
     }
 
 }

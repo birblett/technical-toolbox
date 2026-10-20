@@ -61,9 +61,16 @@ public class TimerMixin<T> implements CommandScheduler {
     }
 
     @Override
+    public void technicalToolbox$killAll() {
+        this.scheduledAliases.clear();
+    }
+
+    @Override
     public HashMap<String, CommandEvent> technicalToolbox$GetCommandEventMap() {
         return this.scheduledCommandMap;
     }
+
+
 
     @Inject(method = "processEvents", at = @At("TAIL"))
     private void executeSchedule(T server, long time, CallbackInfo ci) {

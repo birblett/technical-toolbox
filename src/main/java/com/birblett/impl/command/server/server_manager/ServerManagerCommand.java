@@ -117,7 +117,7 @@ public class ServerManagerCommand {
     }
 
     private static int list(CommandContext<ServerCommandSource> context) {
-        context.getSource().sendMessage(TextUtils.formattable("Worlds:"));
+        ServerUtil.commandFeedback(context, "Worlds:");
         for (Path path : ServerManager.WORLD_PATHS) {
             MutableText t = TextUtils.formattable(("  ") + path);
             String s = getCurrentWorld(context);
@@ -131,7 +131,7 @@ public class ServerManagerCommand {
             if (!s.equals(ServerManagerCommand.currentWorld) && name.equals(ServerManagerCommand.currentWorld)) {
                 t.append(TextUtils.formattable(" ✪").withColor(Colors.YELLOW));
             }
-            context.getSource().sendMessage(t);
+            ServerUtil.commandFeedback(context, t);
         }
 
         return 1;
@@ -203,7 +203,7 @@ public class ServerManagerCommand {
         String worldName = context.getArgument("world_name", String.class);
         String urlString = context.getArgument("url", String.class);
         Runnable download = () -> {
-            context.getSource().sendMessage(Text.of("Attempting world download..."));
+            ServerUtil.commandFeedback(context, "Attempting world download...");
             Path newWorld = null;
             try {
                 newWorld = Files.createTempDirectory(ServerUtil.getBasePath(), "temp_" + worldName);
@@ -213,7 +213,7 @@ public class ServerManagerCommand {
                     try (InputStream in = url.openStream()) {
                         Files.copy(in, zip, StandardCopyOption.REPLACE_EXISTING);
                     }
-                    context.getSource().sendMessage(Text.of("Finished download, extracting..."));
+                    ServerUtil.commandFeedback(context, "Finished download, extracting...");
 
                     try (ZipFile zipFile = new ZipFile(zip.toFile())) {
                         Enumeration<? extends ZipEntry> entries = zipFile.entries();
@@ -232,14 +232,14 @@ public class ServerManagerCommand {
                         }
                     }
                     FileUtils.delete(zip.toFile());
-                    context.getSource().sendMessage(Text.of("Successfully extracted archive, validating..."));
+                    ServerUtil.commandFeedback(context, "Successfully extracted archive, validating...");
 
                     if (!Files.exists(newWorld.resolve("level.dat"))) {
                         try (Stream<Path> stream = Files.list(newWorld)) {
                             Optional<Path> path = stream.filter(p ->
                                     Files.isDirectory(p) && Files.exists(p.resolve("level.dat"))).findFirst();
                             if (path.isPresent()) {
-                                context.getSource().sendMessage(Text.of("Found nested directories, restructuring..."));
+                                ServerUtil.commandFeedback(context, "Found nested directories, restructuring...");
                                 Path p = path.get();
                                 File[] list = p.toFile().listFiles();
                                 if (list == null) {
@@ -253,8 +253,8 @@ public class ServerManagerCommand {
                             }
                         }
                     }
+                    ServerUtil.commandFeedback(context, "Successfully downloaded world \"" + worldName + "\", cleaning up...");
 
-                    context.getSource().sendMessage(Text.of("Successfully downloaded world \"" + worldName + "\", cleaning up..."));
                     FileUtils.copyDirectory(new File(newWorld.toUri()), new File(ServerUtil.getBasePath().resolve(worldName).toUri()));
                     FileUtils.deleteDirectory(new File(newWorld.toUri()));
                     ServerManager.refreshWorlds();
@@ -334,7 +334,7 @@ public class ServerManagerCommand {
         }
         try {
             FileUtils.deleteDirectory(new File(world.toUri()));
-            context.getSource().sendMessage(Text.of("Deleted world \"" + name + "\""));
+            ServerUtil.commandFeedback(context, "Deleted world \"" + name + "\"");
         } catch (IOException e) {
             context.getSource().sendError(Text.of("Failed to delete world \"" + world + "\": " + e));
             return 0;
@@ -368,7 +368,7 @@ public class ServerManagerCommand {
             Path properties = ServerUtil.getBasePath().resolve("server.properties");
             List<String> lines = Files.readAllLines(properties);
             Files.write(properties, lines.stream().map(s -> s.replaceFirst("level-name=.*", "level-name=" + name)).toList());
-            context.getSource().sendMessage(Text.of("Server world set to \"" + name + "\", will be applied on restart"));
+            ServerUtil.commandFeedback(context, "Server world set to \"" + name + "\", will be applied on restart");
             ServerManagerCommand.currentWorld = name;
         } catch (IOException e) {
             context.getSource().sendError(Text.of("Failed to change default world: " + e));
@@ -382,7 +382,7 @@ public class ServerManagerCommand {
         if (name == null) {
             return 0;
         }
-        context.getSource().sendMessage(Text.of((ServerManager.toggleWorldLock(name) ? "Locked " : "Unlocked ") + "world \"" + name + "\""));
+        ServerUtil.commandFeedback(context, (ServerManager.toggleWorldLock(name) ? "Locked " : "Unlocked ") + "world \"" + name + "\"");
         return list(context);
     }
 
@@ -406,10 +406,10 @@ public class ServerManagerCommand {
         try {
             String script = context.getArgument("path", String.class);
             ServerManager.getOpt("restart_script").setValue(script);
-            context.getSource().sendMessage(Text.of("Startup script set to \"" + script + "\""));
+            ServerUtil.commandFeedback(context, "Startup script set to \"" + script + "\"");
         } catch (Exception e) {
-            context.getSource().sendMessage(Text.of("Startup script is set to \"" +
-                    ServerManager.getValue("restart_script", String.class, "start.sh") + "\""));
+            ServerUtil.commandFeedback(context, "Startup script is set to \"" +
+                    ServerManager.getValue("restart_script", String.class, "start.sh") + "\"");
         }
         return 0;
     }
@@ -424,7 +424,7 @@ public class ServerManagerCommand {
                     FileUtils.copyFile(p, new File(newWorld.resolve(dir).toUri()));
                 }
             } catch (IOException e) {
-                context.getSource().sendMessage(Text.of(dir + " not found, skipping"));
+                ServerUtil.commandFeedback(context, dir + " not found, skipping");
             }
         }
     }
