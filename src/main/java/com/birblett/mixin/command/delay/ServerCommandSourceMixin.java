@@ -1,13 +1,13 @@
 package com.birblett.mixin.command.delay;
 
 import com.birblett.accessor.command.delay.AliasedCommandSource;
-import net.minecraft.server.command.ServerCommandSource;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 
 import java.util.HashMap;
+import net.minecraft.commands.CommandSourceStack;
 
-@Mixin(ServerCommandSource.class)
+@Mixin(CommandSourceStack.class)
 public class ServerCommandSourceMixin implements AliasedCommandSource {
 
     @Unique

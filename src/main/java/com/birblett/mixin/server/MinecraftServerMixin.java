@@ -20,13 +20,13 @@ public class MinecraftServerMixin {
     @Unique
     private boolean configurable = false;
 
-    @Inject(method = "loadWorld", at = @At("HEAD"))
+    @Inject(method = "loadLevel", at = @At("HEAD"))
     private void serverLoaded(CallbackInfo ci) {
         this.configurable = true;
         ServerManager.onServerOpen();
     }
 
-    @Inject(method = "shutdown", at = @At("HEAD"))
+    @Inject(method = "stopServer", at = @At("HEAD"))
     private void serverStopped(CallbackInfo ci) {
         if (this.configurable) {
             ServerManager.onServerClose();

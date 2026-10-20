@@ -6,9 +6,9 @@ import com.birblett.impl.command.alias.AliasedCommand;
 import com.birblett.impl.command.alias.language.Variable;
 import com.birblett.impl.command.delay.CommandEvent;
 import com.mojang.brigadier.context.CommandContext;
+import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.world.timer.Timer;
+import net.minecraft.world.level.timers.TimerQueue;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -21,7 +21,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.PriorityQueue;
 
-@Mixin(Timer.class)
+@Mixin(TimerQueue.class)
 public class TimerMixin<T> implements CommandScheduler {
 
     @Unique
@@ -34,7 +34,7 @@ public class TimerMixin<T> implements CommandScheduler {
     private final HashMap<String, CommandEvent> scheduledCommandMap = new HashMap<>();
 
     @Override
-    public boolean technicalToolbox$AddCommandEvent(String command, long delay, @Nullable String id, int priority, boolean silent, ServerCommandSource source) {
+    public boolean technicalToolbox$AddCommandEvent(String command, long delay, @Nullable String id, int priority, boolean silent, CommandSourceStack source) {
         CommandEvent e = new CommandEvent(id, command, delay, priority, silent, source);
         if (id != null) {
             if (this.scheduledCommandMap.containsKey(id)) {
@@ -56,7 +56,7 @@ public class TimerMixin<T> implements CommandScheduler {
     }
 
     @Override
-    public void technicalToolbox$addScheduledAlias(AliasedCommand command, long delay, CommandContext<ServerCommandSource> context, int instruction, LinkedHashMap<String, Variable> variableDefinitions) {
+    public void technicalToolbox$addScheduledAlias(AliasedCommand command, long delay, CommandContext<CommandSourceStack> context, int instruction, LinkedHashMap<String, Variable> variableDefinitions) {
         this.scheduledAliases.add(new AliasState(command, delay, context, instruction, variableDefinitions));
     }
 
@@ -72,7 +72,7 @@ public class TimerMixin<T> implements CommandScheduler {
 
 
 
-    @Inject(method = "processEvents", at = @At("TAIL"))
+    @Inject(method = "tick", at = @At("TAIL"))
     private void executeSchedule(T server, long time, CallbackInfo ci) {
         if (server instanceof MinecraftServer s) {
             while (this.scheduledCommands.peek() != null && this.scheduledCommands.peek().tick() <= time) {

@@ -4,18 +4,17 @@ import com.birblett.impl.command.alias.AliasedCommand;
 import com.birblett.impl.command.alias.language.Variable;
 import com.birblett.impl.command.delay.CommandEvent;
 import com.mojang.brigadier.context.CommandContext;
-import net.minecraft.server.command.ServerCommandSource;
-
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import net.minecraft.commands.CommandSourceStack;
 
 public interface CommandScheduler {
 
-    boolean technicalToolbox$AddCommandEvent(String command, long delay, String id, int priority, boolean silent, ServerCommandSource source);
+    boolean technicalToolbox$AddCommandEvent(String command, long delay, String id, int priority, boolean silent, CommandSourceStack source);
 
     boolean technicalToolbox$RemoveCommandEvent(String id);
 
-    void technicalToolbox$addScheduledAlias(AliasedCommand command, long delay, CommandContext<ServerCommandSource> context, int instruction, LinkedHashMap<String, Variable> variableDefinitions);
+    void technicalToolbox$addScheduledAlias(AliasedCommand command, long delay, CommandContext<CommandSourceStack> context, int instruction, LinkedHashMap<String, Variable> variableDefinitions);
 
     void technicalToolbox$killAll();
 

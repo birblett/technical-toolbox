@@ -5,9 +5,8 @@ import com.birblett.util.ConfigUtil;
 import com.birblett.util.ServerUtil;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.datafixer.Schemas;
-import net.minecraft.world.level.storage.LevelStorage;
-
+import net.minecraft.util.datafix.DataFixers;
+import net.minecraft.world.level.storage.LevelStorageSource;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.function.Function;
@@ -49,10 +48,10 @@ public class ServerManager {
 
     }
 
-    public static final LevelStorage SERVER_MANAGER_LEVEL_STORAGE = new LevelStorage(ServerUtil.getBasePath(),
+    public static final LevelStorageSource SERVER_MANAGER_LEVEL_STORAGE = new LevelStorageSource(ServerUtil.getBasePath(),
             ServerUtil.getBasePath().resolve("backups"),
-            LevelStorage.createSymlinkFinder(Path.of("allowed_symlinks.txt")), Schemas.getFixer());
-    public static List<Path> WORLD_PATHS = SERVER_MANAGER_LEVEL_STORAGE.getLevelList().levels().stream().map(LevelStorage.LevelSave::path).toList();
+            LevelStorageSource.parseValidator(Path.of("allowed_symlinks.txt")), DataFixers.getDataFixer());
+    public static List<Path> WORLD_PATHS = SERVER_MANAGER_LEVEL_STORAGE.findLevelCandidates().levels().stream().map(LevelStorageSource.LevelDirectory::path).toList();
     private static final String SERVER_MANAGER_CONFIG_PATH = "server_manager.conf";
     private static final Map<String, ServerManagerConfigOption<?>> SERVER_MANAGER_CONFIG = new HashMap<>();
 
@@ -94,7 +93,7 @@ public class ServerManager {
     }
 
     public static void refreshWorlds() {
-        ServerManager.WORLD_PATHS = ServerManager.SERVER_MANAGER_LEVEL_STORAGE.getLevelList().levels().stream().map(LevelStorage.LevelSave::path).toList();
+        ServerManager.WORLD_PATHS = ServerManager.SERVER_MANAGER_LEVEL_STORAGE.findLevelCandidates().levels().stream().map(LevelStorageSource.LevelDirectory::path).toList();
     }
 
     public static void onServerOpen() {

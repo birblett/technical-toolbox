@@ -3,12 +3,6 @@ package com.birblett.mixin.command.camera;
 import com.birblett.accessor.command.camera.CameraInterface;
 import com.birblett.impl.config.ConfigOptions;
 import com.birblett.util.TextUtils;
-import net.minecraft.entity.Entity;
-import net.minecraft.network.DisconnectionInfo;
-import net.minecraft.network.packet.c2s.play.SpectatorTeleportC2SPacket;
-import net.minecraft.server.network.ServerPlayNetworkHandler;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -17,21 +11,27 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
 import java.util.Iterator;
+import net.minecraft.network.DisconnectionDetails;
+import net.minecraft.network.protocol.game.ServerboundTeleportToEntityPacket;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.network.ServerGamePacketListenerImpl;
+import net.minecraft.world.entity.Entity;
 
 /**
  * Handle some camera-related configured functionalities
  */
-@Mixin(ServerPlayNetworkHandler.class)
+@Mixin(ServerGamePacketListenerImpl.class)
 public class ServerPlayNetworkHandlerMixin {
 
     @Shadow
-    public ServerPlayerEntity player;
+    public ServerPlayer player;
 
     /**
      * Forcibly switches player out of camera mode on disconnect
      */
-    @Inject(method = "onDisconnected", at = @At("HEAD"))
-    private void disableCameraOnDisconnect(DisconnectionInfo reason, CallbackInfo ci) {
+    @Inject(method = "onDisconnect", at = @At("HEAD"))
+    private void disableCameraOnDisconnect(DisconnectionDetails reason, CallbackInfo ci) {
         if (((CameraInterface) this.player).technicalToolbox$IsCamera()) {
             ((CameraInterface) this.player).technicalToolbox$SwapCameraMode(false);
         }
@@ -40,15 +40,15 @@ public class ServerPlayNetworkHandlerMixin {
     /**
      * Handles whether player can teleport or not in camera mode, as well as relevant logging
      */
-    @Inject(method = "onSpectatorTeleport", at = @At(target = "Lnet/minecraft/server/network/ServerPlayerEntity;teleport(Lnet/minecraft/server/world/ServerWorld;DDDLjava/util/Set;FFZ)Z",
+    @Inject(method = "handleTeleportToEntityPacket", at = @At(target = "Lnet/minecraft/server/level/ServerPlayer;teleportTo(Lnet/minecraft/server/level/ServerLevel;DDDLjava/util/Set;FFZ)Z",
             value = "INVOKE"), locals = LocalCapture.CAPTURE_FAILSOFT, cancellable = true)
-    protected void disableCamTeleport(SpectatorTeleportC2SPacket packet, CallbackInfo ci, Iterator<ServerWorld> var2, ServerWorld serverWorld, Entity entity) {
+    protected void disableCamTeleport(ServerboundTeleportToEntityPacket packet, CallbackInfo ci, Iterator<ServerLevel> var2, ServerLevel serverWorld, Entity entity) {
         if (((CameraInterface) this.player).technicalToolbox$IsCamera() && !ConfigOptions.CAMERA_CAN_TELEPORT.val()) {
-            this.player.sendMessage(TextUtils.formattable("Teleportation is disabled in camera mode"), true);
+            this.player.displayClientMessage(TextUtils.formattable("Teleportation is disabled in camera mode"), true);
             ci.cancel();
         } else if (((CameraInterface) this.player).technicalToolbox$IsCamera() && ConfigOptions.CAMERA_CONSOLE_LOGGING.val().equals("spectate")) {
-            this.player.getEntityWorld().getServer().sendMessage(TextUtils.formattable("[Camera Mode] " + this.player.getNameForScoreboard() +
-                    " teleported to " + entity.getNameForScoreboard()));
+            this.player.level().getServer().sendSystemMessage(TextUtils.formattable("[Camera Mode] " + this.player.getScoreboardName() +
+                    " teleported to " + entity.getScoreboardName()));
         }
     }
 

@@ -16,12 +16,11 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
+import net.minecraft.ChatFormatting;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.command.CommandManager;
-import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.text.MutableText;
-import net.minecraft.util.Formatting;
-
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -54,7 +53,7 @@ public class AliasedCommand {
     private static final Pattern STATEMENT_BEGIN = Pattern.compile("\\[[^ ]+");
     public String status = null;
 
-    public AliasedCommand(String alias, String command, CommandDispatcher<ServerCommandSource> dispatcher) {
+    public AliasedCommand(String alias, String command, CommandDispatcher<CommandSourceStack> dispatcher) {
         this.global = false;
         this.alias = alias;
         this.commands.add(command);
@@ -348,11 +347,11 @@ public class AliasedCommand {
      * @param source command source to send feedback to
      * @return whether compilation was successful or not
      */
-    public boolean register(ServerCommandSource source) {
-        boolean b = this.register(source.getDispatcher());
+    public boolean register(CommandSourceStack source) {
+        boolean b = this.register(source.dispatcher());
         if (!b) {
-            source.sendError(TextUtils.formattable("Failed to compile:"));
-            source.sendError(TextUtils.formattable(this.status));
+            source.sendFailure(TextUtils.formattable("Failed to compile:"));
+            source.sendFailure(TextUtils.formattable(this.status));
         }
         return b;
     }
@@ -363,7 +362,7 @@ public class AliasedCommand {
      * @param dispatcher dispatcher to register to
      * @return true if successful, false if compilation failed
      */
-    public boolean register(CommandDispatcher<ServerCommandSource> dispatcher) {
+    public boolean register(CommandDispatcher<CommandSourceStack> dispatcher) {
         if (!AliasManager.ALIASES.containsKey(this.alias)) {
             AliasManager.ALIASES.put(this.alias, this);
         }
@@ -372,49 +371,49 @@ public class AliasedCommand {
             return false;
         }
         this.status = "Compiled successfully";
-        List<ArgumentBuilder<ServerCommandSource, ?>> tree = new ArrayList<>();
+        List<ArgumentBuilder<CommandSourceStack, ?>> tree = new ArrayList<>();
         // Execution with required arguments
         if (!this.argumentDefinitions.isEmpty()) {
             // the horror
             Variable.Definition[] vars = this.argumentDefinitions.values().toArray(new Variable.Definition[0]);
             for (int i = vars.length - 1; i >= 0; i--) {
                 Variable.Definition def = vars[i];
-                List<ArgumentBuilder<ServerCommandSource, ?>> baseNodes = new ArrayList<>();
+                List<ArgumentBuilder<CommandSourceStack, ?>> baseNodes = new ArrayList<>();
                 // selection adds each option as its own literal, needs to modify command source to preserve arguments
                 if ("selection".equals(def.typeName)) {
                     for (String s : def.args) {
-                        baseNodes.add(CommandManager.literal(s).requires(source -> {
+                        baseNodes.add(Commands.literal(s).requires(source -> {
                             ((CommandSourceModifier) source).technicalToolbox$addSelector(def.name, s);
                             return true;
                         }));
                     }
                 } else {
-                    baseNodes.add(CommandManager.argument(def.name, def.getArgumentType()));
+                    baseNodes.add(Commands.argument(def.name, def.getArgumentType()));
                 }
                 // build command tree by layer, from the bottom up
                 if (tree.isEmpty()) {
-                    for (ArgumentBuilder<ServerCommandSource, ?> base : baseNodes) {
+                    for (ArgumentBuilder<CommandSourceStack, ?> base : baseNodes) {
                         tree.add(base.executes(this::execute));
                     }
                 } else {
-                    for (ArgumentBuilder<ServerCommandSource, ?> base : baseNodes) {
-                        for (ArgumentBuilder<ServerCommandSource, ?> treeNode : tree) {
+                    for (ArgumentBuilder<CommandSourceStack, ?> base : baseNodes) {
+                        for (ArgumentBuilder<CommandSourceStack, ?> treeNode : tree) {
                             base = base.then(treeNode);
                         }
                     }
                     tree = baseNodes;
                 }
             }
-            LiteralArgumentBuilder<ServerCommandSource> root = CommandManager.literal(this.alias)
+            LiteralArgumentBuilder<CommandSourceStack> root = Commands.literal(this.alias)
                     .requires(source -> ServerUtil.permissionLookup(this.getPermission(), source));
-            for (ArgumentBuilder<ServerCommandSource, ?> base : tree) {
+            for (ArgumentBuilder<CommandSourceStack, ?> base : tree) {
                 root = root.then(base);
             }
             dispatcher.register(root.executes(this::getCommandInfo));
         }
         // Execution if no arg provided
         else {
-            dispatcher.register((CommandManager.literal(this.alias)
+            dispatcher.register((Commands.literal(this.alias)
                     .requires(source -> ServerUtil.permissionLookup(this.getPermission(), source)))
                     .executes(this::execute));
         }
@@ -438,7 +437,7 @@ public class AliasedCommand {
      *
      * @param context command context
      */
-    private int execute(CommandContext<ServerCommandSource> context) {
+    private int execute(CommandContext<CommandSourceStack> context) {
         LinkedHashMap<String, Variable> variableDefinitions = new LinkedHashMap<>();
         List<Instruction> instructions = List.copyOf(this.instructions);
         AliasedCommandSource source = (AliasedCommandSource) context.getSource();
@@ -458,7 +457,7 @@ public class AliasedCommand {
         return executeFlow(context, variableDefinitions, instructions, source, 0);
     }
 
-    public void executeScheduled(CommandContext<ServerCommandSource> context, int instruction, LinkedHashMap<String, Variable> variableDefinitions) {
+    public void executeScheduled(CommandContext<CommandSourceStack> context, int instruction, LinkedHashMap<String, Variable> variableDefinitions) {
         List<Instruction> instructions = List.copyOf(this.instructions);
         AliasedCommandSource source = (AliasedCommandSource) context.getSource();
         // load globals
@@ -466,7 +465,7 @@ public class AliasedCommand {
         this.executeFlow(context, variableDefinitions, instructions, source, instruction);
     }
 
-    private int executeFlow(CommandContext<ServerCommandSource> context, LinkedHashMap<String, Variable> variableDefinitions, List<Instruction> instructions, AliasedCommandSource source, int start) {
+    private int executeFlow(CommandContext<CommandSourceStack> context, LinkedHashMap<String, Variable> variableDefinitions, List<Instruction> instructions, AliasedCommandSource source, int start) {
         int i;
         // main loop for running instructions; opcodes -2 is return, -1 is donothing, >=0 is an instruction index to jump to
         for (i = start; i < instructions.size() && (ConfigOptions.ALIAS_INSTRUCTION_LIMIT.val() == -1 ||
@@ -481,9 +480,9 @@ public class AliasedCommand {
                 i = out - 1;
             }
             if (this.wait != 0) {
-                CommandScheduler c = (CommandScheduler) context.getSource().getServer().getSaveProperties().getMainWorldProperties()
+                CommandScheduler c = (CommandScheduler) context.getSource().getServer().getWorldData().overworldData()
                         .getScheduledEvents();
-                c.technicalToolbox$addScheduledAlias(this, context.getSource().getWorld().getTime() + this.wait, context,
+                c.technicalToolbox$addScheduledAlias(this, context.getSource().getLevel().getGameTime() + this.wait, context,
                         i + 1, variableDefinitions);
                 this.wait = 0;
                 this.updateGlobals(variableDefinitions);
@@ -492,7 +491,7 @@ public class AliasedCommand {
         }
         if (source.technicalToolbox$getRecursionCount() >= ConfigOptions.ALIAS_MAX_RECURSION_DEPTH.val()) {
             if (source.technicalToolbox$getRecursionCount() == ConfigOptions.ALIAS_MAX_RECURSION_DEPTH.val()) {
-                context.getSource().sendError(TextUtils.formattable("Exceeded the max recursion depth of " +
+                context.getSource().sendFailure(TextUtils.formattable("Exceeded the max recursion depth of " +
                         ConfigOptions.ALIAS_MAX_RECURSION_DEPTH.val()));
                 source.technicalToolbox$AddToRecursionDepth(1);
             }
@@ -500,7 +499,7 @@ public class AliasedCommand {
             return 0;
         }
         if (i < instructions.size()) {
-            context.getSource().sendError(TextUtils.formattable("Exceeded the instruction limit of " +
+            context.getSource().sendFailure(TextUtils.formattable("Exceeded the instruction limit of " +
                     ConfigOptions.ALIAS_INSTRUCTION_LIMIT.val()));
             this.updateGlobals(variableDefinitions);
             return 0;
@@ -534,9 +533,9 @@ public class AliasedCommand {
      * @param command command to execute
      */
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
-    public CommandResult executeCommand(CommandContext<ServerCommandSource> context, String command, boolean failSilently) {
-        ServerCommandSource source = context.getSource();
-        CommandDispatcher<ServerCommandSource> dispatcher = source.getServer().getCommandManager().getDispatcher();
+    public CommandResult executeCommand(CommandContext<CommandSourceStack> context, String command, boolean failSilently) {
+        CommandSourceStack source = context.getSource();
+        CommandDispatcher<CommandSourceStack> dispatcher = source.getServer().getCommands().getDispatcher();
         ((CommandSourceModifier) source).technicalToolbox$setPermissionOverride(true);
         int result = 0;
         if (this.silent) {
@@ -551,7 +550,7 @@ public class AliasedCommand {
                 return new CommandResult(true, result);
             } else {
                 if (!failSilently) {
-                    context.getSource().sendError(TextUtils.formattable(e.getMessage()));
+                    context.getSource().sendFailure(TextUtils.formattable(e.getMessage()));
                 }
                 ((CommandSourceModifier) source).technicalToolbox$shutUp(false);
                 return new CommandResult(false, result);
@@ -561,7 +560,7 @@ public class AliasedCommand {
         return new CommandResult(true, result);
     }
 
-    public boolean rename(CommandContext<ServerCommandSource> context, String name) {
+    public boolean rename(CommandContext<CommandSourceStack> context, String name) {
         this.deregister(context.getSource().getServer(), true);
         this.alias = name;
         return this.register(context.getSource());
@@ -582,7 +581,7 @@ public class AliasedCommand {
      * @param line line number
      * @return Fail message if removal failed, otherwise null.
      */
-    public MutableText removeCommand(int line) {
+    public MutableComponent removeCommand(int line) {
         if (this.commands.size() <= 1) {
             return TextUtils.formattable("Can't remove the last line in an alias");
         }
@@ -600,7 +599,7 @@ public class AliasedCommand {
      * @param num  line number to insert at (or before)
      * @return an error message if unsuccessful
      */
-    public MutableText insert(String line, int num) {
+    public MutableComponent insert(String line, int num) {
         if (num < 1 || num - 1 > this.commands.size()) {
             return TextUtils.formattable("Line index " + num + " out of bounds");
         }
@@ -611,13 +610,13 @@ public class AliasedCommand {
     /**
      * @return simple command syntax - provides argument types alongside names
      */
-    public MutableText getSyntax() {
-        MutableText out = TextUtils.formattable("/").formatted(Formatting.YELLOW);
-        out.append(TextUtils.formattable(this.alias).formatted(Formatting.YELLOW)).append(" ");
+    public MutableComponent getSyntax() {
+        MutableComponent out = TextUtils.formattable("/").withStyle(ChatFormatting.YELLOW);
+        out.append(TextUtils.formattable(this.alias).withStyle(ChatFormatting.YELLOW)).append(" ");
         for (Variable.Definition arg : this.argumentDefinitions.values()) {
-            out.append(TextUtils.formattable("<").formatted(Formatting.WHITE))
-                    .append(TextUtils.formattable(arg.name).formatted(Formatting.AQUA))
-                    .append(TextUtils.formattable("> ").formatted(Formatting.WHITE));
+            out.append(TextUtils.formattable("<").withStyle(ChatFormatting.WHITE))
+                    .append(TextUtils.formattable(arg.name).withStyle(ChatFormatting.AQUA))
+                    .append(TextUtils.formattable("> ").withStyle(ChatFormatting.WHITE));
         }
         return out;
     }
@@ -625,25 +624,25 @@ public class AliasedCommand {
     /**
      * @return verbose command syntax - provides argument types alongside names
      */
-    public MutableText getVerboseSyntax() {
-        MutableText out = TextUtils.formattable("/").formatted(Formatting.YELLOW);
-        out.append(TextUtils.formattable(this.alias).formatted(Formatting.YELLOW)).append(" ");
+    public MutableComponent getVerboseSyntax() {
+        MutableComponent out = TextUtils.formattable("/").withStyle(ChatFormatting.YELLOW);
+        out.append(TextUtils.formattable(this.alias).withStyle(ChatFormatting.YELLOW)).append(" ");
         for (Variable.Definition arg : this.argumentDefinitions.values()) {
-            out.append(TextUtils.formattable("<").formatted(Formatting.GREEN))
-                    .append(TextUtils.formattable(arg.name).formatted(Formatting.YELLOW))
-                    .append(TextUtils.formattable(":").formatted(Formatting.GREEN))
-                    .append(TextUtils.formattable(arg.typeName).formatted(Formatting.AQUA));
+            out.append(TextUtils.formattable("<").withStyle(ChatFormatting.GREEN))
+                    .append(TextUtils.formattable(arg.name).withStyle(ChatFormatting.YELLOW))
+                    .append(TextUtils.formattable(":").withStyle(ChatFormatting.GREEN))
+                    .append(TextUtils.formattable(arg.typeName).withStyle(ChatFormatting.AQUA));
             if (arg.type.argc() != 0) {
-                out.append(TextUtils.formattable("[").formatted(Formatting.GREEN));
+                out.append(TextUtils.formattable("[").withStyle(ChatFormatting.GREEN));
                 for (int i = 0; i < arg.args.length; i++) {
-                    out.append(TextUtils.formattable(arg.args[i]).formatted(Formatting.WHITE));
+                    out.append(TextUtils.formattable(arg.args[i]).withStyle(ChatFormatting.WHITE));
                     if (i != arg.args.length - 1) {
-                        out.append(TextUtils.formattable(",").formatted(Formatting.GREEN));
+                        out.append(TextUtils.formattable(",").withStyle(ChatFormatting.GREEN));
                     }
                 }
-                out.append(TextUtils.formattable("]").formatted(Formatting.GREEN));
+                out.append(TextUtils.formattable("]").withStyle(ChatFormatting.GREEN));
             }
-            out.append(TextUtils.formattable("> ").formatted(Formatting.GREEN));
+            out.append(TextUtils.formattable("> ").withStyle(ChatFormatting.GREEN));
         }
         return out;
     }
@@ -657,31 +656,31 @@ public class AliasedCommand {
      * @param args    optional args
      * @return false if failed to add argument, true otherwise
      */
-    public boolean addArgument(ServerCommandSource source, boolean replace, String name, String argType, String[] args) {
+    public boolean addArgument(CommandSourceStack source, boolean replace, String name, String argType, String[] args) {
         if (this.argumentDefinitions.containsKey(name)) {
             if (!replace) {
-                source.sendError(TextUtils.formattable("Argument \"" + name + "\" already exists"));
+                source.sendFailure(TextUtils.formattable("Argument \"" + name + "\" already exists"));
                 return false;
             }
         }
         if (!AliasConstants.ARGUMENT_TYPES.containsKey(argType)) {
-            source.sendError(TextUtils.formattable("Not a valid argument type: " + argType));
+            source.sendFailure(TextUtils.formattable("Not a valid argument type: " + argType));
             return false;
         }
         this.argumentDefinitions.put(name, new Variable.Definition(name, argType, args));
-        source.sendFeedback(() -> {
-            MutableText out = TextUtils.formattable((replace ? "Set" : "Added") + " argument ").append(TextUtils.formattable(name)
-                            .formatted(Formatting.GREEN)).append(TextUtils.formattable(" of type ").formatted(Formatting.WHITE))
-                    .append(TextUtils.formattable(argType).formatted(Formatting.GREEN));
+        source.sendSuccess(() -> {
+            MutableComponent out = TextUtils.formattable((replace ? "Set" : "Added") + " argument ").append(TextUtils.formattable(name)
+                            .withStyle(ChatFormatting.GREEN)).append(TextUtils.formattable(" of type ").withStyle(ChatFormatting.WHITE))
+                    .append(TextUtils.formattable(argType).withStyle(ChatFormatting.GREEN));
             if (args.length > 0) {
-                out.append(TextUtils.formattable(" with args [").formatted(Formatting.WHITE));
+                out.append(TextUtils.formattable(" with args [").withStyle(ChatFormatting.WHITE));
                 for (int i = 0; i < args.length; i++) {
-                    out.append(TextUtils.formattable(args[i]).formatted(Formatting.YELLOW));
+                    out.append(TextUtils.formattable(args[i]).withStyle(ChatFormatting.YELLOW));
                     if (i < args.length - 1) {
-                        out.append(TextUtils.formattable(",").formatted(Formatting.WHITE));
+                        out.append(TextUtils.formattable(",").withStyle(ChatFormatting.WHITE));
                     }
                 }
-                out.append(TextUtils.formattable("]").formatted(Formatting.WHITE));
+                out.append(TextUtils.formattable("]").withStyle(ChatFormatting.WHITE));
             }
             return out;
         }, false);
@@ -695,17 +694,17 @@ public class AliasedCommand {
      * @param name name of argument
      * @return true if successful, false if not
      */
-    public boolean removeArgument(ServerCommandSource source, String name) {
+    public boolean removeArgument(CommandSourceStack source, String name) {
         if (this.argumentDefinitions.containsKey(name)) {
             this.argumentDefinitions.remove(name);
-            source.sendFeedback(() -> TextUtils.formattable("Removed argument ").append(TextUtils.formattable(name)
-                    .formatted(Formatting.GREEN)), false);
+            source.sendSuccess(() -> TextUtils.formattable("Removed argument ").append(TextUtils.formattable(name)
+                    .withStyle(ChatFormatting.GREEN)), false);
             if (ConfigOptions.ALIAS_MODIFY_COMPILE.val()) {
                 this.refresh(source);
             }
             return true;
         }
-        source.sendError(TextUtils.formattable("Argument \"" + name + "\" not found"));
+        source.sendFailure(TextUtils.formattable("Argument \"" + name + "\" not found"));
         return false;
     }
 
@@ -716,9 +715,9 @@ public class AliasedCommand {
      * @param newName name to rename to
      * @return true if successful, false otherwise
      */
-    public boolean renameArgument(ServerCommandSource source, String name, String newName) {
+    public boolean renameArgument(CommandSourceStack source, String name, String newName) {
         if (this.argumentDefinitions.containsKey(newName)) {
-            source.sendError(TextUtils.formattable("Argument \"" + newName + "\" already exists"));
+            source.sendFailure(TextUtils.formattable("Argument \"" + newName + "\" already exists"));
             return false;
         }
         if (this.argumentDefinitions.containsKey(name)) {
@@ -735,14 +734,14 @@ public class AliasedCommand {
                 }
             }
             this.argumentDefinitions.putAll(list.reversed());
-            source.sendFeedback(() -> TextUtils.formattable("Renamed argument to ").append(TextUtils.formattable(newName)
-                    .formatted(Formatting.GREEN)), false);
+            source.sendSuccess(() -> TextUtils.formattable("Renamed argument to ").append(TextUtils.formattable(newName)
+                    .withStyle(ChatFormatting.GREEN)), false);
             if (ConfigOptions.ALIAS_MODIFY_COMPILE.val()) {
                 this.refresh(source);
             }
             return true;
         }
-        source.sendError(TextUtils.formattable("Argument \"" + name + "\" not found"));
+        source.sendFailure(TextUtils.formattable("Argument \"" + name + "\" not found"));
         return false;
     }
 
@@ -766,7 +765,7 @@ public class AliasedCommand {
     /**
      * Deregisters and attempts to re-register this alias with the provided command source's server.
      */
-    public boolean refresh(ServerCommandSource source) {
+    public boolean refresh(CommandSourceStack source) {
         this.deregister(source.getServer(), false);
         return this.register(source);
     }
@@ -774,12 +773,12 @@ public class AliasedCommand {
     /**
      * @return full command script as text.
      */
-    public MutableText getCommandText() {
-        MutableText out = TextUtils.formattable("Commands:\n");
+    public MutableComponent getCommandText() {
+        MutableComponent out = TextUtils.formattable("Commands:\n");
         int lineNum = 0;
         for (String line : this.getCommands()) {
             out.append(TextUtils.formattable(" " + ++lineNum + ". ")).append(TextUtils.formattable(line)
-                    .formatted(Formatting.YELLOW));
+                    .withStyle(ChatFormatting.YELLOW));
             if (lineNum != this.getCommands().size()) {
                 out.append(TextUtils.formattable("\n"));
             }
@@ -790,8 +789,8 @@ public class AliasedCommand {
     /**
      * Displays basic command syntax.
      */
-    private int getCommandInfo(CommandContext<ServerCommandSource> context) {
-        context.getSource().sendFeedback(this::getSyntax, false);
+    private int getCommandInfo(CommandContext<CommandSourceStack> context) {
+        context.getSource().sendSuccess(this::getSyntax, false);
         return 0;
     }
 

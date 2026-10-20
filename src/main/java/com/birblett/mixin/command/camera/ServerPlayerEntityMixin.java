@@ -3,19 +3,19 @@ package com.birblett.mixin.command.camera;
 import com.birblett.accessor.command.camera.CameraInterface;
 import com.birblett.impl.config.ConfigOptions;
 import com.birblett.util.TextUtils;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.effect.StatusEffectInstance;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.*;
-import net.minecraft.registry.RegistryKey;
-import net.minecraft.registry.RegistryKeys;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.storage.ReadView;
-import net.minecraft.storage.WriteView;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.GameMode;
+import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
+import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -30,7 +30,7 @@ import java.util.Set;
 /**
  * Allows player to swap to and from camera mode, and also handles some configured functionalities
  */
-@Mixin(ServerPlayerEntity.class)
+@Mixin(ServerPlayer.class)
 public class ServerPlayerEntityMixin implements CameraInterface {
 
     @Unique
@@ -38,7 +38,7 @@ public class ServerPlayerEntityMixin implements CameraInterface {
     @Unique
     private String storedGameMode;
     @Unique
-    private NbtCompound nbt = null;
+    private CompoundTag nbt = null;
 
     @Override
     public boolean technicalToolbox$IsCamera() {
@@ -54,85 +54,85 @@ public class ServerPlayerEntityMixin implements CameraInterface {
      */
     @Override
     public String technicalToolbox$SwapCameraMode(boolean sendMessage) {
-        ServerPlayerEntity player = (ServerPlayerEntity) (Object) this;
+        ServerPlayer player = (ServerPlayer) (Object) this;
         if (player.getVehicle() != null && !this.isCamera) {
             return "Exit vehicles before entering camera mode";
         } else if (player.isSpectator() && !this.isCamera) {
             return "Player is already in spectator mode";
         } else if (!this.isCamera) {
             this.isCamera = true;
-            this.storedGameMode = player.interactionManager.getGameMode().asString();
-            this.nbt = new NbtCompound();
+            this.storedGameMode = player.gameMode.getGameModeForPlayer().getSerializedName();
+            this.nbt = new CompoundTag();
             // store dimension
-            nbt.putString("dimension", player.getEntityWorld().getRegistryKey().getValue().toString());
+            nbt.putString("dimension", player.level().dimension().identifier().toString());
             // store position
-            nbt.put("pos", Vec3d.CODEC, player.getEntityPos());
+            nbt.store("pos", Vec3.CODEC, player.position());
             // store motion
-            nbt.put("motion", Vec3d.CODEC, player.getVelocity());
+            nbt.store("motion", Vec3.CODEC, player.getDeltaMovement());
             // store creative flight
             nbt.putBoolean("flying", player.getAbilities().flying);
             // store elytra flight
-            nbt.putBoolean("gliding", player.isGliding());
+            nbt.putBoolean("gliding", player.isFallFlying());
             // store rotation
-            nbt.putFloat("yaw", player.getYaw());
-            nbt.putFloat("pitch", player.getPitch());
+            nbt.putFloat("yaw", player.getYRot());
+            nbt.putFloat("pitch", player.getXRot());
             // store fall distance
             nbt.putDouble("fall_distance", player.fallDistance);
             // store fire ticks
-            nbt.putInt("fire", player.getFireTicks());
+            nbt.putInt("fire", player.getRemainingFireTicks());
             // store air ticks
-            nbt.putInt("air", player.getAir());
+            nbt.putInt("air", player.getAirSupply());
             // store frozen ticks
-            nbt.putInt("ticks_frozen", player.getFrozenTicks());
+            nbt.putInt("ticks_frozen", player.getTicksFrozen());
             // store sleeping pos
-            player.getSleepingPosition().ifPresent(pos -> nbt.put("sleeping_pos", BlockPos.CODEC, pos));
+            player.getSleepingPos().ifPresent(pos -> nbt.store("sleeping_pos", BlockPos.CODEC, pos));
             // store status effects
-            if (!player.getStatusEffects().isEmpty()) {
-                nbt.put("active_effects", StatusEffectInstance.CODEC.listOf(), List.copyOf(player.getStatusEffects()));
+            if (!player.getActiveEffects().isEmpty()) {
+                nbt.store("active_effects", MobEffectInstance.CODEC.listOf(), List.copyOf(player.getActiveEffects()));
             }
-            player.changeGameMode(GameMode.SPECTATOR);
+            player.setGameMode(GameType.SPECTATOR);
             return "Swapping from " + this.storedGameMode + " to camera mode";
         } else {
             String out;
             if (this.nbt != null) {
                 // restore world
-                ServerWorld world = player.getEntityWorld();
-                if (player.getEntityWorld().getServer() != null) {
-                    world = player.getEntityWorld().getServer().getWorld(RegistryKey.of(RegistryKeys.WORLD,
-                            Identifier.of(nbt.getString("dimension", "overworld"))));
+                ServerLevel world = player.level();
+                if (player.level().getServer() != null) {
+                    world = player.level().getServer().getLevel(ResourceKey.create(Registries.DIMENSION,
+                            Identifier.parse(nbt.getStringOr("dimension", "overworld"))));
                 }
                 // restore position and rotation
-                Optional<Vec3d> pos = nbt.get("pos", Vec3d.CODEC);
+                Optional<Vec3> pos = nbt.read("pos", Vec3.CODEC);
                 Optional<Float> yaw = nbt.getFloat("yaw");
                 Optional<Float> pitch = nbt.getFloat("pitch");
                 if (pos.isPresent() && yaw.isPresent() && pitch.isPresent()) {
-                    player.teleport(world, pos.get().x, pos.get().y, pos.get().z, Set.of(), yaw.get(), pitch.get(), false);
+                    player.teleportTo(world, pos.get().x, pos.get().y, pos.get().z, Set.of(), yaw.get(), pitch.get(), false);
                 }
                 // restore creative flight
                 nbt.getBoolean("flying").ifPresent(b -> player.getAbilities().flying = b);
                 // restore elytra flight
                 nbt.getBoolean("gliding").ifPresent(b -> {
                     if (b) {
-                        player.startGliding();
+                        player.startFallFlying();
                     }
                 });
                 // restore motion
-                nbt.get("motion", Vec3d.CODEC).ifPresent(player::setVelocity);
-                player.velocityDirty = true;
+                nbt.read("motion", Vec3.CODEC).ifPresent(player::setDeltaMovement);
+                player.needsSync = true;
                 // restore fall distance
                 nbt.getFloat("fall_distance").ifPresent(f -> player.fallDistance = f);
                 // restore fire ticks
-                nbt.getInt("fire").ifPresent(player::setFireTicks);
+                nbt.getInt("fire").ifPresent(player::setRemainingFireTicks);
                 // restore air ticks
-                nbt.getInt("air").ifPresent(player::setAir);
+                nbt.getInt("air").ifPresent(player::setAirSupply);
                 // restore frozen ticks
-                nbt.getInt("ticks_frozen").ifPresent(player::setFrozenTicks);
+                nbt.getInt("ticks_frozen").ifPresent(player::setTicksFrozen);
                 // restore sleeping pos
-                nbt.get("sleeping_pos", BlockPos.CODEC).ifPresent(player::setSleepingPosition);
+                nbt.read("sleeping_pos", BlockPos.CODEC).ifPresent(player::setSleepingPos);
                 // restore status effects
-                nbt.get("active_effects", StatusEffectInstance.CODEC.listOf()).ifPresent(effects -> {
-                    for (StatusEffectInstance effect : effects) {
-                        player.setStatusEffect(effect, null);
+                nbt.read("active_effects", MobEffectInstance.CODEC.listOf()).ifPresent(effects -> {
+                    for (MobEffectInstance effect : effects) {
+                        player.forceAddEffect(effect, null);
                     }
                 });
                 out = "Swapping from camera mode back to " + this.storedGameMode;
@@ -141,7 +141,7 @@ public class ServerPlayerEntityMixin implements CameraInterface {
                 out = "Swapping back to " + this.storedGameMode + " but can't restore playerdata - maybe corrupted?";
             }
             this.nbt = null;
-            player.changeGameMode(GameMode.byId(this.storedGameMode, GameMode.SURVIVAL));
+            player.setGameMode(GameType.byName(this.storedGameMode, GameType.SURVIVAL));
             if (!sendMessage) {
                 out = null;
             }
@@ -152,17 +152,17 @@ public class ServerPlayerEntityMixin implements CameraInterface {
     /**
      * Handles disabling entity spectating in camera mode and related logging
      */
-    @Inject(method = "attack", at = @At(target = "Lnet/minecraft/server/network/ServerPlayerEntity;setCameraEntity(Lnet/minecraft/entity/Entity;)V",
+    @Inject(method = "attack", at = @At(target = "Lnet/minecraft/server/level/ServerPlayer;setCamera(Lnet/minecraft/world/entity/Entity;)V",
             value = "INVOKE"), cancellable = true)
     protected void cameraSpectating(Entity target, CallbackInfo ci) {
-        ServerPlayerEntity player = (ServerPlayerEntity) (Object) this;
+        ServerPlayer player = (ServerPlayer) (Object) this;
         if (this.isCamera && !ConfigOptions.CAMERA_CAN_SPECTATE.val()) {
-            player.sendMessage(TextUtils.formattable("Entity spectating is currently disabled in camera mode"), true);
+            player.displayClientMessage(TextUtils.formattable("Entity spectating is currently disabled in camera mode"), true);
             ci.cancel();
-        } else if (this.isCamera && ConfigOptions.CAMERA_CONSOLE_LOGGING.val().equals("spectate") && player.getEntityWorld().getServer()
+        } else if (this.isCamera && ConfigOptions.CAMERA_CONSOLE_LOGGING.val().equals("spectate") && player.level().getServer()
                 != null) {
-            player.getEntityWorld().getServer().sendMessage(TextUtils.formattable("[Camera Mode] " + player.getNameForScoreboard() +
-                    " is spectating " + target.getNameForScoreboard()));
+            player.level().getServer().sendSystemMessage(TextUtils.formattable("[Camera Mode] " + player.getScoreboardName() +
+                    " is spectating " + target.getScoreboardName()));
         }
     }
 
@@ -170,31 +170,31 @@ public class ServerPlayerEntityMixin implements CameraInterface {
     /**
      * Automatically disables camera mode if player directly switches gamemodes
      */
-    @Inject(method = "changeGameMode", at = @At("HEAD"))
-    protected void disableCameraMode(GameMode gameMode, CallbackInfoReturnable<Boolean> cir) {
-        if (this.isCamera && gameMode != GameMode.SPECTATOR) {
-            ((ServerPlayerEntity) (Object) this).sendMessage(TextUtils.formattable("Swapped gamemodes directly, disabling camera mode"),
+    @Inject(method = "setGameMode", at = @At("HEAD"))
+    protected void disableCameraMode(GameType gameMode, CallbackInfoReturnable<Boolean> cir) {
+        if (this.isCamera && gameMode != GameType.SPECTATOR) {
+            ((ServerPlayer) (Object) this).displayClientMessage(TextUtils.formattable("Swapped gamemodes directly, disabling camera mode"),
                     true);
             this.nbt = null;
             this.isCamera = false;
         }
     }
 
-    @Inject(method = "writeCustomData", at = @At("HEAD"))
-    private void writeCameraNbt(WriteView view, CallbackInfo ci) {
+    @Inject(method = "addAdditionalSaveData", at = @At("HEAD"))
+    private void writeCameraNbt(ValueOutput view, CallbackInfo ci) {
         if (this.isCamera) {
             view.putBoolean("IsCamera", true);
-            view.put("StoredNbt", NbtCompound.CODEC, this.nbt);
+            view.store("StoredNbt", CompoundTag.CODEC, this.nbt);
             view.putString("StoredGameMode", this.storedGameMode);
         }
     }
 
-    @Inject(method = "readCustomData", at = @At("HEAD"))
-    private void readCameraNbt(ReadView view, CallbackInfo ci) {
-        if (view.getBoolean("IsCamera", false)) {
+    @Inject(method = "readAdditionalSaveData", at = @At("HEAD"))
+    private void readCameraNbt(ValueInput view, CallbackInfo ci) {
+        if (view.getBooleanOr("IsCamera", false)) {
             this.isCamera = true;
-            view.read("StoredNbt", NbtCompound.CODEC).ifPresent(nbt -> {
-                this.storedGameMode = view.getString("StoredGameMode", "survival");
+            view.read("StoredNbt", CompoundTag.CODEC).ifPresent(nbt -> {
+                this.storedGameMode = view.getStringOr("StoredGameMode", "survival");
                 this.nbt = nbt;
             });
         }

@@ -3,8 +3,8 @@ package com.birblett.impl.config;
 import com.birblett.TechnicalToolbox;
 import com.birblett.util.ConfigUtil;
 import com.birblett.util.ServerUtil;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.text.Text;
 import org.jspecify.annotations.Nullable;
 
 import java.io.BufferedReader;
@@ -72,10 +72,10 @@ public class ConfigManager {
                         }
                         return false;
                     }
-                    Text out = configMap.get(name).setFromString(value, server);
+                    Component out = configMap.get(name).setFromString(value, server);
                     configOptions.remove(configMap.get(name));
                     if (out != null) {
-                        TechnicalToolbox.error(out.getContent().toString());
+                        TechnicalToolbox.error(out.getContents().toString());
                         return false;
                     }
                     return true;

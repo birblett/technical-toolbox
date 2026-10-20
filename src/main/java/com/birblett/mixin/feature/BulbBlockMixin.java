@@ -1,16 +1,16 @@
 package com.birblett.mixin.feature;
 
 import com.birblett.impl.config.ConfigOptions;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.BulbBlock;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.random.Random;
-import net.minecraft.world.World;
-import net.minecraft.world.block.WireOrientation;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.CopperBulbBlock;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.redstone.Orientation;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -22,39 +22,39 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * powering to be ignored. See {@link ConfigOptions#FEATURE_COPPER_BULB_DELAY} and
  * {@link ConfigOptions#FEATURE_COPPER_BULB_NO_POWERED_UPDATES}.
  */
-@Mixin(BulbBlock.class)
+@Mixin(CopperBulbBlock.class)
 public abstract class BulbBlockMixin extends Block {
 
-    public BulbBlockMixin(Settings settings) {
+    public BulbBlockMixin(Properties settings) {
         super(settings);
     }
 
-    @Inject(method = "neighborUpdate", at = @At("HEAD"), cancellable = true)
-    protected void bulbDelayLogic(BlockState state, World world, BlockPos pos, Block sourceBlock, @Nullable WireOrientation wireOrientation, boolean notify, CallbackInfo ci) {
+    @Inject(method = "neighborChanged", at = @At("HEAD"), cancellable = true)
+    protected void bulbDelayLogic(BlockState state, Level world, BlockPos pos, Block sourceBlock, @Nullable Orientation wireOrientation, boolean notify, CallbackInfo ci) {
         int delay = ConfigOptions.FEATURE_COPPER_BULB_DELAY.val();
-        if (delay > 0 && world instanceof ServerWorld) {
-            boolean bl = world.isReceivingRedstonePower(pos);
+        if (delay > 0 && world instanceof ServerLevel) {
+            boolean bl = world.hasNeighborSignal(pos);
             if (ConfigOptions.FEATURE_COPPER_BULB_NO_POWERED_UPDATES.val()) {
-                world.getWorldChunk(pos).setBlockState(pos, state.with(BulbBlock.POWERED, bl), Block.SKIP_REDSTONE_WIRE_STATE_REPLACEMENT);
-                world.updateListeners(pos, state, state.with(BulbBlock.POWERED, bl), Block.NOTIFY_ALL_AND_REDRAW);
+                world.getChunkAt(pos).setBlockState(pos, state.setValue(CopperBulbBlock.POWERED, bl), Block.UPDATE_SKIP_SHAPE_UPDATE_ON_WIRE);
+                world.sendBlockUpdated(pos, state, state.setValue(CopperBulbBlock.POWERED, bl), Block.UPDATE_ALL_IMMEDIATE);
             } else {
-                world.setBlockState(pos, state.with(BulbBlock.POWERED, bl), Block.NOTIFY_ALL);
+                world.setBlock(pos, state.setValue(CopperBulbBlock.POWERED, bl), Block.UPDATE_ALL);
             }
             if (bl) {
-                world.scheduleBlockTick(pos, this, delay);
+                world.scheduleTick(pos, this, delay);
             }
             ci.cancel();
         }
     }
 
     @Override
-    protected void scheduledTick(BlockState state, ServerWorld world, BlockPos pos, Random random) {
-        if (world instanceof ServerWorld) {
-            ((BulbBlock) (Object) this).update(state, world, pos);
-            world.playSound(null, pos, state.cycle(BulbBlock.LIT).get(BulbBlock.LIT) ?
-                            SoundEvents.BLOCK_COPPER_BULB_TURN_ON : SoundEvents.BLOCK_COPPER_BULB_TURN_OFF,
-                    SoundCategory.BLOCKS);
-            world.setBlockState(pos, state.cycle(BulbBlock.LIT), Block.NOTIFY_ALL);
+    protected void tick(BlockState state, ServerLevel world, BlockPos pos, RandomSource random) {
+        if (world instanceof ServerLevel) {
+            ((CopperBulbBlock) (Object) this).checkAndFlip(state, world, pos);
+            world.playSound(null, pos, state.cycle(CopperBulbBlock.LIT).getValue(CopperBulbBlock.LIT) ?
+                            SoundEvents.COPPER_BULB_TURN_ON : SoundEvents.COPPER_BULB_TURN_OFF,
+                    SoundSource.BLOCKS);
+            world.setBlock(pos, state.cycle(CopperBulbBlock.LIT), Block.UPDATE_ALL);
         }
     }
 

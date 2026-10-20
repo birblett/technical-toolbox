@@ -1,8 +1,6 @@
 package com.birblett.accessor.command;
 
 import com.birblett.impl.command.alias.language.Operator;
-import net.minecraft.scoreboard.ScoreboardCriterion;
-
 import java.util.HashSet;
 
 public interface CommandSourceModifier {

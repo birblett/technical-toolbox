@@ -6,9 +6,9 @@ import com.birblett.util.ServerUtil;
 import com.birblett.util.TextUtils;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.context.CommandContext;
-import net.minecraft.server.command.CommandManager;
-import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
+import net.minecraft.server.level.ServerPlayer;
 
 /**
  * Camera command that swaps players in and out of camera mode. Not registered with other commands; is instead
@@ -16,21 +16,21 @@ import net.minecraft.server.network.ServerPlayerEntity;
  */
 public class CameraCommand {
 
-    public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
-        dispatcher.register((CommandManager.literal(ConfigOptions.CAMERA_COMMAND.getWriteable())
-                .requires(source -> ServerUtil.permissionLookup(ConfigOptions.CAMERA_PERMISSION_LEVEL.val(), source) && source.isExecutedByPlayer()))
+    public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
+        dispatcher.register((Commands.literal(ConfigOptions.CAMERA_COMMAND.getWriteable())
+                .requires(source -> ServerUtil.permissionLookup(ConfigOptions.CAMERA_PERMISSION_LEVEL.val(), source) && source.isPlayer()))
                 .executes(CameraCommand::setCameraMode));
     }
 
-    private static int setCameraMode(CommandContext<ServerCommandSource> context) {
-        ServerPlayerEntity player = context.getSource().getPlayer();
+    private static int setCameraMode(CommandContext<CommandSourceStack> context) {
+        ServerPlayer player = context.getSource().getPlayer();
         if (player != null) {
             String feedback = ((CameraInterface) player).technicalToolbox$SwapCameraMode(true);
             if (feedback != null) {
-                player.sendMessage(TextUtils.formattable(feedback), true);
+                player.displayClientMessage(TextUtils.formattable(feedback), true);
                 Object logLevel = ConfigOptions.CAMERA_CONSOLE_LOGGING.val();
                 if (logLevel.equals("command") || logLevel.equals("spectate")) {
-                    context.getSource().getServer().sendMessage(TextUtils.formattable("[Camera Mode] " + player.getNameForScoreboard()
+                    context.getSource().getServer().sendSystemMessage(TextUtils.formattable("[Camera Mode] " + player.getScoreboardName()
                             + ": " + feedback));
                 }
             }

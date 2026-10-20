@@ -3,9 +3,9 @@ package com.birblett.impl.config;
 import com.birblett.impl.command.CameraCommand;
 import com.birblett.impl.command.delay.DelayCommand;
 import com.birblett.util.ServerUtil;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.text.Text;
-import net.minecraft.util.Pair;
+import net.minecraft.util.Tuple;
 
 public class ConfigOptions {
 
@@ -57,21 +57,21 @@ public class ConfigOptions {
             "Camera command string, usage /[cmd string].",
             "cam", "c", "cs") {
         @Override
-        public Text setFromString(String value, MinecraftServer server) {
+        public Component setFromString(String value, MinecraftServer server) {
             String oldValue = this.value;
-            Text s = this.setFromString(value);
+            Component s = this.setFromString(value);
             if (s == null && server != null) {
                 ServerUtil.removeCommandByName(server, oldValue);
-                CameraCommand.register(server.getCommandManager().getDispatcher());
+                CameraCommand.register(server.getCommands().getDispatcher());
             }
             return s;
         }
 
         @Override
-        public Text setFromString(String value) {
-            Pair<String, Text> out = getStringOption(this.getName(), value, "cam");
-            this.value = out.getLeft();
-            return out.getRight();
+        public Component setFromString(String value) {
+            Tuple<String, Component> out = getStringOption(this.getName(), value, "cam");
+            this.value = out.getA();
+            return out.getB();
         }
     };
     public static final ConfigOption<Boolean> CAMERA_GENERATES_CHUNKS = ConfigOption.boolConfig(
@@ -90,11 +90,11 @@ public class ConfigOptions {
             "none", "command",
             "spectate") {
         @Override
-        public Text setFromString(String value) {
-            Pair<String, Text> out = getRestrictedStringOptions(this.getName(), value, "none",
+        public Component setFromString(String value) {
+            Tuple<String, Component> out = getRestrictedStringOptions(this.getName(), value, "none",
                     this.commandSuggestions());
-            this.value = out.getLeft();
-            return out.getRight();
+            this.value = out.getA();
+            return out.getB();
         }
     };
     public static final ConfigOption<Integer> CAMERA_PERMISSION_LEVEL = ConfigOption.intConfig(
@@ -107,21 +107,21 @@ public class ConfigOptions {
             "Command scheduling command string, usage /[cmd string] <delay> <command>.",
             "delay", "sch") {
         @Override
-        public Text setFromString(String value, MinecraftServer server) {
+        public Component setFromString(String value, MinecraftServer server) {
             String oldValue = this.value;
-            Text s = this.setFromString(value);
+            Component s = this.setFromString(value);
             if (s == null && server != null) {
                 ServerUtil.removeCommandByName(server, oldValue);
-                DelayCommand.register(server.getCommandManager().getDispatcher());
+                DelayCommand.register(server.getCommands().getDispatcher());
             }
             return s;
         }
 
         @Override
-        public Text setFromString(String value) {
-            Pair<String, Text> out = getStringOption(this.getName(), value, "delay");
-            this.value = out.getLeft();
-            return out.getRight();
+        public Component setFromString(String value) {
+            Tuple<String, Component> out = getStringOption(this.getName(), value, "delay");
+            this.value = out.getA();
+            return out.getB();
         }
     };
     public static final ConfigOption<Integer> FEATURE_COPPER_BULB_DELAY = ConfigOption.intConfig(

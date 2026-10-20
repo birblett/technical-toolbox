@@ -8,9 +8,9 @@ import com.birblett.impl.command.alias.AliasManager;
 import com.birblett.impl.command.alias.AliasedCommand;
 import com.birblett.impl.command.delay.DelayCommand;
 import com.mojang.brigadier.CommandDispatcher;
-import net.minecraft.command.CommandRegistryAccess;
-import net.minecraft.server.command.CommandManager;
-import net.minecraft.server.command.ServerCommandSource;
+import net.minecraft.commands.CommandBuildContext;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -21,15 +21,15 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 /**
  * Registers some custom commands. Aliases and camera command are registered on-demand as well.
  */
-@Mixin(CommandManager.class)
+@Mixin(Commands.class)
 public class CommandManagerMixin {
 
     @Shadow
     @Final
-    private CommandDispatcher<ServerCommandSource> dispatcher;
+    private CommandDispatcher<CommandSourceStack> dispatcher;
 
     @Inject(method = "<init>", at = @At("RETURN"))
-    private void onRegister(CommandManager.RegistrationEnvironment environment, CommandRegistryAccess commandRegistryAccess, CallbackInfo ci) {
+    private void onRegister(Commands.CommandSelection environment, CommandBuildContext commandRegistryAccess, CallbackInfo ci) {
         ToolboxCommand.register(this.dispatcher);
         AliasCommand.register(this.dispatcher);
         CameraCommand.register(this.dispatcher);

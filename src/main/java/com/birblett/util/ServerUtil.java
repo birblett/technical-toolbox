@@ -4,16 +4,14 @@ import com.birblett.TechnicalToolbox;
 import com.birblett.accessor.command.CommandNodeModifier;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.tree.RootCommandNode;
-import net.minecraft.command.DefaultPermissions;
-import net.minecraft.command.permission.Permission;
-import net.minecraft.command.permission.PermissionLevel;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.ServerTask;
-import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
-import net.minecraft.util.WorldSavePath;
+import net.minecraft.server.TickTask;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.permissions.Permissions;
+import net.minecraft.world.level.storage.LevelResource;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
@@ -28,14 +26,14 @@ public class ServerUtil {
      * @return path to a file on within the current world folder
      */
     public static Path getWorldPath(MinecraftServer server) {
-        return server.getSavePath(WorldSavePath.ROOT);
+        return server.getWorldPath(LevelResource.ROOT);
     }
 
     /**
      * @return path to a file on within the current world folder's technical toolbox folder
      */
     public static Path getToolboxPath(MinecraftServer server) {
-        return server.getSavePath(WorldSavePath.ROOT).resolve("technical_toolbox/");
+        return server.getWorldPath(LevelResource.ROOT).resolve("technical_toolbox/");
     }
 
     /**
@@ -72,7 +70,7 @@ public class ServerUtil {
      * @param name   target command
      */
     public static void removeCommandByName(MinecraftServer server, String name) {
-        RootCommandNode<ServerCommandSource> r = server.getCommandManager().getDispatcher().getRoot();
+        RootCommandNode<CommandSourceStack> r = server.getCommands().getDispatcher().getRoot();
         ((CommandNodeModifier) r).technicalToolbox$RemoveStringInstance(name);
         refreshCommandTree(server);
     }
@@ -83,10 +81,10 @@ public class ServerUtil {
      * @param server target server
      */
     public static void refreshCommandTree(MinecraftServer server) {
-        server.send(new ServerTask(server.getTicks(), () -> {
+        server.schedule(new TickTask(server.getTickCount(), () -> {
             try {
-                for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
-                    server.getCommandManager().sendCommandTree(player);
+                for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+                    server.getCommands().sendCommands(player);
                 }
             } catch (NullPointerException e) {
                 TechnicalToolbox.error("Failed to update command tree, please report");
@@ -97,8 +95,8 @@ public class ServerUtil {
     /**
      * Check if command source has admin perms or not.
      */
-    public static boolean hasAdminPerms(ServerCommandSource source) {
-        return source.getPermissions().hasPermission(DefaultPermissions.ADMINS);
+    public static boolean hasAdminPerms(CommandSourceStack source) {
+        return source.permissions().hasPermission(Permissions.COMMANDS_ADMIN);
     }
 
     /**
@@ -106,22 +104,22 @@ public class ServerUtil {
      *
      * @param permission legacy permission level
      */
-    public static boolean permissionLookup(int permission, ServerCommandSource source) {
+    public static boolean permissionLookup(int permission, CommandSourceStack source) {
         return switch (permission) {
-            case 1 -> source.getPermissions().hasPermission(DefaultPermissions.MODERATORS);
-            case 2 -> source.getPermissions().hasPermission(DefaultPermissions.GAMEMASTERS);
-            case 3 -> source.getPermissions().hasPermission(DefaultPermissions.ADMINS);
-            case 4 -> source.getPermissions().hasPermission(DefaultPermissions.OWNERS);
+            case 1 -> source.permissions().hasPermission(Permissions.COMMANDS_MODERATOR);
+            case 2 -> source.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER);
+            case 3 -> source.permissions().hasPermission(Permissions.COMMANDS_ADMIN);
+            case 4 -> source.permissions().hasPermission(Permissions.COMMANDS_OWNER);
             default -> true;
         };
     }
 
-    public static void commandFeedback(CommandContext<ServerCommandSource> context, String message) {
-        context.getSource().sendFeedback(() -> Text.of(message), true);
+    public static void commandFeedback(CommandContext<CommandSourceStack> context, String message) {
+        context.getSource().sendSuccess(() -> Component.nullToEmpty(message), true);
     }
 
-    public static void commandFeedback(CommandContext<ServerCommandSource> context, MutableText message) {
-        context.getSource().sendFeedback(() -> message, true);
+    public static void commandFeedback(CommandContext<CommandSourceStack> context, MutableComponent message) {
+        context.getSource().sendSuccess(() -> message, true);
     }
 
 }

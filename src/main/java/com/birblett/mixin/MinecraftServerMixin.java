@@ -2,7 +2,6 @@ package com.birblett.mixin;
 
 import com.birblett.TechnicalToolbox;
 import com.birblett.util.ServerUtil;
-import net.minecraft.scoreboard.ServerScoreboard;
 import net.minecraft.server.MinecraftServer;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -21,7 +20,7 @@ public class MinecraftServerMixin {
     @Unique
     private boolean configurable = false;
 
-    @Inject(method = "loadWorld", at = @At("HEAD"))
+    @Inject(method = "loadLevel", at = @At("HEAD"))
     private void serverLoaded(CallbackInfo ci) {
         this.configurable = true;
         MinecraftServer server = (MinecraftServer) (Object) this;
@@ -30,7 +29,7 @@ public class MinecraftServerMixin {
         ServerUtil.refreshCommandTree(server);
     }
 
-    @Inject(method = "shutdown", at = @At("HEAD"))
+    @Inject(method = "stopServer", at = @At("HEAD"))
     private void serverStopped(CallbackInfo ci) {
         if (this.configurable) {
             MinecraftServer server = (MinecraftServer) (Object) this;

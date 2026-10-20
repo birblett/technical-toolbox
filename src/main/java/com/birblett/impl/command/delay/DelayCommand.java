@@ -14,61 +14,59 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import com.mojang.brigadier.tree.LiteralCommandNode;
-import net.minecraft.command.CommandSource;
-import net.minecraft.command.DefaultPermissions;
-import net.minecraft.server.command.CommandManager;
-import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Style;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import net.minecraft.ChatFormatting;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
+import net.minecraft.commands.SharedSuggestionProvider;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.Style;
 
 /**
  * Simple non-serialized command scheduler.
  */
 public class DelayCommand {
 
-    public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
-        LiteralCommandNode<ServerCommandSource> node = dispatcher.register(CommandManager.literal(ConfigOptions
+    public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
+        LiteralCommandNode<CommandSourceStack> node = dispatcher.register(Commands.literal(ConfigOptions
                         .DELAY_COMMAND.val())
                 .requires(ServerUtil::hasAdminPerms));
-        dispatcher.register(CommandManager.literal(ConfigOptions
+        dispatcher.register(Commands.literal(ConfigOptions
                         .DELAY_COMMAND.val())
                 .requires(ServerUtil::hasAdminPerms)
-                .then(CommandManager.literal("as")
-                        .then(CommandManager.argument("source", StringArgumentType.string())
-                                .suggests((context, builder) -> CommandSource.suggestMatching(context.getSource().isExecutedByPlayer() ?
+                .then(Commands.literal("as")
+                        .then(Commands.argument("source", StringArgumentType.string())
+                                .suggests((context, builder) -> SharedSuggestionProvider.suggest(context.getSource().isPlayer() ?
                                                 List.of("self", "server") : List.of("server"), builder))
                                 .redirect(node, context -> DelayCommand.optionalArgument(context, "source", String.class))))
-                .then(CommandManager.literal("priority")
-                        .then(CommandManager.argument("priority", IntegerArgumentType.integer())
+                .then(Commands.literal("priority")
+                        .then(Commands.argument("priority", IntegerArgumentType.integer())
                                 .redirect(node, context -> DelayCommand.optionalArgument(context, "priority", Integer.class))))
-                .then(CommandManager.literal("silent")
-                        .then(CommandManager.argument("silent", BoolArgumentType.bool())
+                .then(Commands.literal("silent")
+                        .then(Commands.argument("silent", BoolArgumentType.bool())
                                 .redirect(node, context -> DelayCommand.optionalArgument(context, "silent", Boolean.class))))
-                .then(CommandManager.literal("set")
-                        .then(CommandManager.argument("id", StringArgumentType.word())
-                                .then(CommandManager.argument("delay", LongArgumentType.longArg(1))
-                                        .then(CommandManager.argument("command", StringArgumentType.greedyString())
+                .then(Commands.literal("set")
+                        .then(Commands.argument("id", StringArgumentType.word())
+                                .then(Commands.argument("delay", LongArgumentType.longArg(1))
+                                        .then(Commands.argument("command", StringArgumentType.greedyString())
                                                 .executes(DelayCommand::set)))))
-                .then(CommandManager.literal("proc")
-                        .then(CommandManager.argument("delay", LongArgumentType.longArg(1))
-                                .then(CommandManager.argument("command", StringArgumentType.greedyString())
+                .then(Commands.literal("proc")
+                        .then(Commands.argument("delay", LongArgumentType.longArg(1))
+                                .then(Commands.argument("command", StringArgumentType.greedyString())
                                         .executes(DelayCommand::proc))))
-                .then(CommandManager.literal("list")
+                .then(Commands.literal("list")
                         .executes(DelayCommand::list))
-                .then(CommandManager.literal("remove")
-                        .then(CommandManager.argument("id", StringArgumentType.word())
+                .then(Commands.literal("remove")
+                        .then(Commands.argument("id", StringArgumentType.word())
                                 .suggests(DelayCommand::getIdSuggestions)
                                 .executes(DelayCommand::remove))));
     }
 
-    private static <T> T getOpt(CommandContext<ServerCommandSource> context, String arg, T def, Class<T> clazz) {
+    private static <T> T getOpt(CommandContext<CommandSourceStack> context, String arg, T def, Class<T> clazz) {
         AliasedCommandSource c = (AliasedCommandSource) context.getSource();
         try {
             Object o = c.technicalToolbox$GetOpt(arg);
@@ -78,13 +76,13 @@ public class DelayCommand {
         }
     }
 
-    private static ServerCommandSource optionalArgument(CommandContext<ServerCommandSource> context, String opt, Class<?> clazz) {
+    private static CommandSourceStack optionalArgument(CommandContext<CommandSourceStack> context, String opt, Class<?> clazz) {
         AliasedCommandSource s = (AliasedCommandSource) context.getSource();
         s.technicalToolbox$SetOpt(opt, context.getArgument(opt, clazz));
         return context.getSource();
     }
 
-    private static int set(CommandContext<ServerCommandSource> context) {
+    private static int set(CommandContext<CommandSourceStack> context) {
         String source = DelayCommand.getOpt(context, "source", "self", String.class), id = context.getArgument("id",
                 String.class);
         int priority = DelayCommand.getOpt(context, "priority", 1000, Integer.class);
@@ -92,65 +90,65 @@ public class DelayCommand {
         long delay = context.getArgument("delay", Long.class);
         String command = context.getArgument("command", String.class);
         ((AliasedCommandSource) context.getSource()).technicalToolbox$ResetOpt();
-        MutableText out = ((CommandScheduler) context.getSource().getServer().getSaveProperties().getMainWorldProperties()
-                .getScheduledEvents()).technicalToolbox$AddCommandEvent(command, context.getSource().getWorld().getTime() + delay,
-                id, priority, silent, Objects.equals(source, "server") ? context.getSource().getServer().getCommandSource() :
+        MutableComponent out = ((CommandScheduler) context.getSource().getServer().getWorldData().overworldData()
+                .getScheduledEvents()).technicalToolbox$AddCommandEvent(command, context.getSource().getLevel().getGameTime() + delay,
+                id, priority, silent, Objects.equals(source, "server") ? context.getSource().getServer().createCommandSourceStack() :
                         context.getSource()) ? TextUtils.formattable("Scheduled command \"" + command + "\" with identifier ")
-                .append(TextUtils.formattable(id).setStyle(Style.EMPTY.withColor(Formatting.GREEN))) : TextUtils.formattable("Command" +
-                " with identifier " + id + " already scheduled").setStyle(Style.EMPTY.withColor(Formatting.RED));
-        context.getSource().sendFeedback(() -> out, false);
+                .append(TextUtils.formattable(id).setStyle(Style.EMPTY.withColor(ChatFormatting.GREEN))) : TextUtils.formattable("Command" +
+                " with identifier " + id + " already scheduled").setStyle(Style.EMPTY.withColor(ChatFormatting.RED));
+        context.getSource().sendSuccess(() -> out, false);
         return 0;
     }
 
-    private static int proc(CommandContext<ServerCommandSource> context) {
+    private static int proc(CommandContext<CommandSourceStack> context) {
         String source = DelayCommand.getOpt(context, "source", "self", String.class);
         int priority = DelayCommand.getOpt(context, "priority", 1000, Integer.class);
         boolean silent = DelayCommand.getOpt(context, "silent", false, Boolean.class);
         long delay = context.getArgument("delay", Long.class);
         String command = context.getArgument("command", String.class);
         ((AliasedCommandSource) context.getSource()).technicalToolbox$ResetOpt();
-        ((CommandScheduler) context.getSource().getServer().getSaveProperties().getMainWorldProperties().getScheduledEvents())
-                .technicalToolbox$AddCommandEvent(command, context.getSource().getWorld().getTime() + delay,null, priority, silent,
-                        Objects.equals(source, "server") ? context.getSource().getServer().getCommandSource() : context.getSource());
-        context.getSource().sendFeedback(() -> TextUtils.formattable("Scheduled command \"" + command + "\" with " + delay +
+        ((CommandScheduler) context.getSource().getServer().getWorldData().overworldData().getScheduledEvents())
+                .technicalToolbox$AddCommandEvent(command, context.getSource().getLevel().getGameTime() + delay,null, priority, silent,
+                        Objects.equals(source, "server") ? context.getSource().getServer().createCommandSourceStack() : context.getSource());
+        context.getSource().sendSuccess(() -> TextUtils.formattable("Scheduled command \"" + command + "\" with " + delay +
                 " game tick delay"), false);
         return 0;
     }
 
-    private static int list(CommandContext<ServerCommandSource> context) {
-        CommandScheduler c = (CommandScheduler) context.getSource().getServer().getSaveProperties().getMainWorldProperties()
+    private static int list(CommandContext<CommandSourceStack> context) {
+        CommandScheduler c = (CommandScheduler) context.getSource().getServer().getWorldData().overworldData()
                 .getScheduledEvents();
-        List<Text> commandList = new ArrayList<>();
+        List<Component> commandList = new ArrayList<>();
         for (String key : c.technicalToolbox$GetCommandEventMap().keySet()) {
             CommandEvent event = c.technicalToolbox$GetCommandEventMap().get(key);
-            long timeLeft = event.tick() - context.getSource().getServer().getSaveProperties().getMainWorldProperties().getTime();
-            commandList.add(TextUtils.formattable(key).setStyle(Style.EMPTY.withColor(Formatting.GREEN)).append(TextUtils
-                    .formattable(" | " + timeLeft + " | " + event.command()).setStyle(Style.EMPTY.withColor(Formatting.WHITE))));
+            long timeLeft = event.tick() - context.getSource().getServer().getWorldData().overworldData().getGameTime();
+            commandList.add(TextUtils.formattable(key).setStyle(Style.EMPTY.withColor(ChatFormatting.GREEN)).append(TextUtils
+                    .formattable(" | " + timeLeft + " | " + event.command()).setStyle(Style.EMPTY.withColor(ChatFormatting.WHITE))));
         }
-        for (Text cmd : commandList.reversed()) {
-            context.getSource().sendFeedback(() -> cmd, false);
+        for (Component cmd : commandList.reversed()) {
+            context.getSource().sendSuccess(() -> cmd, false);
         }
         return 0;
     }
 
-    private static CompletableFuture<Suggestions> getIdSuggestions(CommandContext<ServerCommandSource> context, SuggestionsBuilder builder) {
-        return CommandSource.suggestMatching(((CommandScheduler) context.getSource().getServer().getSaveProperties()
-                .getMainWorldProperties().getScheduledEvents()).technicalToolbox$GetCommandEventMap().keySet(), builder);
+    private static CompletableFuture<Suggestions> getIdSuggestions(CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) {
+        return SharedSuggestionProvider.suggest(((CommandScheduler) context.getSource().getServer().getWorldData()
+                .overworldData().getScheduledEvents()).technicalToolbox$GetCommandEventMap().keySet(), builder);
     }
 
-    private static int remove(CommandContext<ServerCommandSource> context) {
-        CommandScheduler c = (CommandScheduler) context.getSource().getServer().getSaveProperties().getMainWorldProperties()
+    private static int remove(CommandContext<CommandSourceStack> context) {
+        CommandScheduler c = (CommandScheduler) context.getSource().getServer().getWorldData().overworldData()
                 .getScheduledEvents();
-        MutableText out;
+        MutableComponent out;
         String id = context.getArgument("id", String.class);
         if (c.technicalToolbox$RemoveCommandEvent(id)) {
             out = TextUtils.formattable("Removed scheduled command with identifier ").append(TextUtils.formattable(id)
-                    .setStyle(Style.EMPTY.withColor(Formatting.GREEN)));
+                    .setStyle(Style.EMPTY.withColor(ChatFormatting.GREEN)));
         } else {
             out = TextUtils.formattable("No scheduled command with identifier \"" + id + "\"").setStyle(Style.EMPTY
-                    .withColor(Formatting.RED));
+                    .withColor(ChatFormatting.RED));
         }
-        context.getSource().sendFeedback(() -> out, false);
+        context.getSource().sendSuccess(() -> out, false);
         return 0;
     }
 

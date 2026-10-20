@@ -5,22 +5,22 @@ import com.birblett.impl.command.alias.language.Operator;
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
-import net.minecraft.command.permission.PermissionPredicate;
-import net.minecraft.scoreboard.ScoreboardCriterion;
-import net.minecraft.server.command.CommandOutput;
-import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.text.Text;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import net.minecraft.commands.CommandSource;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.permissions.PermissionSet;
+import net.minecraft.world.scores.criteria.ObjectiveCriteria;
 
 /**
  * Allows for command aliases to override permission level checks on use and also enable/disable feedback
  */
-@Mixin(ServerCommandSource.class)
+@Mixin(CommandSourceStack.class)
 public class ServerCommandSourceMixin implements CommandSourceModifier {
 
     @Unique
@@ -30,7 +30,7 @@ public class ServerCommandSourceMixin implements CommandSourceModifier {
     @Unique
     private final HashMap<String, String> selectorMap = new HashMap<>();
     @Unique
-    private final HashSet<ScoreboardCriterion> criteria = new HashSet<>();
+    private final HashSet<ObjectiveCriteria> criteria = new HashSet<>();
     @Unique
     private Operator ret = null;
 
@@ -64,13 +64,13 @@ public class ServerCommandSourceMixin implements CommandSourceModifier {
         return this.ret;
     }
 
-    @ModifyReturnValue(method = "getPermissions", at = @At("RETURN"))
-    private PermissionPredicate overridePermissionLevelCheck(PermissionPredicate original) {
-        return this.overridePermissions ? PermissionPredicate.ALL : original;
+    @ModifyReturnValue(method = "permissions", at = @At("RETURN"))
+    private PermissionSet overridePermissionLevelCheck(PermissionSet original) {
+        return this.overridePermissions ? PermissionSet.ALL_PERMISSIONS : original;
     }
 
-    @WrapOperation(method = "sendFeedback", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/command/CommandOutput;sendMessage(Lnet/minecraft/text/Text;)V"))
-    private void maybeShutUp(CommandOutput instance, Text text, Operation<Void> original) {
+    @WrapOperation(method = "sendSuccess", at = @At(value = "INVOKE", target = "Lnet/minecraft/commands/CommandSource;sendSystemMessage(Lnet/minecraft/network/chat/Component;)V"))
+    private void maybeShutUp(CommandSource instance, Component text, Operation<Void> original) {
         if (!this.shutUp) {
             original.call(instance, text);
         }

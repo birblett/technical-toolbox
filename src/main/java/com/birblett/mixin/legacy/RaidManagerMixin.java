@@ -2,21 +2,21 @@ package com.birblett.mixin.legacy;
 
 import com.birblett.impl.config.ConfigOptions;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
-import net.minecraft.advancement.criterion.Criteria;
-import net.minecraft.entity.effect.StatusEffects;
-import net.minecraft.registry.tag.PointOfInterestTypeTags;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.stat.Stats;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.village.raid.Raid;
-import net.minecraft.village.raid.RaidManager;
-import net.minecraft.world.PersistentState;
+import net.minecraft.advancements.CriteriaTriggers;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.stats.Stats;
+import net.minecraft.tags.PoiTypeTags;
 import net.minecraft.world.attribute.EnvironmentAttributes;
-import net.minecraft.world.poi.PointOfInterest;
-import net.minecraft.world.poi.PointOfInterestStorage;
-import net.minecraft.world.rule.GameRules;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.ai.village.poi.PoiManager;
+import net.minecraft.world.entity.ai.village.poi.PoiRecord;
+import net.minecraft.world.entity.raid.Raid;
+import net.minecraft.world.entity.raid.Raids;
+import net.minecraft.world.level.gamerules.GameRules;
+import net.minecraft.world.level.saveddata.SavedData;
+import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -28,65 +28,65 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import java.util.Iterator;
 import java.util.List;
 
-@Mixin(RaidManager.class)
-public abstract class RaidManagerMixin extends PersistentState {
+@Mixin(Raids.class)
+public abstract class RaidManagerMixin extends SavedData {
 
     @Shadow
     @Final
-    private Int2ObjectMap<Raid> raids;
+    private Int2ObjectMap<Raid> raidMap;
     @Shadow
-    protected abstract Raid getOrCreateRaid(ServerWorld world, BlockPos pos);
+    protected abstract Raid getOrCreateRaid(ServerLevel world, BlockPos pos);
 
     @Shadow
-    protected abstract int nextId();
+    protected abstract int getUniqueId();
 
-    @Inject(method = "startRaid", at = @At("HEAD"), cancellable = true)
-    private void startRaid(ServerPlayerEntity player, BlockPos pos, CallbackInfoReturnable<Raid> cir) {
+    @Inject(method = "createOrExtendRaid", at = @At("HEAD"), cancellable = true)
+    private void startRaid(ServerPlayer player, BlockPos pos, CallbackInfoReturnable<Raid> cir) {
         if (ConfigOptions.LEGACY_RAID.val()) {
-            cir.setReturnValue(this.legacyStartRaid(player, player.getEntityWorld()));
+            cir.setReturnValue(this.legacyStartRaid(player, player.level()));
         }
     }
 
     @Unique
-    private Raid legacyStartRaid(ServerPlayerEntity player, ServerWorld world) {
+    private Raid legacyStartRaid(ServerPlayer player, ServerLevel world) {
         if (player.isSpectator()) {
             return null;
-        } else if (world.getGameRules().getValue(GameRules.DISABLE_RAIDS)) {
+        } else if (world.getGameRules().get(GameRules.RAIDS)) {
             return null;
         } else {
-            if (!world.getEnvironmentAttributes().getAttributeValue(EnvironmentAttributes.CAN_START_RAID_GAMEPLAY, player.getBlockPos())) {
+            if (!world.environmentAttributes().getValue(EnvironmentAttributes.CAN_START_RAID, player.blockPosition())) {
                 return null;
             } else {
-                BlockPos blockPos = player.getBlockPos();
-                List<PointOfInterest> list = world.getPointOfInterestStorage().getInCircle((poiType) ->
-                        poiType.isIn(PointOfInterestTypeTags.VILLAGE), blockPos, 64,
-                        PointOfInterestStorage.OccupationStatus.IS_OCCUPIED).toList();
+                BlockPos blockPos = player.blockPosition();
+                List<PoiRecord> list = world.getPoiManager().getInRange((poiType) ->
+                        poiType.is(PoiTypeTags.VILLAGE), blockPos, 64,
+                        PoiManager.Occupancy.IS_OCCUPIED).toList();
                 int i = 0;
-                Vec3d vec3d = Vec3d.ZERO;
-                for(Iterator<PointOfInterest> var8 = list.iterator(); var8.hasNext(); ++i) {
-                    PointOfInterest pointOfInterest = var8.next();
+                Vec3 vec3d = Vec3.ZERO;
+                for(Iterator<PoiRecord> var8 = list.iterator(); var8.hasNext(); ++i) {
+                    PoiRecord pointOfInterest = var8.next();
                     BlockPos blockPos2 = pointOfInterest.getPos();
                     vec3d = vec3d.add(blockPos2.getX(), blockPos2.getY(), blockPos2.getZ());
                 }
-                BlockPos blockPos3 = i > 0 ? BlockPos.ofFloored(vec3d.multiply(1.0 / (double) i)) : blockPos;
-                Raid raid = this.getOrCreateRaid(player.getEntityWorld(), blockPos3);
+                BlockPos blockPos3 = i > 0 ? BlockPos.containing(vec3d.scale(1.0 / (double) i)) : blockPos;
+                Raid raid = this.getOrCreateRaid(player.level(), blockPos3);
                 boolean bl = false;
-                if (!raid.hasStarted()) {
-                    this.raids.put(this.nextId(), raid);
+                if (!raid.isStarted()) {
+                    this.raidMap.put(this.getUniqueId(), raid);
                     bl = true;
-                } else if (raid.getBadOmenLevel() < raid.getMaxAcceptableBadOmenLevel()) {
+                } else if (raid.getRaidOmenLevel() < raid.getMaxRaidOmenLevel()) {
                     bl = true;
                 } else {
-                    player.removeStatusEffect(StatusEffects.BAD_OMEN);
+                    player.removeEffect(MobEffects.BAD_OMEN);
                 }
                 if (bl) {
-                    raid.start(player);
-                    if (!raid.hasSpawned()) {
-                        player.incrementStat(Stats.RAID_TRIGGER);
-                        Criteria.VOLUNTARY_EXILE.trigger(player);
+                    raid.absorbRaidOmen(player);
+                    if (!raid.hasFirstWaveSpawned()) {
+                        player.awardStat(Stats.RAID_TRIGGER);
+                        CriteriaTriggers.RAID_OMEN.trigger(player);
                     }
                 }
-                this.markDirty();
+                this.setDirty();
                 return raid;
             }
         }

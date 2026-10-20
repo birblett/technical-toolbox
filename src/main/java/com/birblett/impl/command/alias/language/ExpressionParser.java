@@ -3,10 +3,9 @@ package com.birblett.impl.command.alias.language;
 import com.birblett.TechnicalToolbox;
 import com.birblett.impl.command.alias.AliasedCommand;
 import com.mojang.brigadier.context.CommandContext;
-import net.minecraft.server.command.ServerCommandSource;
-
 import java.util.*;
 import java.util.regex.Matcher;
+import net.minecraft.commands.CommandSourceStack;
 
 /**
  * Contains methods and values for parsing expressions i.e. for if/let/return statements
@@ -159,7 +158,7 @@ public interface ExpressionParser {
         return inferredType;
     }
 
-    default Operator evaluate(AliasedCommand command, CommandContext<ServerCommandSource> context, Queue<Object> post, LinkedHashMap<String, Variable> variables) {
+    default Operator evaluate(AliasedCommand command, CommandContext<CommandSourceStack> context, Queue<Object> post, LinkedHashMap<String, Variable> variables) {
         Queue<Object> postfix = new LinkedList<>(post);
         Stack<Operator> eval = new Stack<>();
         if (!postfix.isEmpty()) {

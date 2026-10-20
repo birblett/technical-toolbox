@@ -16,17 +16,17 @@ import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.command.CommandSource;
-import net.minecraft.nbt.NbtCompound;
+import net.minecraft.ChatFormatting;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
+import net.minecraft.commands.SharedSuggestionProvider;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtAccounter;
 import net.minecraft.nbt.NbtIo;
-import net.minecraft.nbt.NbtSizeTracker;
-import net.minecraft.server.command.CommandManager;
-import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Style;
-import net.minecraft.text.Text;
-import net.minecraft.util.Colors;
-import net.minecraft.util.Formatting;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.Style;
+import net.minecraft.util.CommonColors;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 
@@ -55,81 +55,81 @@ public class ServerManagerCommand {
     private static final List<String> COPIED_DIRS = List.of("datapacks", "technical_toolbox", "carpet.conf");
     private static String currentWorld = null;
 
-    public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
-        dispatcher.register(CommandManager.literal("server_manager")
+    public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
+        dispatcher.register(Commands.literal("server_manager")
                 .requires(ServerUtil::hasAdminPerms)
-                .then(CommandManager.literal("list")
+                .then(Commands.literal("list")
                         .executes(ServerManagerCommand::list))
-                .then(CommandManager.literal("refresh")
+                .then(Commands.literal("refresh")
                         .executes(ServerManagerCommand::refresh))
-                .then(CommandManager.literal("new_world")
-                        .then(CommandManager.argument("world_name", StringArgumentType.string())
-                                .then(CommandManager.argument("world_seed", LongArgumentType.longArg())
-                                        .then(CommandManager.argument("copy_files", BoolArgumentType.bool())
+                .then(Commands.literal("new_world")
+                        .then(Commands.argument("world_name", StringArgumentType.string())
+                                .then(Commands.argument("world_seed", LongArgumentType.longArg())
+                                        .then(Commands.argument("copy_files", BoolArgumentType.bool())
                                                 .executes(ServerManagerCommand::createNewWorld)))))
-                .then(CommandManager.literal("download_world")
-                        .then(CommandManager.argument("world_name", StringArgumentType.string())
-                                .then(CommandManager.argument("url", StringArgumentType.greedyString())
+                .then(Commands.literal("download_world")
+                        .then(Commands.argument("world_name", StringArgumentType.string())
+                                .then(Commands.argument("url", StringArgumentType.greedyString())
                                         .executes(ServerManagerCommand::downloadWorld))))
-                .then(CommandManager.literal("copy_world")
-                        .then(CommandManager.argument("source", StringArgumentType.string())
+                .then(Commands.literal("copy_world")
+                        .then(Commands.argument("source", StringArgumentType.string())
                                 .suggests((c, b) -> listWorlds(c, b, true))
-                                .then(CommandManager.argument("destination", StringArgumentType.string())
+                                .then(Commands.argument("destination", StringArgumentType.string())
                                         .suggests(ServerManagerCommand::listWorldsWriteable)
                                         .executes(ServerManagerCommand::copyWorld))))
-                .then(CommandManager.literal("copy_configs_and_data")
-                        .then(CommandManager.argument("source", StringArgumentType.string())
+                .then(Commands.literal("copy_configs_and_data")
+                        .then(Commands.argument("source", StringArgumentType.string())
                                 .suggests((c, b) -> listWorlds(c, b, true))
-                                .then(CommandManager.argument("destination", StringArgumentType.string())
+                                .then(Commands.argument("destination", StringArgumentType.string())
                                         .suggests(ServerManagerCommand::listWorldsWriteable)
                                         .executes(ServerManagerCommand::copyConfigsAndData))))
-                .then(CommandManager.literal("delete_world")
-                        .then(CommandManager.argument("world_name", StringArgumentType.string())
+                .then(Commands.literal("delete_world")
+                        .then(Commands.argument("world_name", StringArgumentType.string())
                                 .suggests(ServerManagerCommand::listWorldsWriteable)
                                         .executes(ServerManagerCommand::deleteWorld)))
-                .then(CommandManager.literal("swap_to")
-                        .then(CommandManager.argument("world_name", StringArgumentType.string())
+                .then(Commands.literal("swap_to")
+                        .then(Commands.argument("world_name", StringArgumentType.string())
                                 .suggests((c, b) -> listWorlds(c, b, false))
                                 .executes(ServerManagerCommand::setCurrentWorld)))
-                .then(CommandManager.literal("toggle_lock")
-                        .then(CommandManager.argument("world_name", StringArgumentType.string())
+                .then(Commands.literal("toggle_lock")
+                        .then(Commands.argument("world_name", StringArgumentType.string())
                                 .suggests((c, b) -> listWorlds(c, b, true))
                                 .executes(ServerManagerCommand::toggleLock)))
-                .then(CommandManager.literal("restart")
-                        .then(CommandManager.argument("delay", IntegerArgumentType.integer(0))
+                .then(Commands.literal("restart")
+                        .then(Commands.argument("delay", IntegerArgumentType.integer(0))
                                 .executes(ServerManagerCommand::restart))
                         .executes(ServerManagerCommand::restart))
-                .then(CommandManager.literal("restart_script")
-                        .then(CommandManager.argument("script", StringArgumentType.greedyString())
+                .then(Commands.literal("restart_script")
+                        .then(Commands.argument("script", StringArgumentType.greedyString())
                                 .executes(ServerManagerCommand::getOrSetRestartScript))
                         .executes(ServerManagerCommand::getOrSetRestartScript))
-                .then(CommandManager.literal("configure_toolbox")
-                        .then(CommandManager.argument("world_name", StringArgumentType.string())
+                .then(Commands.literal("configure_toolbox")
+                        .then(Commands.argument("world_name", StringArgumentType.string())
                             .suggests((c, b) -> listWorlds(c, b, false))
-                            .then(CommandManager.argument("config_option", StringArgumentType.string())
+                            .then(Commands.argument("config_option", StringArgumentType.string())
                                     .suggests((context, builder) ->
-                                            CommandSource.suggestMatching(TechnicalToolbox.CONFIG_MANAGER.getAllConfigOptions(), builder))
-                                    .then(CommandManager.argument("config_value", StringArgumentType.string())
+                                            SharedSuggestionProvider.suggest(TechnicalToolbox.CONFIG_MANAGER.getAllConfigOptions(), builder))
+                                    .then(Commands.argument("config_value", StringArgumentType.string())
                                             .requires(ServerUtil::hasAdminPerms)
                                             .suggests(ToolboxCommand::configSuggestions)
                                             .executes((ServerManagerCommand::setConfig)))
                                     .executes(ServerManagerCommand::getConfig)))));
     }
 
-    private static int list(CommandContext<ServerCommandSource> context) {
+    private static int list(CommandContext<CommandSourceStack> context) {
         ServerUtil.commandFeedback(context, "Worlds:");
         for (Path path : ServerManager.WORLD_PATHS) {
-            MutableText t = TextUtils.formattable(("  ") + path);
+            MutableComponent t = TextUtils.formattable(("  ") + path);
             String s = getCurrentWorld(context);
             String name = path.toString();
             if (ServerManager.isWorldLocked(name)) {
-                t = t.withColor(Colors.LIGHT_RED).append(" \uD83D\uDD12");
+                t = t.withColor(CommonColors.SOFT_RED).append(" \uD83D\uDD12");
             }
             if (name.equals(s)) {
-                t.append(TextUtils.formattable(" ★").withColor(Colors.GREEN));
+                t.append(TextUtils.formattable(" ★").withColor(CommonColors.GREEN));
             }
             if (!s.equals(ServerManagerCommand.currentWorld) && name.equals(ServerManagerCommand.currentWorld)) {
-                t.append(TextUtils.formattable(" ✪").withColor(Colors.YELLOW));
+                t.append(TextUtils.formattable(" ✪").withColor(CommonColors.YELLOW));
             }
             ServerUtil.commandFeedback(context, t);
         }
@@ -137,25 +137,25 @@ public class ServerManagerCommand {
         return 1;
     }
 
-    private static int refresh(CommandContext<ServerCommandSource> context) {
+    private static int refresh(CommandContext<CommandSourceStack> context) {
         ServerManager.refreshWorlds();
-        context.getSource().sendFeedback(() -> TextUtils.formattable("Refreshed worlds!").withColor(Colors.GREEN), true);
+        context.getSource().sendSuccess(() -> TextUtils.formattable("Refreshed worlds!").withColor(CommonColors.GREEN), true);
         return list(context);
     }
 
-    private static int createNewWorld(CommandContext<ServerCommandSource> context) {
+    private static int createNewWorld(CommandContext<CommandSourceStack> context) {
         String worldName = context.getArgument("world_name", String.class);
         long seed = context.getArgument("world_seed", Long.class);
 
         if (Files.exists(ServerUtil.getBasePath().resolve(worldName))) {
-            context.getSource().sendError(Text.of("Directory \"" + worldName + "\" already exists"));
+            context.getSource().sendFailure(Component.nullToEmpty("Directory \"" + worldName + "\" already exists"));
             return 0;
         }
 
         Path newWorld = null;
 
         try {
-            NbtCompound nbt = NbtIo.readCompressed(ServerUtil.getWorldPath(context.getSource().getServer()).resolve("level.dat"), NbtSizeTracker.ofUnlimitedBytes());
+            CompoundTag nbt = NbtIo.readCompressed(ServerUtil.getWorldPath(context.getSource().getServer()).resolve("level.dat"), NbtAccounter.unlimitedHeap());
 
             if (nbt == null) {
                 throw new RuntimeException();
@@ -163,9 +163,9 @@ public class ServerManagerCommand {
 
             newWorld = Files.createTempDirectory(ServerUtil.getBasePath(), "temp_" + worldName);
 
-            NbtCompound newProperties = nbt.copy();
-            NbtCompound data = nbt.get("Data", NbtCompound.CODEC).orElse(new NbtCompound());
-            NbtCompound worldGen = data.get("WorldGenSettings", NbtCompound.CODEC).orElse(new NbtCompound());
+            CompoundTag newProperties = nbt.copy();
+            CompoundTag data = nbt.read("Data", CompoundTag.CODEC).orElse(new CompoundTag());
+            CompoundTag worldGen = data.read("WorldGenSettings", CompoundTag.CODEC).orElse(new CompoundTag());
             worldGen.putLong("seed", seed);
             data.put("WorldGenSettings", worldGen);
             data.putString("LevelName", worldName);
@@ -192,14 +192,14 @@ public class ServerManagerCommand {
                     throw new RuntimeException(ex);
                 }
             }
-            context.getSource().sendError(Text.of("Something went wrong creating the world: " + e));
+            context.getSource().sendFailure(Component.nullToEmpty("Something went wrong creating the world: " + e));
             return 0;
         }
 
         return ServerManagerCommand.list(context);
     }
 
-    private static int downloadWorld(CommandContext<ServerCommandSource> context) {
+    private static int downloadWorld(CommandContext<CommandSourceStack> context) {
         String worldName = context.getArgument("world_name", String.class);
         String urlString = context.getArgument("url", String.class);
         Runnable download = () -> {
@@ -267,20 +267,20 @@ public class ServerManagerCommand {
                         throw new RuntimeException(ex);
                     }
                 }
-                context.getSource().sendError(Text.of("Something went wrong downloading the world: " + e));
+                context.getSource().sendFailure(Component.nullToEmpty("Something went wrong downloading the world: " + e));
             }
         };
         (new Thread(download)).start();
         return 0;
     }
 
-    private static CompletableFuture<Suggestions> listWorlds(CommandContext<ServerCommandSource> context, SuggestionsBuilder builder, boolean includeCurrent) {
-        String current = context.getSource().getServer().getSaveProperties().getLevelName();
-        return CommandSource.suggestMatching(ServerManager.WORLD_PATHS.stream().map(Path::toString).filter(s -> includeCurrent || !current.equals(s)), builder);
+    private static CompletableFuture<Suggestions> listWorlds(CommandContext<CommandSourceStack> context, SuggestionsBuilder builder, boolean includeCurrent) {
+        String current = context.getSource().getServer().getWorldData().getLevelName();
+        return SharedSuggestionProvider.suggest(ServerManager.WORLD_PATHS.stream().map(Path::toString).filter(s -> includeCurrent || !current.equals(s)), builder);
     }
 
-    private static CompletableFuture<Suggestions> listWorldsWriteable(CommandContext<ServerCommandSource> context, SuggestionsBuilder builder) {
-        String current = context.getSource().getServer().getSaveProperties().getLevelName();
+    private static CompletableFuture<Suggestions> listWorldsWriteable(CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) {
+        String current = context.getSource().getServer().getWorldData().getLevelName();
         String source;
         try {
             source = context.getArgument("source", String.class);
@@ -288,78 +288,78 @@ public class ServerManagerCommand {
             source = "";
         }
         String checkedSource = source;
-        return CommandSource.suggestMatching(ServerManager.WORLD_PATHS.stream().map(Path::toString)
+        return SharedSuggestionProvider.suggest(ServerManager.WORLD_PATHS.stream().map(Path::toString)
                 .filter(s -> !current.equals(s) && !checkedSource.equals(s) && !ServerManager.isWorldLocked(s)) , builder);
     }
 
-    private static CompletableFuture<Suggestions> listWorldsNoSource(CommandContext<ServerCommandSource> context, SuggestionsBuilder builder) {
+    private static CompletableFuture<Suggestions> listWorldsNoSource(CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) {
         String dest = context.getArgument("source", String.class);
-        return CommandSource.suggestMatching(ServerManager.WORLD_PATHS.stream().map(Path::toString).filter(s -> !dest.equals(s)), builder);
+        return SharedSuggestionProvider.suggest(ServerManager.WORLD_PATHS.stream().map(Path::toString).filter(s -> !dest.equals(s)), builder);
     }
 
-    private static int copyWorld(CommandContext<ServerCommandSource> context) {
+    private static int copyWorld(CommandContext<CommandSourceStack> context) {
         Path source = ServerUtil.getBasePath().resolve(context.getArgument("source", String.class));
         Path dest = ServerUtil.getBasePath().resolve(context.getArgument("destination", String.class));
         if (!Files.exists(source)) {
-            context.getSource().sendError(Text.of("World \"" + source + "\" not found"));
+            context.getSource().sendFailure(Component.nullToEmpty("World \"" + source + "\" not found"));
             return 0;
         }
         if (Files.exists(dest)) {
-            context.getSource().sendError(Text.of("Directory \"" + dest + "\" already exists"));
+            context.getSource().sendFailure(Component.nullToEmpty("Directory \"" + dest + "\" already exists"));
             return 0;
         }
         try {
             FileUtils.copyDirectory(new File(source.toUri()), new File(dest.toUri()));
         } catch (IOException e) {
-            context.getSource().sendError(Text.of("Failed to create copy of \"" + source + "\": " + e));
+            context.getSource().sendFailure(Component.nullToEmpty("Failed to create copy of \"" + source + "\": " + e));
         }
         ServerManager.refreshWorlds();
         return list(context);
     }
 
-    private static int deleteWorld(CommandContext<ServerCommandSource> context) {
+    private static int deleteWorld(CommandContext<CommandSourceStack> context) {
         String name = context.getArgument("world_name", String.class);
         Path world = ServerUtil.getBasePath().resolve(name);
         if (!Files.exists(world)) {
-            context.getSource().sendError(Text.of("World \"" + name + "\" not found"));
+            context.getSource().sendFailure(Component.nullToEmpty("World \"" + name + "\" not found"));
             return 0;
         }
-        if (context.getSource().getServer().getSaveProperties().getLevelName().equals(name)) {
-            context.getSource().sendError(Text.of("Can't delete the active world"));
+        if (context.getSource().getServer().getWorldData().getLevelName().equals(name)) {
+            context.getSource().sendFailure(Component.nullToEmpty("Can't delete the active world"));
             return 0;
         }
         if (ServerManager.isWorldLocked(name)) {
-            context.getSource().sendError(Text.of("World \"" + name + "\" is locked and can't be modified"));
+            context.getSource().sendFailure(Component.nullToEmpty("World \"" + name + "\" is locked and can't be modified"));
             return 0;
         }
         try {
             FileUtils.deleteDirectory(new File(world.toUri()));
             ServerUtil.commandFeedback(context, "Deleted world \"" + name + "\"");
         } catch (IOException e) {
-            context.getSource().sendError(Text.of("Failed to delete world \"" + world + "\": " + e));
+            context.getSource().sendFailure(Component.nullToEmpty("Failed to delete world \"" + world + "\": " + e));
             return 0;
         }
         ServerManager.refreshWorlds();
         return list(context);
     }
 
-    private static int copyConfigsAndData(CommandContext<ServerCommandSource> context) {
+    private static int copyConfigsAndData(CommandContext<CommandSourceStack> context) {
         Path dest = ServerUtil.getBasePath().resolve(context.getArgument("destination", String.class));
         Path source = ServerUtil.getBasePath().resolve(context.getArgument("source", String.class));
         Path t;
         if (!Files.exists(t = dest) || !Files.exists(t = source)) {
-            context.getSource().sendError(Text.of("World \"" + t + "\" not found"));
+            context.getSource().sendFailure(Component.nullToEmpty("World \"" + t + "\" not found"));
             return 0;
         }
         if (ServerManager.isWorldLocked(dest.toString())) {
-            context.getSource().sendError(Text.of("World \"" + t + "\" is locked and can't be modified"));
+            context.getSource().sendFailure(Component.nullToEmpty("World \"" + t + "\" is locked and can't be modified"));
             return 0;
         }
         copyDirs(context, dest, source);
         return 1;
     }
 
-    private static int setCurrentWorld(CommandContext<ServerCommandSource> context) {
+    private static int setCurrentWorld(CommandContext<CommandSourceStack> context) {
         String name = getWorld(context);
         if (name == null) {
             return 0;
@@ -371,13 +371,13 @@ public class ServerManagerCommand {
             ServerUtil.commandFeedback(context, "Server world set to \"" + name + "\", will be applied on restart");
             ServerManagerCommand.currentWorld = name;
         } catch (IOException e) {
-            context.getSource().sendError(Text.of("Failed to change default world: " + e));
+            context.getSource().sendFailure(Component.nullToEmpty("Failed to change default world: " + e));
             return 0;
         }
         return list(context);
     }
 
-    private static int toggleLock(CommandContext<ServerCommandSource> context) {
+    private static int toggleLock(CommandContext<CommandSourceStack> context) {
         String name = getWorld(context);
         if (name == null) {
             return 0;
@@ -386,23 +386,23 @@ public class ServerManagerCommand {
         return list(context);
     }
 
-    private static int restart(CommandContext<ServerCommandSource> context) {
+    private static int restart(CommandContext<CommandSourceStack> context) {
         String script = ServerManager.getValue("restart_script", String.class, "./start.sh");
         try {
             int delay = context.getArgument("delay", Integer.class);
         } catch (Exception e) {
             try {
                 Runtime.getRuntime().exec(new String[]{ script }, null);
-                TechnicalToolbox.log("{} restarted the server via server_manager", context.getSource().getName());
-                context.getSource().getServer().stop(false);
+                TechnicalToolbox.log("{} restarted the server via server_manager", context.getSource().getTextName());
+                context.getSource().getServer().halt(false);
             } catch (IOException ex) {
-                context.getSource().sendError(Text.of("Encountered an error restarting the server: " + ex));
+                context.getSource().sendFailure(Component.nullToEmpty("Encountered an error restarting the server: " + ex));
             }
         }
         return 0;
     }
 
-    private static int getOrSetRestartScript(CommandContext<ServerCommandSource> context) {
+    private static int getOrSetRestartScript(CommandContext<CommandSourceStack> context) {
         try {
             String script = context.getArgument("path", String.class);
             ServerManager.getOpt("restart_script").setValue(script);
@@ -414,7 +414,7 @@ public class ServerManagerCommand {
         return 0;
     }
 
-    private static void copyDirs(CommandContext<ServerCommandSource> context, Path newWorld, Path source) {
+    private static void copyDirs(CommandContext<CommandSourceStack> context, Path newWorld, Path source) {
         for (String dir : COPIED_DIRS) {
             try {
                 File p = new File(source.resolve(dir).toUri());
@@ -429,13 +429,13 @@ public class ServerManagerCommand {
         }
     }
 
-    private static int setConfig(CommandContext<ServerCommandSource> context) {
+    private static int setConfig(CommandContext<CommandSourceStack> context) {
         String name = getWorld(context);
         if (name == null) {
             return 1;
         }
         if (name.equals(getCurrentWorld(context))) {
-            context.getSource().sendError(Text.of("Please use /toolbox config to configure the current world"));
+            context.getSource().sendFailure(Component.nullToEmpty("Please use /toolbox config to configure the current world"));
             return 1;
         }
         String option = context.getArgument("config_option", String.class);
@@ -443,24 +443,24 @@ public class ServerManagerCommand {
         ConfigManager m = getTemporaryConfig(ServerUtil.getBasePath().resolve(name));
         if (m.getAllConfigOptions().contains(option)) {
             ConfigOption<?> c = m.get(option);
-            Text out = c.setFromString(value, null);
+            Component out = c.setFromString(value, null);
             if (out != null) {
-                context.getSource().sendError(out);
+                context.getSource().sendFailure(out);
                 return 1;
             } else {
-                context.getSource().sendFeedback(() -> TextUtils.formattable("Successfully set value ").append(
-                        TextUtils.formattable(value).setStyle(Style.EMPTY.withColor(Formatting.GREEN))).append(
+                context.getSource().sendSuccess(() -> TextUtils.formattable("Successfully set value ").append(
+                        TextUtils.formattable(value).setStyle(Style.EMPTY.withColor(ChatFormatting.GREEN))).append(
                         TextUtils.formattable(" for option " + option + " on world \"" + name + "\"")), true);
                 m.writeConfigs(ServerUtil.getBasePath().resolve(name + "/technical_toolbox"));
                 return 1;
             }
         } else {
-            context.getSource().sendError(TextUtils.formattable("No config option with name \"" + option + "\""));
+            context.getSource().sendFailure(TextUtils.formattable("No config option with name \"" + option + "\""));
             return 0;
         }
     }
 
-    private static int getConfig(CommandContext<ServerCommandSource> context) {
+    private static int getConfig(CommandContext<CommandSourceStack> context) {
         String name = getWorld(context);
         if (name == null) {
             return 1;
@@ -469,9 +469,9 @@ public class ServerManagerCommand {
         ConfigManager m = getTemporaryConfig(ServerUtil.getBasePath().resolve(name));
         if (m.getAllConfigOptions().contains(option)) {
             ConfigOption<?> c = m.get(option);
-            context.getSource().sendFeedback(c::getText, true);
+            context.getSource().sendSuccess(c::getText, true);
         } else {
-            context.getSource().sendError(TextUtils.formattable("No config option with name \"" + option + "\""));
+            context.getSource().sendFailure(TextUtils.formattable("No config option with name \"" + option + "\""));
         }
         return 0;
     }
@@ -484,18 +484,18 @@ public class ServerManagerCommand {
         return m;
     }
 
-    private static String getWorld(CommandContext<ServerCommandSource> context) {
+    private static String getWorld(CommandContext<CommandSourceStack> context) {
         String name = context.getArgument("world_name", String.class);
         Path path = ServerUtil.getBasePath().resolve(name);
         if (!Files.exists(path)) {
-            context.getSource().sendError(Text.of("World directory \"" + path + "\" not found"));
+            context.getSource().sendFailure(Component.nullToEmpty("World directory \"" + path + "\" not found"));
             return null;
         }
         return name;
     }
 
-    private static String getCurrentWorld(CommandContext<ServerCommandSource> context) {
-        String s = context.getSource().getServer().getSaveProperties().getLevelName();
+    private static String getCurrentWorld(CommandContext<CommandSourceStack> context) {
+        String s = context.getSource().getServer().getWorldData().getLevelName();
         if (ServerManagerCommand.currentWorld == null) {
             ServerManagerCommand.currentWorld = s;
         }

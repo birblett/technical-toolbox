@@ -41,7 +41,7 @@ public class AliasManager {
         this.readAliases(server);
         for (AliasedCommand aliasedCommand : AliasManager.ALIASES.values()) {
             try {
-                aliasedCommand.register(server.getCommandSource().getDispatcher());
+                aliasedCommand.register(server.createCommandSourceStack().dispatcher());
             } catch (Exception e) {
                 TechnicalToolbox.error("Something went wrong with compiling alias {}", aliasedCommand.getAlias());
             }

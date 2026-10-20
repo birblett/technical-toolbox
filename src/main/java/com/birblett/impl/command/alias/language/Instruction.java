@@ -5,16 +5,15 @@ import com.birblett.accessor.command.CommandSourceModifier;
 import com.birblett.accessor.command.delay.CommandScheduler;
 import com.birblett.impl.command.alias.AliasedCommand;
 import com.mojang.brigadier.context.CommandContext;
-import net.minecraft.server.command.ServerCommandSource;
-
 import java.util.*;
+import net.minecraft.commands.CommandSourceStack;
 
 /**
  * Basic interface for all instructions - returns -1 by default on execution, basically a no-op.
  */
 public interface Instruction {
 
-    default int execute(AliasedCommand aliasedCommand, CommandContext<ServerCommandSource> context, LinkedHashMap<String, Variable> variables) {
+    default int execute(AliasedCommand aliasedCommand, CommandContext<CommandSourceStack> context, LinkedHashMap<String, Variable> variables) {
         return -1;
     }
 
@@ -26,7 +25,7 @@ public interface Instruction {
     record Command(String command) implements Instruction {
 
         @Override
-        public int execute(AliasedCommand aliasedCommand, CommandContext<ServerCommandSource> context, LinkedHashMap<String, Variable> variables) {
+        public int execute(AliasedCommand aliasedCommand, CommandContext<CommandSourceStack> context, LinkedHashMap<String, Variable> variables) {
             String cmd = this.command;
             for (String var : variables.keySet()) {
                 cmd = cmd.replaceAll("\\{\\$" + var + "}", variables.get(var).value().toString());
@@ -104,7 +103,7 @@ public interface Instruction {
         }
 
         @Override
-        public int execute(AliasedCommand aliasedCommand, CommandContext<ServerCommandSource> context, LinkedHashMap<String, Variable> variables) {
+        public int execute(AliasedCommand aliasedCommand, CommandContext<CommandSourceStack> context, LinkedHashMap<String, Variable> variables) {
             Operator o = this.evaluate(aliasedCommand, context, this.post, variables);
             if (!variables.containsKey(this.assignVar)) {
                 variables.put(this.assignVar, new Variable(new Variable.Definition(this.assignVar, AliasConstants.INV_VALUE_MAP
@@ -137,7 +136,7 @@ public interface Instruction {
         }
 
         @Override
-        public int execute(AliasedCommand aliasedCommand, CommandContext<ServerCommandSource> context, LinkedHashMap<String, Variable> variables) {
+        public int execute(AliasedCommand aliasedCommand, CommandContext<CommandSourceStack> context, LinkedHashMap<String, Variable> variables) {
             return this.jumpTo;
         }
 
@@ -169,7 +168,7 @@ public interface Instruction {
         }
 
         @Override
-        public int execute(AliasedCommand aliasedCommand, CommandContext<ServerCommandSource> context, LinkedHashMap<String, Variable> variables) {
+        public int execute(AliasedCommand aliasedCommand, CommandContext<CommandSourceStack> context, LinkedHashMap<String, Variable> variables) {
             Operator o = this.evaluate(aliasedCommand, context, this.post, variables);
             if (o instanceof Operator.NumberOperator n) {
                 long value = (long) n.getValue();
@@ -244,7 +243,7 @@ public interface Instruction {
         }
 
         @Override
-        public int execute(AliasedCommand aliasedCommand, CommandContext<ServerCommandSource> context, LinkedHashMap<String, Variable> variables) {
+        public int execute(AliasedCommand aliasedCommand, CommandContext<CommandSourceStack> context, LinkedHashMap<String, Variable> variables) {
             Operator l = this.evaluate(aliasedCommand, context, this.left, variables);
             Operator r = this.evaluate(aliasedCommand, context, this.right, variables);
             return l.compare(this.cmp, r) ? -1 : this.jumpTo;
@@ -281,7 +280,7 @@ public interface Instruction {
         }
 
         @Override
-        public int execute(AliasedCommand aliasedCommand, CommandContext<ServerCommandSource> context, LinkedHashMap<String, Variable> variables) {
+        public int execute(AliasedCommand aliasedCommand, CommandContext<CommandSourceStack> context, LinkedHashMap<String, Variable> variables) {
             boolean failSilent = aliasedCommand.getFailSilent();
             aliasedCommand.setFailSilent(false);
             String cmd = this.commandString;
@@ -356,7 +355,7 @@ public interface Instruction {
         }
 
         @Override
-        public int execute(AliasedCommand aliasedCommand, CommandContext<ServerCommandSource> context, LinkedHashMap<String, Variable> variables) {
+        public int execute(AliasedCommand aliasedCommand, CommandContext<CommandSourceStack> context, LinkedHashMap<String, Variable> variables) {
             boolean failSilent = aliasedCommand.getFailSilent();
             aliasedCommand.setFailSilent(false);
             String cmd = this.commandString;
@@ -393,7 +392,7 @@ public interface Instruction {
         }
 
         @Override
-        public int execute(AliasedCommand aliasedCommand, CommandContext<ServerCommandSource> context, LinkedHashMap<String, Variable> variables) {
+        public int execute(AliasedCommand aliasedCommand, CommandContext<CommandSourceStack> context, LinkedHashMap<String, Variable> variables) {
             if (this.inferredType >= 0) {
                 Operator o = this.evaluate(aliasedCommand, context, this.post, variables);
                 ((CommandSourceModifier) context.getSource()).technicalToolbox$setReturnValue(o);
@@ -449,7 +448,7 @@ public interface Instruction {
         }
 
         @Override
-        public int execute(AliasedCommand aliasedCommand, CommandContext<ServerCommandSource> context, LinkedHashMap<String, Variable> variables) {
+        public int execute(AliasedCommand aliasedCommand, CommandContext<CommandSourceStack> context, LinkedHashMap<String, Variable> variables) {
             Operator o = ((CommandSourceModifier) context.getSource()).technicalToolbox$getReturnValue();
             if (o == null) {
                 o = new Operator.NumberOperator(0);
