@@ -22,7 +22,7 @@ import java.util.LinkedHashMap;
 import java.util.PriorityQueue;
 
 @Mixin(TimerQueue.class)
-public class TimerMixin<T> implements CommandScheduler {
+public class TimerQueueMixin<T> implements CommandScheduler {
 
     @Unique
     private final PriorityQueue<CommandEvent> scheduledCommands = new PriorityQueue<>((a, b) -> a.tick() - b.tick() == 0 ? a.priority() -

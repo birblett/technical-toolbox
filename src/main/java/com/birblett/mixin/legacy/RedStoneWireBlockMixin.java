@@ -12,7 +12,7 @@ import org.spongepowered.asm.mixin.injection.At;
  * Re-introduces update skipping if config option is enabled; see {@link ConfigOptions#LEGACY_TRAPDOOR_UPDATE_SKIPPING}
  */
 @Mixin(RedStoneWireBlock.class)
-public class RedstoneWireBlockMixin {
+public class RedStoneWireBlockMixin {
 
     @ModifyExpressionValue(method = "getConnectingSide(Lnet/minecraft/world/level/BlockGetter;Lnet/minecraft/core/BlockPos;Lnet/minecraft/core/Direction;Z)Lnet/minecraft/world/level/block/state/properties/RedstoneSide;", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/block/state/BlockState;getBlock()Lnet/minecraft/world/level/block/Block;"))
     private Block returnAirIfSkipping(Block b) {

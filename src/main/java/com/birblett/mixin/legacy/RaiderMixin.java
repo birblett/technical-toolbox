@@ -28,7 +28,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * See {@link ConfigOptions#LEGACY_RAID}
  */
 @Mixin(Raider.class)
-public class RaiderEntityMixin {
+public class RaiderMixin {
 
     @Inject(method = "isCaptain", at = @At("HEAD"), cancellable = true)
     private void disableCaptainPredicateForLoot(CallbackInfoReturnable<Boolean> cir) {

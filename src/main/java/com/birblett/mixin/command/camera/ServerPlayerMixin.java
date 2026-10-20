@@ -31,7 +31,7 @@ import java.util.Set;
  * Allows player to swap to and from camera mode, and also handles some configured functionalities
  */
 @Mixin(ServerPlayer.class)
-public class ServerPlayerEntityMixin implements CameraInterface {
+public class ServerPlayerMixin implements CameraInterface {
 
     @Unique
     private boolean isCamera = false;

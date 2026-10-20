@@ -22,7 +22,7 @@ import net.minecraft.world.entity.Entity;
  * Handle some camera-related configured functionalities
  */
 @Mixin(ServerGamePacketListenerImpl.class)
-public class ServerPlayNetworkHandlerMixin {
+public class ServerGamePacketListenerImplMixin {
 
     @Shadow
     public ServerPlayer player;

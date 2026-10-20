@@ -11,7 +11,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(EndCrystal.class)
-public class EndCrystalEntityMixin {
+public class EndCrystalMixin {
 
     @Inject(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/boss/enderdragon/EndCrystal;applyEffectsFromBlocks()V"), cancellable = true)
     private void oldEndCrystalLogic(CallbackInfo ci) {

@@ -16,7 +16,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * {@link ConfigOptions#LEGACY_RAID}
  */
 @Mixin(BadOmenMobEffect.class)
-public class BadOmenStatusEffectMixin {
+public class BadOmenMobEffectMixin {
 
     @Inject(method = "applyEffectTick", at = @At("HEAD"), cancellable = true)
     private void instantRaidProc(ServerLevel world, LivingEntity entity, int amplifier, CallbackInfoReturnable<Boolean> cir) {

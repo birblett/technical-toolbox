@@ -23,9 +23,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * {@link ConfigOptions#FEATURE_COPPER_BULB_NO_POWERED_UPDATES}.
  */
 @Mixin(CopperBulbBlock.class)
-public abstract class BulbBlockMixin extends Block {
+public abstract class CopperBulbBlockMixin extends Block {
 
-    public BulbBlockMixin(Properties settings) {
+    public CopperBulbBlockMixin(Properties settings) {
         super(settings);
     }
 

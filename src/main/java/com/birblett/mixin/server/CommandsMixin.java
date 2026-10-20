@@ -16,7 +16,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Environment(EnvType.SERVER)
 @Mixin(Commands.class)
-public class CommandManagerMixin {
+public class CommandsMixin {
 
     @Shadow
     @Final

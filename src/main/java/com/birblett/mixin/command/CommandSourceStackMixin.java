@@ -21,7 +21,7 @@ import net.minecraft.world.scores.criteria.ObjectiveCriteria;
  * Allows for command aliases to override permission level checks on use and also enable/disable feedback
  */
 @Mixin(CommandSourceStack.class)
-public class ServerCommandSourceMixin implements CommandSourceModifier {
+public class CommandSourceStackMixin implements CommandSourceModifier {
 
     @Unique
     private boolean overridePermissions = false;

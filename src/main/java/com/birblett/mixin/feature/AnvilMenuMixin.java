@@ -18,7 +18,7 @@ import net.minecraft.world.item.enchantment.Enchantment;
  * Allows different protection enchantments to be combined. See {@link ConfigOptions#LEGACY_PROTECTION_COMPATIBILITY}
  */
 @Mixin(AnvilMenu.class)
-public class AnvilScreenHandlerMixin {
+public class AnvilMenuMixin {
 
     @Unique
     private static final Identifier PROTECTION_ID = Identifier.parse("exclusive_set/armor");

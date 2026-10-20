@@ -22,7 +22,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * Registers some custom commands. Aliases and camera command are registered on-demand as well.
  */
 @Mixin(Commands.class)
-public class CommandManagerMixin {
+public class CommandsMixin {
 
     @Shadow
     @Final

@@ -29,7 +29,7 @@ import java.util.Iterator;
 import java.util.List;
 
 @Mixin(Raids.class)
-public abstract class RaidManagerMixin extends SavedData {
+public abstract class RaidsMixin extends SavedData {
 
     @Shadow
     @Final

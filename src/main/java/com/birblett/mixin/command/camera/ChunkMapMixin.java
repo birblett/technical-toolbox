@@ -14,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * Prevents camera mode players from generating chunks if option is disabled
  */
 @Mixin(ChunkMap.class)
-public class ServerChunkLoadingManagerMixin {
+public class ChunkMapMixin {
 
     @Inject(method = "skipPlayer", at = @At("RETURN"), cancellable = true)
     protected void cameraGeneratesChunks(ServerPlayer player, CallbackInfoReturnable<Boolean> cir) {

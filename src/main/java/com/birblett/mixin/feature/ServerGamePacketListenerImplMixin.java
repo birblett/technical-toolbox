@@ -11,7 +11,7 @@ import org.spongepowered.asm.mixin.injection.At;
  * {@link ConfigOptions#FEATURE_SPEED_LIMIT_ELYTRA}, and {@link ConfigOptions#FEATURE_SPEED_LIMIT_VEHICLE}
  */
 @Mixin(ServerGamePacketListenerImpl.class)
-public class ServerPlayNetworkHandlerMixin {
+public class ServerGamePacketListenerImplMixin {
 
     /**
      * Override the regular speed limit, default 100.

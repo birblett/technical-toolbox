@@ -8,7 +8,7 @@ import java.util.HashMap;
 import net.minecraft.commands.CommandSourceStack;
 
 @Mixin(CommandSourceStack.class)
-public class ServerCommandSourceMixin implements AliasedCommandSource {
+public class CommandSourceStackMixin implements AliasedCommandSource {
 
     @Unique
     private final HashMap<String, Object> commandOptions = new HashMap<>();
