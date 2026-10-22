@@ -480,8 +480,7 @@ public class AliasedCommand {
                 i = out - 1;
             }
             if (this.wait != 0) {
-                CommandScheduler c = (CommandScheduler) context.getSource().getServer().getWorldData().overworldData()
-                        .getScheduledEvents();
+                CommandScheduler c = (CommandScheduler) context.getSource().getServer().getScheduledEvents();
                 c.technicalToolbox$addScheduledAlias(this, context.getSource().getLevel().getGameTime() + this.wait, context,
                         i + 1, variableDefinitions);
                 this.wait = 0;

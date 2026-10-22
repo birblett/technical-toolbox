@@ -90,8 +90,8 @@ public class DelayCommand {
         long delay = context.getArgument("delay", Long.class);
         String command = context.getArgument("command", String.class);
         ((AliasedCommandSource) context.getSource()).technicalToolbox$ResetOpt();
-        MutableComponent out = ((CommandScheduler) context.getSource().getServer().getWorldData().overworldData()
-                .getScheduledEvents()).technicalToolbox$AddCommandEvent(command, context.getSource().getLevel().getGameTime() + delay,
+        MutableComponent out = ((CommandScheduler) context.getSource().getServer().getScheduledEvents())
+                .technicalToolbox$AddCommandEvent(command, context.getSource().getLevel().getGameTime() + delay,
                 id, priority, silent, Objects.equals(source, "server") ? context.getSource().getServer().createCommandSourceStack() :
                         context.getSource()) ? TextUtils.formattable("Scheduled command \"" + command + "\" with identifier ")
                 .append(TextUtils.formattable(id).setStyle(Style.EMPTY.withColor(ChatFormatting.GREEN))) : TextUtils.formattable("Command" +
@@ -107,7 +107,7 @@ public class DelayCommand {
         long delay = context.getArgument("delay", Long.class);
         String command = context.getArgument("command", String.class);
         ((AliasedCommandSource) context.getSource()).technicalToolbox$ResetOpt();
-        ((CommandScheduler) context.getSource().getServer().getWorldData().overworldData().getScheduledEvents())
+        ((CommandScheduler) context.getSource().getServer().getScheduledEvents())
                 .technicalToolbox$AddCommandEvent(command, context.getSource().getLevel().getGameTime() + delay,null, priority, silent,
                         Objects.equals(source, "server") ? context.getSource().getServer().createCommandSourceStack() : context.getSource());
         context.getSource().sendSuccess(() -> TextUtils.formattable("Scheduled command \"" + command + "\" with " + delay +
@@ -116,8 +116,7 @@ public class DelayCommand {
     }
 
     private static int list(CommandContext<CommandSourceStack> context) {
-        CommandScheduler c = (CommandScheduler) context.getSource().getServer().getWorldData().overworldData()
-                .getScheduledEvents();
+        CommandScheduler c = (CommandScheduler) context.getSource().getServer().getScheduledEvents();
         List<Component> commandList = new ArrayList<>();
         for (String key : c.technicalToolbox$GetCommandEventMap().keySet()) {
             CommandEvent event = c.technicalToolbox$GetCommandEventMap().get(key);
@@ -132,13 +131,12 @@ public class DelayCommand {
     }
 
     private static CompletableFuture<Suggestions> getIdSuggestions(CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) {
-        return SharedSuggestionProvider.suggest(((CommandScheduler) context.getSource().getServer().getWorldData()
-                .overworldData().getScheduledEvents()).technicalToolbox$GetCommandEventMap().keySet(), builder);
+        return SharedSuggestionProvider.suggest(((CommandScheduler) context.getSource().getServer().getScheduledEvents())
+                .technicalToolbox$GetCommandEventMap().keySet(), builder);
     }
 
     private static int remove(CommandContext<CommandSourceStack> context) {
-        CommandScheduler c = (CommandScheduler) context.getSource().getServer().getWorldData().overworldData()
-                .getScheduledEvents();
+        CommandScheduler c = (CommandScheduler) context.getSource().getServer().getScheduledEvents();
         MutableComponent out;
         String id = context.getArgument("id", String.class);
         if (c.technicalToolbox$RemoveCommandEvent(id)) {

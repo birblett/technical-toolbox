@@ -27,7 +27,7 @@ public class CameraCommand {
         if (player != null) {
             String feedback = ((CameraInterface) player).technicalToolbox$SwapCameraMode(true);
             if (feedback != null) {
-                player.displayClientMessage(TextUtils.formattable(feedback), true);
+                player.sendSystemMessage(TextUtils.formattable(feedback), true);
                 Object logLevel = ConfigOptions.CAMERA_CONSOLE_LOGGING.val();
                 if (logLevel.equals("command") || logLevel.equals("spectate")) {
                     context.getSource().getServer().sendSystemMessage(TextUtils.formattable("[Camera Mode] " + player.getScoreboardName()

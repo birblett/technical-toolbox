@@ -3,6 +3,8 @@ package com.birblett.mixin.command.camera;
 import com.birblett.accessor.command.camera.CameraInterface;
 import com.birblett.impl.config.ConfigOptions;
 import com.birblett.util.TextUtils;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -44,12 +46,30 @@ public class ServerGamePacketListenerImplMixin {
             value = "INVOKE"), locals = LocalCapture.CAPTURE_FAILSOFT, cancellable = true)
     protected void disableCamTeleport(ServerboundTeleportToEntityPacket packet, CallbackInfo ci, Iterator<ServerLevel> var2, ServerLevel serverWorld, Entity entity) {
         if (((CameraInterface) this.player).technicalToolbox$IsCamera() && !ConfigOptions.CAMERA_CAN_TELEPORT.val()) {
-            this.player.displayClientMessage(TextUtils.formattable("Teleportation is disabled in camera mode"), true);
+            this.player.sendSystemMessage(TextUtils.formattable("Teleportation is disabled in camera mode"), true);
             ci.cancel();
         } else if (((CameraInterface) this.player).technicalToolbox$IsCamera() && ConfigOptions.CAMERA_CONSOLE_LOGGING.val().equals("spectate")) {
             this.player.level().getServer().sendSystemMessage(TextUtils.formattable("[Camera Mode] " + this.player.getScoreboardName() +
                     " teleported to " + entity.getScoreboardName()));
         }
+    }
+
+    /**
+     * Handles disabling entity spectating in camera mode and related logging
+     */
+    @WrapOperation(method = "handleSpectatorAction", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/level/ServerPlayer;setCamera(Lnet/minecraft/world/entity/Entity;)V"))
+    private void disableCamSpectate(ServerPlayer player, Entity entity, Operation<Void> original) {
+        if ((((CameraInterface) player).technicalToolbox$IsCamera())) {
+            if (!ConfigOptions.CAMERA_CAN_SPECTATE.val()) {
+                player.sendSystemMessage(TextUtils.formattable("Entity spectating is currently disabled in camera mode"), true);
+                return;
+            }
+            if (ConfigOptions.CAMERA_CONSOLE_LOGGING.val().equals("spectate")) {
+                player.level().getServer().sendSystemMessage(TextUtils.formattable("[Camera Mode] " + player.getScoreboardName() +
+                        " is spectating " + entity.getScoreboardName()));
+            }
+        }
+        original.call(player, entity);
     }
 
 }

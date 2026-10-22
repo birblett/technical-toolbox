@@ -16,7 +16,7 @@ public class ServerGamePacketListenerImplMixin {
     /**
      * Override the regular speed limit, default 100.
      */
-    @ModifyExpressionValue(method = "handleMovePlayer", at = @At(value = "CONSTANT", args = "floatValue=100.0f"))
+    @ModifyExpressionValue(method = "handlePlayerPositionChange", at = @At(value = "CONSTANT", args = "floatValue=100.0f"))
     private float speedLimit(float f) {
         return ConfigOptions.FEATURE_SPEED_LIMIT.val();
     }
@@ -24,7 +24,7 @@ public class ServerGamePacketListenerImplMixin {
     /**
      * Override the elytra speed limit, default 300.
      */
-    @ModifyExpressionValue(method = "handleMovePlayer", at = @At(value = "CONSTANT", args = "floatValue=300.0f"))
+    @ModifyExpressionValue(method = "handlePlayerPositionChange", at = @At(value = "CONSTANT", args = "floatValue=300.0f"))
     private float elytraSpeedLimit(float f) {
         return ConfigOptions.FEATURE_SPEED_LIMIT_ELYTRA.val();
     }

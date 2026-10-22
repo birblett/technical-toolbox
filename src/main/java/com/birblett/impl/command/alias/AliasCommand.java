@@ -281,8 +281,7 @@ public class AliasCommand {
     }
 
     private static int killAll(CommandContext<CommandSourceStack> context) {
-        CommandScheduler c = (CommandScheduler) context.getSource().getServer().getWorldData().overworldData()
-                .getScheduledEvents();
+        CommandScheduler c = (CommandScheduler) context.getSource().getServer().getScheduledEvents();
         c.technicalToolbox$killAll();
         context.getSource().sendSuccess(() -> TextUtils.formattable("Killed all currently running aliases"), true);
         return 0;

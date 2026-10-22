@@ -149,23 +149,6 @@ public class ServerPlayerMixin implements CameraInterface {
         }
     }
 
-    /**
-     * Handles disabling entity spectating in camera mode and related logging
-     */
-    @Inject(method = "attack", at = @At(target = "Lnet/minecraft/server/level/ServerPlayer;setCamera(Lnet/minecraft/world/entity/Entity;)V",
-            value = "INVOKE"), cancellable = true)
-    protected void cameraSpectating(Entity target, CallbackInfo ci) {
-        ServerPlayer player = (ServerPlayer) (Object) this;
-        if (this.isCamera && !ConfigOptions.CAMERA_CAN_SPECTATE.val()) {
-            player.displayClientMessage(TextUtils.formattable("Entity spectating is currently disabled in camera mode"), true);
-            ci.cancel();
-        } else if (this.isCamera && ConfigOptions.CAMERA_CONSOLE_LOGGING.val().equals("spectate") && player.level().getServer()
-                != null) {
-            player.level().getServer().sendSystemMessage(TextUtils.formattable("[Camera Mode] " + player.getScoreboardName() +
-                    " is spectating " + target.getScoreboardName()));
-        }
-    }
-
 
     /**
      * Automatically disables camera mode if player directly switches gamemodes
@@ -173,7 +156,7 @@ public class ServerPlayerMixin implements CameraInterface {
     @Inject(method = "setGameMode", at = @At("HEAD"))
     protected void disableCameraMode(GameType gameMode, CallbackInfoReturnable<Boolean> cir) {
         if (this.isCamera && gameMode != GameType.SPECTATOR) {
-            ((ServerPlayer) (Object) this).displayClientMessage(TextUtils.formattable("Swapped gamemodes directly, disabling camera mode"),
+            ((ServerPlayer) (Object) this).sendSystemMessage(TextUtils.formattable("Swapped gamemodes directly, disabling camera mode"),
                     true);
             this.nbt = null;
             this.isCamera = false;

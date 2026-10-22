@@ -1,7 +1,7 @@
 package com.birblett.mixin.legacy;
 
 import com.birblett.impl.config.ConfigOptions;
-import net.minecraft.advancements.CriteriaTriggers;
+import net.minecraft.advancements.triggers.CriteriaTriggers;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.network.chat.Component;
@@ -15,7 +15,7 @@ import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.raid.Raid;
 import net.minecraft.world.level.block.Blocks;
@@ -273,15 +273,15 @@ public abstract class RaidMixin {
         int i = proximity == 0 ? 2 : 2 - proximity;
         BlockPos.MutableBlockPos mutable = new BlockPos.MutableBlockPos();
         for(int j = 0; j < tries; ++j) {
-            float f = world.random.nextFloat() * 6.2831855F;
-            int k = this.center.getX() + Mth.floor(Mth.cos(f) * 32.0F * i) + world.random.nextInt(5);
-            int l = this.center.getZ() + Mth.floor(Mth.sin(f) * 32.0F * i) + world.random.nextInt(5);
+            float f = world.getRandom().nextFloat() * 6.2831855F;
+            int k = this.center.getX() + Mth.floor(Mth.cos(f) * 32.0F * i) + world.getRandom().nextInt(5);
+            int l = this.center.getZ() + Mth.floor(Mth.sin(f) * 32.0F * i) + world.getRandom().nextInt(5);
             int m = world.getHeight(Heightmap.Types.WORLD_SURFACE, k, l);
             mutable.set(k, m, l);
             if (!world.isVillage(mutable) || proximity >= 2) {
                 if (world.hasChunksAt(mutable.getX() - 10, mutable.getZ() - 10, mutable.getX() + 10,
                         mutable.getZ() + 10) && world.isPositionEntityTicking(mutable) &&
-                        (RAVAGER_SPAWN_PLACEMENT_TYPE.isSpawnPositionOk(world, mutable, EntityType.RAVAGER) ||
+                        (RAVAGER_SPAWN_PLACEMENT_TYPE.isSpawnPositionOk(world, mutable, EntityTypes.RAVAGER) ||
                         world.getBlockState(mutable.below()).is(Blocks.SNOW) && world.getBlockState(mutable).isAir())) {
                     return mutable;
                 }

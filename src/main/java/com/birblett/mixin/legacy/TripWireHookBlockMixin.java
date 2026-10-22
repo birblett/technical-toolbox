@@ -12,9 +12,12 @@ import org.spongepowered.asm.mixin.injection.At;
 @Mixin(TripWireHookBlock.class)
 public abstract class TripWireHookBlockMixin {
 
-    @ModifyExpressionValue(method = "calculateState", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/block/state/BlockState;is(Lnet/minecraft/world/level/block/Block;)Z", ordinal = 2))
-    private static boolean legacyTripwireHook(boolean original) {
-        return ConfigOptions.LEGACY_TRIPWIRE_HOOK.val() || original;
+    @ModifyExpressionValue(method = "calculateState", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/block/state/BlockState;getValue(Lnet/minecraft/world/level/block/state/properties/Property;)Ljava/lang/Comparable;", ordinal = 2))
+    private static Comparable<Boolean> legacyTripwireHook(Comparable<Boolean> original) {
+        if (ConfigOptions.LEGACY_TRIPWIRE_HOOK.val()) {
+            return true;
+        }
+        return original;
     }
 
 }

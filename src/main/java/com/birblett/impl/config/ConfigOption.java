@@ -7,7 +7,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.util.Tuple;
+import oshi.util.tuples.Pair;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -102,7 +103,7 @@ public class ConfigOption<T> {
         return new ConfigOption<>(name, defaultValue, desc, hasLineBreak, "true", "false") {
             @Override
             public Component setFromString(String value) {
-                Tuple<Boolean, Component> out = getBooleanOption(this.getName(), value, false);
+                Pair<Boolean, Component> out = getBooleanOption(this.getName(), value, false);
                 this.value = out.getA();
                 return out.getB();
             }
@@ -117,7 +118,7 @@ public class ConfigOption<T> {
         return new ConfigOption<>(name, defaultValue, desc, hasLineBreak, suggestions) {
             @Override
             public Component setFromString(String value) {
-                Tuple<Integer, Component> out = getIntOption(this.getName(), value, defaultValue, min, max);
+                Pair<Integer, Component> out = getIntOption(this.getName(), value, defaultValue, min, max);
                 this.value = out.getA();
                 return out.getB();
             }
@@ -132,7 +133,7 @@ public class ConfigOption<T> {
         return new ConfigOption<>(name, defaultValue, desc, hasLineBreak, suggestions) {
             @Override
             public Component setFromString(String value) {
-                Tuple<Long, Component> out = getLongOption(this.getName(), value, defaultValue, min, max);
+                Pair<Long, Component> out = getLongOption(this.getName(), value, defaultValue, min, max);
                 this.value = out.getA();
                 return out.getB();
             }
@@ -147,7 +148,7 @@ public class ConfigOption<T> {
         return new ConfigOption<>(name, defaultValue, desc, hasLineBreak, suggestions) {
             @Override
             public Component setFromString(String value) {
-                Tuple<Float, Component> out = getFloatOption(this.getName(), value, defaultValue, min, max);
+                Pair<Float, Component> out = getFloatOption(this.getName(), value, defaultValue, min, max);
                 this.value = out.getA();
                 return out.getB();
             }
@@ -162,7 +163,7 @@ public class ConfigOption<T> {
         return new ConfigOption<>(name, defaultValue, desc, hasLineBreak, suggestions) {
             @Override
             public Component setFromString(String value) {
-                Tuple<Double, Component> out = getDoubleOption(this.getName(), value, defaultValue, min, max);
+                Pair<Double, Component> out = getDoubleOption(this.getName(), value, defaultValue, min, max);
                 this.value = out.getA();
                 return out.getB();
             }
@@ -177,111 +178,111 @@ public class ConfigOption<T> {
         return TextUtils.formattable("Failed to parse value " + value + " for option " + name);
     }
 
-    public static Tuple<Integer, Component> getIntOption(String name, String value, int defaultValue, int left, int right) {
+    public static Pair<Integer, Component> getIntOption(String name, String value, int defaultValue, int left, int right) {
         int tmp;
         try {
             tmp = Integer.parseInt(value);
             if (tmp < left || tmp > right) {
                 MutableComponent t = TextUtils.formattable("Invalid input " + value + ": " + name + " only accepts values ");
                 if (left != Integer.MIN_VALUE && right != Integer.MAX_VALUE) {
-                    return new Tuple<>(defaultValue, t.append(TextUtils.formattable("in range [" + left + ", " + right
+                    return new Pair<>(defaultValue, t.append(TextUtils.formattable("in range [" + left + ", " + right
                             + "]")));
                 } else if (left != Integer.MIN_VALUE) {
-                    return new Tuple<>(defaultValue, t.append(TextUtils.formattable(">= " + left)));
+                    return new Pair<>(defaultValue, t.append(TextUtils.formattable(">= " + left)));
                 } else if (right != Integer.MAX_VALUE) {
-                    return new Tuple<>(defaultValue, t.append(TextUtils.formattable("<= " + right)));
+                    return new Pair<>(defaultValue, t.append(TextUtils.formattable("<= " + right)));
                 }
             }
         } catch (Exception e) {
-            return new Tuple<>(defaultValue, setFailGeneric(name, value));
+            return new Pair<>(defaultValue, setFailGeneric(name, value));
         }
-        return new Tuple<>(tmp, null);
+        return new Pair<>(tmp, null);
     }
 
-    public static Tuple<Long, Component> getLongOption(String name, String value, long defaultValue, long left, long right) {
+    public static Pair<Long, Component> getLongOption(String name, String value, long defaultValue, long left, long right) {
         long tmp;
         try {
             tmp = Long.parseLong(value);
             if (tmp < left || tmp > right) {
                 MutableComponent t = TextUtils.formattable("Invalid input " + value + ": " + name + " only accepts values ");
                 if (left != Long.MIN_VALUE && right != Long.MAX_VALUE) {
-                    return new Tuple<>(defaultValue, t.append(TextUtils.formattable("in range [" + left + ", " + right
+                    return new Pair<>(defaultValue, t.append(TextUtils.formattable("in range [" + left + ", " + right
                             + "]")));
                 } else if (left != Long.MIN_VALUE) {
-                    return new Tuple<>(defaultValue, t.append(TextUtils.formattable(">= " + left)));
+                    return new Pair<>(defaultValue, t.append(TextUtils.formattable(">= " + left)));
                 } else if (right != Long.MAX_VALUE) {
-                    return new Tuple<>(defaultValue, t.append(TextUtils.formattable("<= " + right)));
+                    return new Pair<>(defaultValue, t.append(TextUtils.formattable("<= " + right)));
                 }
             }
         } catch (Exception e) {
-            return new Tuple<>(defaultValue, setFailGeneric(name, value));
+            return new Pair<>(defaultValue, setFailGeneric(name, value));
         }
-        return new Tuple<>(tmp, null);
+        return new Pair<>(tmp, null);
     }
 
-    public static Tuple<Float, Component> getFloatOption(String name, String value, float defaultValue, float left, float right) {
+    public static Pair<Float, Component> getFloatOption(String name, String value, float defaultValue, float left, float right) {
         float tmp;
         try {
             tmp = Float.parseFloat(value);
             if (tmp < left || tmp > right) {
                 MutableComponent t = TextUtils.formattable("Invalid input " + value + ": " + name + " only accepts values ");
                 if (left != Float.MIN_VALUE && right != Float.MAX_VALUE) {
-                    return new Tuple<>(defaultValue, t.append(TextUtils.formattable("in range [" + left + ", " + right
+                    return new Pair<>(defaultValue, t.append(TextUtils.formattable("in range [" + left + ", " + right
                             + "]")));
                 } else if (left != Float.MIN_VALUE) {
-                    return new Tuple<>(defaultValue, t.append(TextUtils.formattable(">= " + left)));
+                    return new Pair<>(defaultValue, t.append(TextUtils.formattable(">= " + left)));
                 } else if (right != Float.MAX_VALUE) {
-                    return new Tuple<>(defaultValue, t.append(TextUtils.formattable("<= " + right)));
+                    return new Pair<>(defaultValue, t.append(TextUtils.formattable("<= " + right)));
                 }
             }
         } catch (Exception e) {
-            return new Tuple<>(defaultValue, setFailGeneric(name, value));
+            return new Pair<>(defaultValue, setFailGeneric(name, value));
         }
-        return new Tuple<>(tmp, null);
+        return new Pair<>(tmp, null);
     }
 
-    public static Tuple<Double, Component> getDoubleOption(String name, String value, double defaultValue, double left, double right) {
+    public static Pair<Double, Component> getDoubleOption(String name, String value, double defaultValue, double left, double right) {
         double tmp;
         try {
             tmp = Double.parseDouble(value);
             if (tmp < left || tmp > right) {
                 MutableComponent t = TextUtils.formattable("Invalid input " + value + ": " + name + " only accepts values ");
                 if (left != Double.MIN_VALUE && right != Double.MAX_VALUE) {
-                    return new Tuple<>(defaultValue, t.append(TextUtils.formattable("in range [" + left + ", " + right
+                    return new Pair<>(defaultValue, t.append(TextUtils.formattable("in range [" + left + ", " + right
                             + "]")));
                 } else if (left != Double.MIN_VALUE) {
-                    return new Tuple<>(defaultValue, t.append(TextUtils.formattable(">= " + left)));
+                    return new Pair<>(defaultValue, t.append(TextUtils.formattable(">= " + left)));
                 } else if (right != Double.MAX_VALUE) {
-                    return new Tuple<>(defaultValue, t.append(TextUtils.formattable("<= " + right)));
+                    return new Pair<>(defaultValue, t.append(TextUtils.formattable("<= " + right)));
                 }
             }
         } catch (Exception e) {
-            return new Tuple<>(defaultValue, setFailGeneric(name, value));
+            return new Pair<>(defaultValue, setFailGeneric(name, value));
         }
-        return new Tuple<>(tmp, null);
+        return new Pair<>(tmp, null);
     }
 
-    public static Tuple<Boolean, Component> getBooleanOption(String name, String value, boolean defaultValue) {
+    public static Pair<Boolean, Component> getBooleanOption(String name, String value, boolean defaultValue) {
         boolean tmp;
         if (!(value.equals("false") || value.equals("true"))) {
-            return new Tuple<>(defaultValue, setFailGeneric(name, value));
+            return new Pair<>(defaultValue, setFailGeneric(name, value));
         }
         try {
             tmp = Boolean.parseBoolean(value);
         } catch (Exception e) {
-            return new Tuple<>(defaultValue, setFailGeneric(name, value));
+            return new Pair<>(defaultValue, setFailGeneric(name, value));
         }
-        return new Tuple<>(tmp, null);
+        return new Pair<>(tmp, null);
     }
 
-    public static Tuple<String, Component> getStringOption(String name, String value, String defaultValue) {
+    public static Pair<String, Component> getStringOption(String name, String value, String defaultValue) {
         if (value == null || value.length() == 0) {
-            return new Tuple<>(defaultValue, setFailGeneric(name, value));
+            return new Pair<>(defaultValue, setFailGeneric(name, value));
         }
-        return new Tuple<>(value, null);
+        return new Pair<>(value, null);
     }
 
-    public static Tuple<String, Component> getRestrictedStringOptions(String name, String value, String defaultValue, Collection<String> suggestions) {
+    public static Pair<String, Component> getRestrictedStringOptions(String name, String value, String defaultValue, Collection<String> suggestions) {
         if (!suggestions.contains(value)) {
             MutableComponent out = TextUtils.formattable("Invalid input \"" + value + "\" for option " + name + ": must " +
                     "be one of " + "[");
@@ -292,9 +293,9 @@ public class ConfigOption<T> {
                     out = out.append(TextUtils.formattable(","));
                 }
             }
-            return new Tuple<>(defaultValue, out.append("]"));
+            return new Pair<>(defaultValue, out.append("]"));
         }
-        return new Tuple<>(value, null);
+        return new Pair<>(value, null);
     }
 
 }

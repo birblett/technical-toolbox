@@ -14,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.At;
 @Mixin(PortalForcer.class)
 public class PortalForcerMixin {
 
-    @ModifyExpressionValue(method = "method_61028", at = @At(value = "INVOKE", target = "net/minecraft/world/level/block/state/BlockState.hasProperty(Lnet/minecraft/world/level/block/state/properties/Property;)Z"))
+    @ModifyExpressionValue(method = "lambda$findClosestPortalPosition$1(Lnet/minecraft/core/BlockPos;)Z", at = @At(value = "INVOKE", target = "net/minecraft/world/level/block/state/BlockState.hasProperty(Lnet/minecraft/world/level/block/state/properties/Property;)Z"))
     private boolean ignoreProperty(boolean b) {
         return b || ConfigOptions.LEGACY_POI_PROPERTY_CHECK.val();
     }

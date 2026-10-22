@@ -5,7 +5,7 @@ import com.birblett.impl.command.delay.DelayCommand;
 import com.birblett.util.ServerUtil;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.util.Tuple;
+import oshi.util.tuples.Pair;
 
 public class ConfigOptions {
 
@@ -69,7 +69,7 @@ public class ConfigOptions {
 
         @Override
         public Component setFromString(String value) {
-            Tuple<String, Component> out = getStringOption(this.getName(), value, "cam");
+            Pair<String, Component> out = getStringOption(this.getName(), value, "cam");
             this.value = out.getA();
             return out.getB();
         }
@@ -91,7 +91,7 @@ public class ConfigOptions {
             "spectate") {
         @Override
         public Component setFromString(String value) {
-            Tuple<String, Component> out = getRestrictedStringOptions(this.getName(), value, "none",
+            Pair<String, Component> out = getRestrictedStringOptions(this.getName(), value, "none",
                     this.commandSuggestions());
             this.value = out.getA();
             return out.getB();
@@ -119,7 +119,7 @@ public class ConfigOptions {
 
         @Override
         public Component setFromString(String value) {
-            Tuple<String, Component> out = getStringOption(this.getName(), value, "delay");
+            Pair<String, Component> out = getStringOption(this.getName(), value, "delay");
             this.value = out.getA();
             return out.getB();
         }
